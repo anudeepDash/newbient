@@ -1,5 +1,6 @@
 import React from 'react';
 import TriangleAlert from 'lucide-react/dist/esm/icons/triangle-alert';
+import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import Sheet from '../../Sheet';
 import { Button } from '../../ui';
 import { TRANSITIONS, isOnShortlist } from '../../../../lib/outreach/status';
@@ -18,7 +19,7 @@ const Row = ({ label, children }) => (children === null || children === undefine
     </div>
 ));
 
-const ApplicationSheet = ({ app, campaign, campaignId, onClose, onStatus, nameOf, refreshKey }) => {
+const ApplicationSheet = ({ app, campaign, campaignId, onClose, onStatus, onMessage = null, nameOf, refreshKey }) => {
     const summary = app && campaign ? deliverableSummary(campaign, app) : null;
     // Under the campaign's follower minimum (the Nano "from" count): can't go onto the shortlist.
     const belowMin = Boolean(app && campaign && !isOnShortlist(app.status) && isBelowMinimum(app, campaign));
@@ -34,6 +35,9 @@ const ApplicationSheet = ({ app, campaign, campaignId, onClose, onStatus, nameOf
                                 {STATUS_ACTIONS[s]}
                             </Button>
                         ))}
+                        {onMessage && !app.whatsappOptOut && (
+                            <Button size="sm" variant="success" className="ml-auto" onClick={() => onMessage([app.id])}><MessageCircle size={13} /> Message on WhatsApp</Button>
+                        )}
                     </div>
                     {belowMin && (
                         <p className="flex items-start gap-2 rounded-2xl bg-amber-500/10 p-3 text-[13px]">

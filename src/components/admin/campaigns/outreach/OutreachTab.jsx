@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import ClipboardPaste from 'lucide-react/dist/esm/icons/clipboard-paste';
 import Inbox from 'lucide-react/dist/esm/icons/inbox';
 import Star from 'lucide-react/dist/esm/icons/star';
@@ -39,6 +41,9 @@ const BLANK_FILTERS = { q: '', minFollowers: '', maxFollowers: '', category: 'al
 
 const OutreachTab = ({ campaign }) => {
     const addToast = useStore(s => s.addToast);
+    const navigate = useNavigate();
+    // The WhatsApp center's Send tab, with these applicants picked and the campaign filled in.
+    const messageOnWhatsApp = (appIds) => navigate('/admin/whatsapp', { state: { whatsappSend: { campaignId: campaign.id, appIds, at: Date.now() } } });
     const [data, setData] = useState({ loading: true, error: '', applications: [], settings: null, api: null });
     const [view, setView] = useState('applications');
     const [filters, setFilters] = useState(BLANK_FILTERS);
@@ -179,6 +184,7 @@ const OutreachTab = ({ campaign }) => {
             <span className="px-2 text-[13px] font-bold">{selected.size} selected</span>
             <Button variant="accent" size="sm" disabled={!canShortlist.length} onClick={() => addToShortlist(canShortlist.map(a => a.id))}><Star size={13} /> {canShortlist.length ? `Add ${canShortlist.length} to shortlist` : 'Add to shortlist'}</Button>
             <Button size="sm" disabled={!canRemove.length} onClick={() => setConfirmRemove(canRemove.map(a => a.id))}>{canRemove.length ? `Remove ${canRemove.length}` : 'Remove'}</Button>
+            {data.api?.configured && <Button size="sm" variant="success" onClick={() => messageOnWhatsApp([...selected])}><MessageCircle size={13} /> WhatsApp template</Button>}
             <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>Clear</Button>
         </div>
     );
@@ -321,7 +327,7 @@ const OutreachTab = ({ campaign }) => {
                 onShortlist={addToShortlist}
                 onMark={(ids, to, source) => changeStatus(ids, to, { source })}
             />
-            <ApplicationSheet app={openId ? byId.get(openId) : null} campaign={campaign} campaignId={campaign.id} onClose={() => setOpenId(null)} onStatus={changeStatus} nameOf={nameOf} refreshKey={refreshKey} />
+            <ApplicationSheet app={openId ? byId.get(openId) : null} campaign={campaign} campaignId={campaign.id} onClose={() => setOpenId(null)} onStatus={changeStatus} onMessage={data.api?.configured ? messageOnWhatsApp : null} nameOf={nameOf} refreshKey={refreshKey} />
             <ConfirmSheet
                 open={Boolean(confirmRemove)}
                 onClose={() => setConfirmRemove(null)}

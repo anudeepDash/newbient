@@ -120,7 +120,12 @@ const SetupPanel = ({ campaign, settings, api, sampleApplication, onSaved }) => 
                     <p className="text-[12.5px] text-gray-500">API messages use templates approved by Meta, so they can’t be edited here. The template above is for Open WhatsApp. Both use the same details.</p>
                     {['invite', 'reminder', 'deliverables', 'changes', 'payout'].map(kind => (
                         <div key={kind} className="space-y-1">
-                            <p className="font-mono text-[12px] text-gray-500">{WA_TEMPLATES[kind].name}</p>
+                            <p className="flex items-center gap-2 font-mono text-[12px] text-gray-500">
+                                {WA_TEMPLATES[kind].name}
+                                {api?.configured && (api.templates?.[kind]
+                                    ? <span className="font-sans font-semibold text-emerald-600">· on</span>
+                                    : <span className="font-sans font-semibold text-gray-500">· off until WHATSAPP_TEMPLATE_{WA_TEMPLATES[kind].name.toUpperCase()} is set</span>)}
+                            </p>
                             <div className="whitespace-pre-wrap rounded-xl bg-black/[0.03] p-3 text-[13px] dark:bg-white/[0.04]">{renderTemplatePreview(kind, apiSample)}{(['invite', 'reminder'].includes(kind) ? JOIN_BUTTON : WA_TEMPLATES[kind].button) && <span className="mt-1 block font-semibold text-sky-600">{['invite', 'reminder'].includes(kind) ? JOIN_BUTTON : WA_TEMPLATES[kind].button}</span>}</div>
                         </div>
                     ))}
