@@ -4,6 +4,8 @@ import './index.css'
 import App from './App.jsx'
 import { initLang } from './i18n'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
+import { Analytics } from '@vercel/analytics/react'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 
 import { reloadForNewChunks } from './lib/chunkReload'
 
@@ -14,9 +16,14 @@ window.addEventListener('vite:preloadError', () => {
 initLang()
 
 createRoot(document.getElementById('root')).render(
-  <ErrorBoundary>
-    <App />
-  </ErrorBoundary>
+  <>
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+    {/* Vercel Web Analytics + Speed Insights; they only report on Vercel deployments. */}
+    <Analytics />
+    <SpeedInsights />
+  </>
 )
 
 
