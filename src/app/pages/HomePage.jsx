@@ -40,8 +40,10 @@ import { useLocalizedCampaigns, useLocalizedFeed } from '../../i18n/useHinglish'
  * Home, top to bottom:
  *   a greeting (time of day, your name, one warm line; your next pass when it's close)
  *   quick actions · the ways in (until you've done them) · finish your profile
- *   your passes · open campaigns · upcoming shows (tickets or the guestlist)
- *   what's on in the community · the WhatsApp community. Creator things come first.
+ *   your passes · upcoming shows (tickets or the guestlist) and open campaigns
+ *   (creators see campaigns first, everyone else upcoming first) · gigs,
+ *   giveaways and forms in the community (guestlists are in Upcoming) ·
+ *   the WhatsApp community.
  */
 
 // Phone, email and name are asked by the account banner (auth/AccountBanner) above.
@@ -136,6 +138,10 @@ const HomePage = () => {
     const missing = authUser && profileLoaded && !signingIn ? missingFields(profile, ONBOARDING_FIELDS) : [];
     const joined = new Set(creator?.joinedCampaigns || []);
     const { shows, loaded: showsLoaded } = useUpcomingShows();
+    // Guestlists live in Upcoming; the community rail is for gigs, giveaways and forms.
+    const communityItems = useMemo(() => feed.filter(item => item.type !== 'guestlist'), [feed]);
+    // Creators see campaigns first; everyone else sees what's on first.
+    const isCreator = Boolean(creator) || Boolean(profile?.capabilities?.creator);
     const whatsapp = usePublicFeed()?.contact?.whatsappCommunity;
 
     const next = upcoming[0];
@@ -146,6 +152,32 @@ const HomePage = () => {
         signedIn: Boolean(authUser),
         nextPass: next ? { title: next.event?.title || next.campaignTitle, when: nextWhen } : null,
     });
+
+    const campaignsSection = (
+        <section className="space-y-3">
+            <SectionHeader title={t('Open campaigns')} to={appPath('/creator')} />
+            {!campaignsLoaded ? (
+                <Rail><CardSkeleton /><CardSkeleton /></Rail>
+            ) : campaigns.length ? (
+                <Rail>
+                    {campaigns.slice(0, 6).map(c => <Card key={c.id} {...campaignCard(c, { applied: joined.has(c.id), from: location })} />)}
+                </Rail>
+            ) : (
+                <EmptyState icon={Megaphone} title={t('No open campaigns right now')} message={t('New brand and event campaigns show up here first.')} />
+            )}
+        </section>
+    );
+
+    const upcomingSection = (!showsLoaded || shows.length > 0) && (
+        <section className="space-y-3">
+            <SectionHeader title={t('Upcoming')} to={appPath('/tickets')} />
+            {!showsLoaded ? (
+                <Rail><CardSkeleton /><CardSkeleton /></Rail>
+            ) : (
+                <Rail>{shows.map(e => <Card key={e.id} {...showCard(e, t, location)} />)}</Rail>
+            )}
+        </section>
+    );
 
     return (
         <PageBody>
@@ -203,37 +235,15 @@ const HomePage = () => {
                 </section>
             )}
 
-            <section className="space-y-3">
-                <SectionHeader title={t('Open campaigns')} to={appPath('/creator')} />
-                {!campaignsLoaded ? (
-                    <Rail><CardSkeleton /><CardSkeleton /></Rail>
-                ) : campaigns.length ? (
-                    <Rail>
-                        {campaigns.slice(0, 6).map(c => <Card key={c.id} {...campaignCard(c, { applied: joined.has(c.id), from: location })} />)}
-                    </Rail>
-                ) : (
-                    <EmptyState icon={Megaphone} title={t('No open campaigns right now')} message={t('New brand and event campaigns show up here first.')} />
-                )}
-            </section>
+            {isCreator ? <>{campaignsSection}{upcomingSection}</> : <>{upcomingSection}{campaignsSection}</>}
 
-            {(!showsLoaded || shows.length > 0) && (
-                <section className="space-y-3">
-                    <SectionHeader title={t('Upcoming')} to={appPath('/tickets')} />
-                    {!showsLoaded ? (
-                        <Rail><CardSkeleton /><CardSkeleton /></Rail>
-                    ) : (
-                        <Rail>{shows.map(e => <Card key={e.id} {...showCard(e, t, location)} />)}</Rail>
-                    )}
-                </section>
-            )}
-
-            {(!feedLoaded || feed.length > 0) && (
+            {(!feedLoaded || communityItems.length > 0) && (
                 <section className="space-y-3">
                     <SectionHeader title={t('In the community')} to={appPath('/community')} />
                     {!feedLoaded ? (
                         <Rail><CardSkeleton /><CardSkeleton /></Rail>
                     ) : (
-                        <Rail>{feed.slice(0, 6).map(item => <Card key={item.key} {...feedCard(item, { from: location })} />)}</Rail>
+                        <Rail>{communityItems.slice(0, 6).map(item => <Card key={item.key} {...feedCard(item, { from: location })} />)}</Rail>
                     )}
                 </section>
             )}
