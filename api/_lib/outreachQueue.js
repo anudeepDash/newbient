@@ -213,6 +213,7 @@ const KINDS = {
     all_approved: {},
     post_due: { button: 'link' },
     post_overdue: { button: 'link' },
+    posts_open: { button: 'link' },
     inbox_text: { text: true },
     // Any approved template, ready to send (WhatsApp center bulk sends): data { phone, name, template, language, header, bodyParams, buttons, text }.
     template: { custom: true },
@@ -286,8 +287,8 @@ const loadContext = async (db, job) => {
     }
     if (job.kind === 'deliverables' && !(campaign.tasks || []).length) return { skip: 'no_deliverables' };
     if (spec.button === 'link' && !submitToken(job.campaignId, job.appId)) return { skip: 'no_link_secret' };
-    // A deadline reminder is pointless once the posts it was about are in.
-    if ((job.kind === 'post_due' || job.kind === 'post_overdue')
+    // A deadline reminder (or posting-opens notice) is pointless once the posts it was about are in.
+    if (['post_due', 'post_overdue', 'posts_open'].includes(job.kind)
         && (job.data?.taskIds || []).every(id => ['submitted', 'approved'].includes(app.deliverables?.[id]?.status))) return { skip: 'posts_in' };
     return { campaign, settings, app };
 };

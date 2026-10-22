@@ -59,6 +59,14 @@ export const WA_TEMPLATES = {
         body: '💸 *Payout sent, {{1}}*\n\n*Amount:* ₹{{2}}\n*Campaign:* {{3}}\n*Reference:* {{4}}\n\nThanks for creating with Newbi!',
         placeholders: ['first_name', 'amount', 'campaign_title', 'reference'],
     },
+    // When a deliverable opens for posting (worded as an update on their post, so Meta keeps it Utility): the day before its "Opens on" date, or
+    // right away when the team opens it (api/_lib/postsOpen.js). Same posts link.
+    posts_open: {
+        name: 'campaign_posts_open',
+        body: "🗓️ *Your post date is set, {{1}}*\n\nYour post for *{{2}}* can go up from {{3}}.\n\n*Post:* {{4}}\n*Due:* {{5}}\n\nOnce it's up, tap *Send my posts* so we can check it. Reply here if you need to change anything.",
+        placeholders: ['first_name', 'campaign_title', 'opens_at', 'what_to_post', 'due_at'],
+        button: 'Send my posts',
+    },
     // The day before a posting deadline, and the day after it if the posts still aren't in
     // (api/_lib/postReminders.js). URL button: their posts link, like campaign_deliverables.
     post_due: {
@@ -102,6 +110,8 @@ export const templateParamsFor = (kind, { application, campaign, groupLink, data
         approved_summary: String(data.summary || '').trim() || 'All your posts',
         due_at: String(data.dueAt || '').trim() || 'Soon',
         still_to_send: String(data.stillToSend || '').trim() || 'Your posts',
+        opens_at: String(data.opensAt || '').trim() || 'today',
+        what_to_post: String(data.whatToPost || '').trim() || 'Your posts',
     };
     return (WA_TEMPLATES[kind] || WA_TEMPLATES.invite).placeholders.map(p => values[p]);
 };

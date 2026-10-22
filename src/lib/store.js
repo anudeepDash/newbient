@@ -16,7 +16,7 @@ import { clearSessionHint } from './sessionHint';
 import { DEFAULT_CREATOR_GROUPS, isCampaignCityMatch } from './constants';
 import { TOAST_TYPES, toFriendlyMessage, getSupportHint, getToastDuration } from './toastCopy';
 import { indexAppSubmissions, mergeAppSubmissions, isAppSubmission } from './creator/appSubmissions';
-import { taskWindowFields } from './creator/tasks';
+import { openedTaskIds, taskWindowFields } from './creator/tasks';
 import { ADMIN_ROLES } from '../constants/roles';
 
 /** A short, stable key for a push token (tokens are too long and odd-charactered to be field names). */
@@ -3969,6 +3969,8 @@ export const useStore = create((set, get) => ({
         if (result.announce) {
             notifyMatchingCreatorsOfCampaign({ ...result.stored, ...result.written, id }, get().creators);
         }
+        const opened = Array.isArray(result.written.tasks) ? openedTaskIds(result.stored.tasks, result.written.tasks) : [];
+        if (opened.length) notifyEvent('posts-opened', { campaignId: id, taskIds: opened });
     },
     // Tell matching creators about a live campaign again (email + in-app).
     announceCampaign: async (id) => {
@@ -4154,13 +4156,16 @@ export const useStore = create((set, get) => ({
      */
     setTaskWindow: async (campaignId, taskId, phase) => {
         const ref = doc(db, 'campaigns', campaignId);
-        const tasks = await runTransaction(db, async (tx) => {
+        const { tasks, opened } = await runTransaction(db, async (tx) => {
             const snap = await tx.get(ref);
             if (!snap.exists()) throw new Error('Campaign not found');
-            const next = (snap.data().tasks || []).map(t => (String(t.id) === String(taskId) ? { ...t, ...taskWindowFields(phase) } : t));
+            const stored = snap.data().tasks || [];
+            const next = stored.map(t => (String(t.id) === String(taskId) ? { ...t, ...taskWindowFields(phase) } : t));
             tx.update(ref, { tasks: next });
-            return next;
+            return { tasks: next, opened: openedTaskIds(stored, next) };
         });
+        // Creators hear on WhatsApp that posting has opened (api/_lib/postsOpen.js).
+        if (opened.length) notifyEvent('posts-opened', { campaignId, taskIds: opened });
         if (rawCampaigns) rawCampaigns = rawCampaigns.map(c => (c.id === campaignId ? { ...c, tasks } : c));
         set(state => ({
             campaigns: mergeAppSubmissions((state.campaigns || []).map(c => (c.id === campaignId ? { ...c, tasks } : c)), appSubmissionIndex),

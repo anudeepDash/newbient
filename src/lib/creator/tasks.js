@@ -40,6 +40,18 @@ export const taskWindow = (task = {}) => {
 export const taskWindowFields = (phase) => ({ submissionsOpen: phase !== 'upcoming', submissionsClosed: phase === 'closed' });
 
 /*
+ * Deliverables that just opened between two versions of a campaign's tasks: from
+ * "Opens soon" to open, or added already open. Reopening a closed one doesn't
+ * count. Their creators get the campaign_posts_open message (api/_lib/postsOpen.js).
+ */
+export const openedTaskIds = (before = [], after = []) => {
+    const was = new Map((before || []).map(t => [String(t?.id), taskWindow(t)]));
+    return (after || [])
+        .filter(t => t && taskWindow(t) === 'open' && !['open', 'closed'].includes(was.get(String(t.id))))
+        .map(t => String(t.id));
+};
+
+/*
  * Whether a creator can send (or resend) this deliverable now: while it's open, or
  * once it's closed only when the team asked for changes on what they'd already sent.
  */

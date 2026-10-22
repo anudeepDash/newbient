@@ -4,12 +4,16 @@ import { setDbForTests } from '../api/_lib/db.js';
 import { setWhatsAppFetchForTests } from '../api/_lib/whatsapp.js';
 import { queueCampaignInvites } from '../api/_lib/campaignInvites.js';
 import { runPostReminders } from '../api/_lib/postReminders.js';
+import { runPostsOpen, tellPostsOpened } from '../api/_lib/postsOpen.js';
+import { openedTaskIds } from '../src/lib/creator/tasks.js';
+import { TEMPLATES, problemsWith } from '../scripts/submit-wa-templates.mjs';
+import { WA_TEMPLATES, renderTemplatePreview } from '../src/lib/outreach/whatsappTemplate.js';
 import { runTeamDigest, digestCounts } from '../api/_lib/teamDigest.js';
 import { advanceWaitlist, _internal } from '../api/_lib/passes.js';
 
 /* Messages that go out by themselves on site actions and the daily worker. */
 
-const LIVE = ['CAMPAIGN_INVITE', 'CAMPAIGN_POST_DUE', 'CAMPAIGN_POST_OVERDUE', 'TEAM_DAILY_BRIEF', 'GUESTLIST_SPOT_OPENED', 'GUESTLIST_PENDING'];
+const LIVE = ['CAMPAIGN_INVITE', 'CAMPAIGN_POSTS_OPEN', 'CAMPAIGN_POST_DUE', 'CAMPAIGN_POST_OVERDUE', 'TEAM_DAILY_BRIEF', 'GUESTLIST_SPOT_OPENED', 'GUESTLIST_PENDING'];
 const NOW = Date.parse('2026-11-11T03:30:00Z'); // 09:00 IST, 11 Nov
 
 let db;
@@ -82,6 +86,58 @@ describe('posting deadline reminders', () => {
         expect(byKind.post_overdue).toMatchObject({ appId: 'a1', data: { dueAt: 'Tuesday, 10 November', taskIds: ['story'] } });
         // Once per day.
         expect(await runPostReminders({ db, now: NOW })).toMatchObject({ due: 0, overdue: 0 });
+    });
+});
+
+describe('posting opens', () => {
+    beforeEach(() => {
+        db.store.set('campaigns/c1', {
+            title: 'Bacardi NH7 Hype', postingDeadline: '2026-11-15',
+            tasks: [
+                { id: 'reel', title: 'Reel', submissionsOpen: false, opensOn: '2026-11-12' },
+                { id: 'story', title: 'Story', submissionsOpen: false, opensOn: '2026-11-12', deadline: '2026-11-14' },
+                { id: 'later', title: 'Recap', submissionsOpen: false, opensOn: '2026-11-20' },
+                { id: 'manual', title: 'Carousel', submissionsOpen: false },
+            ],
+        });
+        db.store.set('campaigns/c1/applications/a1', { status: 'joined', phone: '+919876500001', fullName: 'Riya Sharma', deliverables: {} });
+        db.store.set('campaigns/c1/applications/a2', { status: 'applied', phone: '+919876500002' });
+    });
+    const open = () => Object.fromEntries((db.store.get('campaigns/c1').tasks).map(t => [t.id, t.submissionsOpen]));
+
+    it('gives the creators group a heads-up the day before, then opens it that morning without telling them twice', async () => {
+        expect(await runPostsOpen({ db, now: NOW })).toEqual({ opened: 0, told: 1 });
+        const [[id, job]] = jobs();
+        expect(id).toBe('posts_open_c1_a1_2026-11-12');
+        expect(job).toMatchObject({ kind: 'posts_open', appId: 'a1', data: { opensAt: 'tomorrow, Thursday, 12 November', whatToPost: 'Reel and Story', dueAt: 'Saturday, 14 November', taskIds: ['reel', 'story'] } });
+        expect(open()).toMatchObject({ reel: false, story: false });
+
+        const next = NOW + 86_400_000;
+        expect(await runPostsOpen({ db, now: next })).toEqual({ opened: 2, told: 0 });
+        expect(open()).toEqual({ reel: true, story: true, later: false, manual: false });
+        expect(jobs()).toHaveLength(1);
+    });
+
+    it('tells them straight away when the team opens one by hand', async () => {
+        const c = db.store.get('campaigns/c1');
+        db.store.set('campaigns/c1', { ...c, tasks: c.tasks.map(t => (t.id === 'manual' ? { ...t, submissionsOpen: true } : t)) });
+        expect(await tellPostsOpened({ db, campaignId: 'c1', taskIds: ['manual', 'later'], now: NOW, start: false })).toEqual({ queued: 1 });
+        const [[, job]] = jobs();
+        expect(job.data).toMatchObject({ opensAt: 'today', whatToPost: 'Carousel', dueAt: 'Sunday, 15 November', taskIds: ['manual'] });
+    });
+
+    it('spots which deliverables just opened', () => {
+        const before = [{ id: 1, submissionsOpen: false }, { id: 2, submissionsOpen: true, submissionsClosed: true }, { id: 3, submissionsOpen: true }];
+        const after = [{ id: 1, submissionsOpen: true }, { id: 2, submissionsOpen: true }, { id: 3, submissionsOpen: true }, { id: 4, submissionsOpen: true }, { id: 5, submissionsOpen: false }];
+        expect(openedTaskIds(before, after)).toEqual(['1', '4']);
+    });
+
+    it('matches the template submitted to Meta', () => {
+        const t = TEMPLATES.find(x => x.name === 'campaign_posts_open');
+        expect(t.body).toBe(WA_TEMPLATES.posts_open.body);
+        expect(problemsWith(t)).toEqual([]);
+        const preview = renderTemplatePreview('posts_open', { application: { fullName: 'Riya Sharma' }, campaign: { title: 'Bacardi NH7 Hype' }, data: { opensAt: 'today', whatToPost: 'Reel', dueAt: 'Sunday, 15 November' } });
+        expect(preview).toContain('Your post for *Bacardi NH7 Hype* can go up from today.');
     });
 });
 

@@ -110,6 +110,14 @@ export const TEMPLATES = [
         footer: 'Newbi Creators · app.newbi.live',
     },
     {
+        // Worded as an update on a post they already owe: "posting opens" was flagged as Marketing.
+        name: 'campaign_posts_open',
+        body: "🗓️ *Your post date is set, {{1}}*\n\nYour post for *{{2}}* can go up from {{3}}.\n\n*Post:* {{4}}\n*Due:* {{5}}\n\nOnce it's up, tap *Send my posts* so we can check it. Reply here if you need to change anything.",
+        samples: ['Riya', 'Bacardi NH7 Hype', 'tomorrow, Thursday, 12 November', 'Reel and Story', 'Sunday, 15 November'],
+        buttons: [{ type: 'URL', text: 'Send my posts', url: `${APP}/d/{{1}}`, example: [`${APP}/d/sample-token`] }],
+        footer: 'Newbi Creators · app.newbi.live',
+    },
+    {
         name: 'team_daily_brief',
         body: "☀️ *Today's to-do at Newbi*\n\n*Ticket orders to check:* {{1}}\n*Guestlist sign-ups to review:* {{2}}\n*Creator posts to review:* {{3}}\n*Payouts to send:* {{4}}\n\nOpen the admin panel to clear them. The numbers there are live, so they may have changed since this message.",
         samples: ['3', '12', '7', '5'],

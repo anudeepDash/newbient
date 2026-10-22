@@ -19,6 +19,7 @@ import { isTemplateLive, sendTemplate } from '../whatsapp.js';
 import { sendTeamAlert, TICKET_TEAM, contactForAdmin, roleLabel } from '../teamAlerts.js';
 import { tellPassHolders, countPassHolders } from '../passHolders.js';
 import { queueCampaignInvites } from '../campaignInvites.js';
+import { tellPostsOpened } from '../postsOpen.js';
 import { isRequiredTask } from '../../../src/lib/creator/tasks.js';
 import { approvedSummary } from '../../../src/lib/outreach/whatsappTemplate.js';
 
@@ -106,6 +107,15 @@ const guestlistSpotFreed = async ({ guestlistId }, caller) => {
     if (!caller.staff) throw new EventError('Forbidden', 403);
     if (!idOk(guestlistId)) throw new EventError('Missing guestlist.');
     return advanceWaitlist(getDb(), guestlistId);
+};
+
+/* Campaign deliverables just opened by the team: tell the creators group on WhatsApp (campaign_posts_open, "…can go up from today"). */
+const postsOpened = async ({ campaignId, taskIds }, caller) => {
+    if (!caller.staff) throw new EventError('Forbidden', 403);
+    if (!idOk(campaignId)) throw new EventError('Missing campaign.');
+    const ids = (Array.isArray(taskIds) ? taskIds : []).map(String).filter(Boolean).slice(0, 50);
+    if (!ids.length) throw new EventError('Missing deliverables.');
+    return tellPostsOpened({ db: getDb(), campaignId, taskIds: ids });
 };
 
 /* Ticketing → Settings → Tell pass holders: a change, or the event is cancelled. Call again while `remaining` > 0. */
@@ -559,6 +569,7 @@ const HANDLERS = {
     'guestlist-declined': guestlistDeclined,
     'guestlist-task-changes': guestlistTaskChanges,
     'guestlist-spot-freed': guestlistSpotFreed,
+    'posts-opened': postsOpened,
     'event-changed': passHoldersNotice('changed'),
     'event-cancelled': passHoldersNotice('cancelled'),
     'payment-approved': invoicePayment('payment-approved'),
