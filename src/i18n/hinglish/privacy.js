@@ -18,6 +18,12 @@ export default {
     'Save choices': 'Choices save karo',
     'Change this any time from “Cookie settings” at the bottom of the page.': 'Page ke neeche “Cookie settings” se kabhi bhi badal sakte ho.',
     'How we use your data': 'Hum aapka data kaise use karte hain',
+    'Essential storage keeps you signed in. With your OK we also count visits and play videos. We never sell your data.': 'Zaroori storage aapko signed in rakhta hai. Aapki permission ho toh hum visits count karte hain aur videos chalate hain. Hum aapka data kabhi nahi bechte.',
+    'Choose': 'Khud chuno',
+    'Sign-in, settings and offline passes. Always on.': 'Sign-in, settings aur offline passes. Hamesha on.',
+    'Visit counts with Vercel. No cookies or ads.': 'Vercel se visits count. Koi cookies ya ads nahi.',
+    'YouTube, Vimeo and Instagram set their own cookies.': 'YouTube, Vimeo aur Instagram apni cookies set karte hain.',
+    'Change it any time from “Cookie settings” in the footer.': 'Footer mein “Cookie settings” se kabhi bhi badlo.',
 
     // Legal links
     'We never sell your data.': 'Hum aapka data kabhi nahi bechte.',
