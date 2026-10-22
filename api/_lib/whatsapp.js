@@ -12,7 +12,7 @@
  * the same doc and, when the send had a `ref`, `{collection}/{id}.delivery.whatsapp`.
  */
 import { getDb, FieldValue, nowIso } from './db.js';
-import { APP_ORIGIN, WA_CARDS } from '../../src/app/seo.js';
+import { APP_ORIGIN, WA_CARDS, toOgImage } from '../../src/app/seo.js';
 
 const API_VERSION = () => process.env.WHATSAPP_API_VERSION || 'v23.0';
 const RETRY_DELAYS_MIN = [5, 30, 120];
@@ -20,7 +20,8 @@ const RETRY_DELAYS_MIN = [5, 30, 120];
 /*
  * Templates approved with an image header, and the card each one carries
  * (public/og/wa-*, drawn in scripts/og/cards.html). Meta rejects a send whose
- * header doesn't match the approved template, so these always get theirs.
+ * header doesn't match the approved template, so these always get an image:
+ * the event's or campaign's own picture when WhatsApp can show it, else the card.
  */
 const IMAGE_HEADERS = {
     pass_confirmed: 'wa-pass',
@@ -34,12 +35,37 @@ const IMAGE_HEADERS = {
     campaign_deliverable_changes: 'wa-changes',
     campaign_payout_sent: 'wa-payout',
     creator_city_group: 'wa-city',
+    // Guestlists and events (image header added in WhatsApp Manager on 23 Oct 2026).
+    guestlist_pending: 'wa-signedup',
+    guestlist_rsvp_confirmed: 'wa-onlist',
+    guestlist_task_changes: 'wa-request-change',
+    guestlist_not_confirmed: 'wa-declined',
+    guestlist_spot_opened: 'wa-waitlist',
+    guestlist_entry_cutoff: 'wa-tonight',
+    event_changed: 'wa-changed',
+    event_cancelled: 'wa-cancelled',
+    pass_checked_in: 'wa-scanned',
 };
 
-/** The image header for a template, or null when the template has none. */
-export const imageHeaderFor = (template) => {
+const HEADER_TYPES = new Set(['image/jpeg', 'image/png']);
+
+/**
+ * An event or campaign picture as a WhatsApp header link, or null when WhatsApp
+ * can't show it (only HTTPS JPEG and PNG work; WebP, GIF and SVG don't).
+ * Cloudinary pictures come back as the 1200×630 JPEG crop link previews use.
+ */
+export const headerImageUrl = (image) => {
+    const og = toOgImage(typeof image === 'string' ? image : '', APP_ORIGIN);
+    return og && og.url.startsWith('https://') && HEADER_TYPES.has(og.type) ? og.url : null;
+};
+
+/** A campaign's own picture (whichever field it was saved in). */
+export const campaignImageOf = (c) => c?.image || c?.coverImage || c?.bannerImage || c?.thumbnail || null;
+
+/** The image header for a template (its event's or campaign's picture, else its card), or null when it has none. */
+export const imageHeaderFor = (template, image = null) => {
     const card = WA_CARDS[IMAGE_HEADERS[template]];
-    return card ? { type: 'image', link: `${APP_ORIGIN}${card.path}` } : null;
+    return card ? { type: 'image', link: headerImageUrl(image) || `${APP_ORIGIN}${card.path}` } : null;
 };
 
 /** True once the owner marked a template approved in Meta by setting WHATSAPP_TEMPLATE_<NAME>. */
@@ -120,8 +146,9 @@ const callMeta = async (payload) => {
 const PERMANENT_CODES = new Set([100, 131008, 131009, 131026, 131030, 131047, 131051, 132000, 132001, 132005, 132007, 132012, 132015, 132016, 133010]);
 
 /**
- * sendTemplate({ to, template, language, header, bodyParams, buttons, event, uid, ref })
- * Templates with an image header (IMAGE_HEADERS) get their card unless `header` is given.
+ * sendTemplate({ to, template, language, header, image, bodyParams, buttons, event, uid, ref })
+ * Templates with an image header (IMAGE_HEADERS) get `image` (the event's or
+ * campaign's picture) when WhatsApp can show it, else their card, unless `header` is given.
  * → { ok, status: 'sent'|'failed'|'retry'|'skipped', messageId, error, errorCode, retriable, logId }
  * Never throws.
  *
@@ -129,12 +156,12 @@ const PERMANENT_CODES = new Set([100, 131008, 131009, 131026, 131030, 131047, 13
  * its own rate limit): a failure is logged as 'failed' and the daily worker
  * won't resend it. `retriable` says whether trying again could work.
  */
-export const sendTemplate = async ({ to, template, language, header: givenHeader, bodyParams = [], buttons = [], event = '', uid = null, ref = null, logId = null, autoRetry = true }) => {
+export const sendTemplate = async ({ to, template, language, header: givenHeader, image = null, bodyParams = [], buttons = [], event = '', uid = null, ref = null, logId = null, autoRetry = true }) => {
     if (!isWhatsAppConfigured()) return { ok: false, status: 'skipped', error: 'WhatsApp is not set up' };
     const phone = toE164(to);
     if (!phone) return { ok: false, status: 'skipped', error: 'No valid WhatsApp number' };
 
-    const header = givenHeader || imageHeaderFor(template);
+    const header = givenHeader || imageHeaderFor(template, image);
     const name = templateName(template);
     const payload = {
         messaging_product: 'whatsapp',

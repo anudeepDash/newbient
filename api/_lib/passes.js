@@ -499,7 +499,7 @@ const signUpOnList = async (db, body, who) => {
     } else {
         // Waiting for the team: say we have it (WhatsApp only, once the template is approved).
         delivery = await notify('guestlist-pending', who.uid, {
-            name: who.name, eventName: g.title, date: g.date, qty: guests, guestlistId: gid,
+            name: who.name, eventName: g.title, date: g.date, qty: guests, guestlistId: gid, image: g.image,
         }, { to: { email: who.email, phone: who.phone, name: who.name } }).catch((err) => {
             console.warn('[PASSES] pending notice failed:', err.message);
             return null;
@@ -1255,7 +1255,7 @@ const scanTime = () => new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/
 /* "Your pass was scanned" to the holder. The gate never waits more than a moment for it. */
 const tellCheckedIn = (ref, pass) => {
     const send = notify('pass-checked-in', pass.holderUid || null, {
-        name: pass.holderName, eventName: pass.event?.title || pass.campaignTitle, scannedAt: scanTime(),
+        name: pass.holderName, eventName: pass.event?.title || pass.campaignTitle, scannedAt: scanTime(), image: pass.event?.image,
     }, { to: { phone: pass.holderPhone, name: pass.holderName }, skip: ['email', 'push', 'inApp'] })
         .catch(err => console.warn('[PASSES] check-in notice failed:', ref, err.message));
     return Promise.race([send, new Promise(resolve => setTimeout(resolve, CHECKIN_NOTICE_MS))]);

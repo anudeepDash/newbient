@@ -382,7 +382,7 @@ export const notify = async (event, uid, data = {}, opts = {}) => {
         else if (!isTemplateLive(waTemplate)) results.whatsapp = skipped('WhatsApp template not approved yet');
         else if (!toE164(person.phone)) results.whatsapp = skipped('No WhatsApp number');
         else {
-            jobs.push(sendTemplate({ to: person.phone, template: waTemplate, ...config.whatsapp.build(payload), event, uid, ref: opts.ref })
+            jobs.push(sendTemplate({ to: person.phone, template: waTemplate, image: payload.image, ...config.whatsapp.build(payload), event, uid, ref: opts.ref })
                 .then(r => { results.whatsapp = { status: r.status, ...(r.messageId ? { messageId: r.messageId } : {}), ...(r.error ? { error: r.error } : {}) }; }));
         }
     }

@@ -79,6 +79,7 @@ export const tellPassHolders = async (db, { eventId, guestlistIds = [], kind, ch
                 name: claimed.holderName,
                 eventName: ev.title || claimed.campaignTitle,
                 date: ev.date,
+                image: ev.image,
                 ref,
                 passUrl: passUrl(ref),
                 ...(kind === 'changed' ? { change: text } : { refund: text }),

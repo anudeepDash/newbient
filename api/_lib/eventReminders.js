@@ -62,7 +62,7 @@ const basics = (pass, doc) => {
     const ref = pass.ref || doc.id;
     const ev = pass.event || {};
     return {
-        data: { name: pass.holderName, eventName: ev.title || pass.campaignTitle, venue: [ev.venue, ev.city].filter(Boolean).join(', '), ref, passUrl: passUrl(ref) },
+        data: { name: pass.holderName, eventName: ev.title || pass.campaignTitle, venue: [ev.venue, ev.city].filter(Boolean).join(', '), ref, passUrl: passUrl(ref), image: ev.image },
         opts: { to: { phone: pass.holderPhone, name: pass.holderName }, ref: { collection: 'passes', id: doc.id } },
     };
 };

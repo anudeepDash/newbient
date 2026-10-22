@@ -178,6 +178,8 @@ const ICONS = {
   link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
   pin: '<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
   upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>',
+  hourglass: '<path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>',
+  x: '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
 };
 const icon = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</svg>`;
 
@@ -297,6 +299,67 @@ const CARDS = {
     sub: 'Thanks for creating with Newbi. The reference is in the message.',
     url: 'Newbi <b>Creators</b>',
     art: 'receipt',
+  },
+  // Guestlists and events (one card per message; the event's own picture is sent instead when it has one).
+  'wa-signedup': {
+    lines: ["You're", 'signed'], sticker: 'up.', inline: true,
+    sub: 'The team checks every sign-up on this list. Your pass comes here once you\'re in.',
+    url: 'app.<b>newbi</b>.live',
+    art: 'stamp', stamp: { icon: 'hourglass', word: 'In review', small: 'Guestlist request' },
+  },
+  'wa-onlist': {
+    lines: ["You're on", 'the'], sticker: 'list.', inline: true,
+    sub: 'Give your name at the entrance. There\'s no QR code for this event.',
+    url: 'app.<b>newbi</b>.live',
+    art: 'ticket',
+    ticket: { kicker: 'RSVP', big: 'Name on<br/>the <em>list</em>', meta: [['Entry', 'Your name'], ['QR code', 'Not needed']], stub: 'Newbi guestlist' },
+    floats: [['users', 'Plus-ones included', true, 'left: 660px; top: 476px; transform: rotate(-4deg);']],
+  },
+  'wa-request-change': {
+    lines: ['Your request', 'needs a'], sticker: 'change.',
+    sub: 'Update the task on the guestlist page and we\'ll review it again.',
+    url: 'app.<b>newbi</b>.live',
+    art: 'post', post: { icon: 'upload' }, note: { small: 'What to change', text: 'Upload a clearer screenshot' },
+  },
+  'wa-declined': {
+    lines: ['Not this'], sticker: 'time.',
+    sub: 'This list was full. Your account and your other passes aren\'t affected.',
+    url: 'app.<b>newbi</b>.live',
+    art: 'stamp', stamp: { icon: 'heart', word: 'Thank you', small: 'For signing up' }, dark: true,
+  },
+  'wa-waitlist': {
+    lines: ['A place is', 'now'], sticker: 'free.', inline: true,
+    sub: 'Confirm it in the Newbi app before the time in the message.',
+    url: 'app.<b>newbi</b>.live',
+    art: 'ticket',
+    ticket: { kicker: 'Waitlist', big: 'Your <em>place</em><br/>is open', meta: [['Confirm', 'Before the time'], ['Then', 'Pass in the app']], stub: 'Newbi guestlist' },
+    floats: [['alarm', 'Confirm in time', true, 'left: 660px; top: 476px; transform: rotate(-4deg);']],
+  },
+  'wa-tonight': {
+    lines: ['Guestlist', 'entry'], sticker: 'today.',
+    sub: 'Your pass works until the entry time in the message.',
+    url: 'app.<b>newbi</b>.live',
+    art: 'stamp', stamp: { icon: 'alarm', word: 'Entry time', small: 'Arrive before it' }, dark: true,
+  },
+  'wa-changed': {
+    lines: ['A change to', 'your'], sticker: 'event.', inline: true,
+    sub: 'Your pass still works. The message says what changed.',
+    url: 'app.<b>newbi</b>.live',
+    art: 'stamp', stamp: { icon: 'megaphone', word: 'Updated', small: 'Event details' },
+  },
+  'wa-cancelled': {
+    lines: ['Event'], sticker: 'cancelled.',
+    sub: 'We\'re sorry. Your pass is cancelled and the refund details are in the message.',
+    url: 'app.<b>newbi</b>.live',
+    art: 'stamp', stamp: { icon: 'x', word: 'Cancelled', small: 'Your pass' }, dark: true,
+  },
+  'wa-scanned': {
+    lines: ["You're", 'checked'], sticker: 'in.', inline: true,
+    sub: 'Your pass was just scanned at the gate. Enjoy the show!',
+    url: 'app.<b>newbi</b>.live',
+    art: 'ticket',
+    ticket: { kicker: 'Checked in', big: 'Welcome<br/>to the <em>show</em>', meta: [['Entry', 'Scanned'], ['Gate', 'Just now']], stub: 'Newbi pass', qr: true },
+    floats: [['check', 'Entry granted', true, 'left: 660px; top: 476px; transform: rotate(-4deg);']],
   },
   'wa-city': {
     lines: ["Your city's", 'creator'], sticker: 'crew.', inline: true,
