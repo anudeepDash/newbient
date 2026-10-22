@@ -10,7 +10,7 @@ export const ARTISTANT_ORIGIN = 'https://artistant.in';
 
 export const SITE_NAME = 'newbi.live';
 export const TWITTER_SITE = '@newbi_live';
-export const DEFAULT_TITLE = 'newbi.live — We build the nights you remember';
+export const DEFAULT_TITLE = 'newbi.live — We bring you the nights you remember';
 export const DEFAULT_DESCRIPTION = 'Concerts, college fests, brand activations and creator campaigns across India, planned, produced and run end to end by the Newbi crew.';
 
 // Share cards (1200×630 JPEG) in public/og/, one per part of the site, drawn in
