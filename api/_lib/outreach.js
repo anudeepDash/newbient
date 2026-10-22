@@ -616,9 +616,11 @@ const handleQueueRun = async (req, res, { db, cron }) => {
         return send(res, 200, { success: true, ...report, chained });
     }
     const report = await runQueue({ db, deadline: Date.now() + 8_000 });
+    // More waiting: hand over to the background worker (with CRON_SECRET) so it carries on after this page's nudge.
+    const chained = report.more && !report.capped && !report.blocked ? await kickWorker(req, 0) : false;
     const campaignId = str(req.body?.campaignId, 120);
     const queue = campaignId ? await queueStatus(db, campaignId) : null;
-    return send(res, 200, { success: true, ...report, queue });
+    return send(res, 200, { success: true, ...report, chained, queue });
 };
 
 /* ── Router ───────────────────────────────────────────────────────────── */

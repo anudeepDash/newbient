@@ -11,6 +11,8 @@ import Sheet from '../Sheet';
 import { Button, Avatar } from '../ui';
 import { Field, fieldCls, areaCls, Toggle } from '../uploads/UploadKit';
 import { Spinner } from './parts';
+import { callOutreach } from './outreach/outreachApi';
+import { useWhatsAppTemplate, WhatsAppTemplateFields } from '../whatsapp/TemplateFields';
 import { creatorPhotoOf, creatorRef, inr, payoutDefault, toDayInput, waNumber } from './campaignModel';
 
 const todayInput = () => toDayInput(new Date());
@@ -29,35 +31,60 @@ const Recipients = ({ entries }) => (
     </div>
 );
 
-/** In-app message (and optional email) to one or more creators of a campaign. */
+/**
+ * A message to one or more creators of a campaign: in the Newbi app, by email,
+ * and on WhatsApp with an approved template (queued on the server, so it goes
+ * out at the rate limit and waits while Meta is holding the number).
+ */
 export const MessageSheet = ({ open, onClose, campaign, entries }) => {
     const addToast = useStore(s => s.addToast);
     const [title, setTitle] = useState('');
     const [body, setBody] = useState('');
+    const [inApp, setInApp] = useState(true);
     const [email, setEmail] = useState(false);
+    const [whatsapp, setWhatsapp] = useState(false);
     const [sending, setSending] = useState(false);
     const [progress, setProgress] = useState(0);
+    const template = useWhatsAppTemplate({ active: open && whatsapp, campaign: true });
 
     useEffect(() => {
         if (open) {
             setTitle(`Update on ${campaign?.title || 'your campaign'}`);
             setBody('');
+            setInApp(true);
             setEmail(false);
+            setWhatsapp(false);
             setProgress(0);
+            template.reset();
         }
-    }, [open, campaign?.title]);
+    }, [open, campaign?.title]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const withEmail = entries.filter(e => e.creator.email);
+    const withPhone = entries.filter(e => waNumber(e.creator.phone));
     const single = entries.length === 1 ? entries[0] : null;
     const wa = single ? waNumber(single.creator.phone) : '';
+    const needsText = inApp || email;
+    const canSend = (inApp || email || whatsapp)
+        && (!needsText || (body.trim() && title.trim()))
+        && (!whatsapp || (template.ready && withPhone.length > 0));
+
+    const sendWhatsApp = async () => {
+        const r = await callOutreach('wa-bulk', {
+            ...template.payload,
+            params: { ...template.payload.params, campaignId: campaign.id },
+            recipients: withPhone.map(e => ({ phone: e.creator.phone, name: e.creator.name || '' })),
+        });
+        if (!r.ok) return { error: r.error };
+        return { queued: r.data.queued, skipped: r.data.skipped.length + (entries.length - withPhone.length) };
+    };
 
     const send = async () => {
-        if (sending || !body.trim() || !title.trim()) return;
+        if (sending || !canSend) return;
         setSending(true);
         setProgress(0);
         let mailFailed = 0;
         try {
-            await Promise.all(entries.map(e => notifySpecificUser(creatorRef(e.creator), title.trim(), body.trim(), creatorCampaignPath(campaign.id), 'campaign')));
+            if (inApp) await Promise.all(entries.map(e => notifySpecificUser(creatorRef(e.creator), title.trim(), body.trim(), creatorCampaignPath(campaign.id), 'campaign')));
             if (email) {
                 for (let i = 0; i < withEmail.length; i += 1) {
                     const e = withEmail[i];
@@ -69,8 +96,19 @@ export const MessageSheet = ({ open, onClose, campaign, entries }) => {
                     setProgress(Math.round(((i + 1) / withEmail.length) * 100));
                 }
             }
+            const waResult = whatsapp ? await sendWhatsApp() : null;
+            if (waResult?.error) {
+                addToast(waResult.error, 'error', { title: needsText ? 'Sent, but not on WhatsApp' : 'Not sent on WhatsApp' });
+                if (!needsText) return;
+            } else if (waResult) {
+                addToast(
+                    `${waResult.queued} queued on WhatsApp${waResult.skipped ? `, ${waResult.skipped} skipped (no number, or stopped updates)` : ''}. They go out a few a minute, and wait if Meta is holding the number.`,
+                    waResult.queued ? 'success' : 'warning',
+                    { title: 'WhatsApp' },
+                );
+            }
             if (mailFailed) addToast(`${mailFailed} email${mailFailed === 1 ? '' : 's'} didn't go through.`, 'warning', { title: 'Message sent in the app' });
-            else addToast(entries.length === 1 ? 'Message sent.' : `Message sent to ${entries.length} creators.`, 'success');
+            else if (needsText) addToast(entries.length === 1 ? 'Message sent.' : `Message sent to ${entries.length} creators.`, 'success');
             onClose();
         } catch {
             addToast('Check your connection and try again.', 'error', { title: 'Message not sent' });
@@ -84,7 +122,7 @@ export const MessageSheet = ({ open, onClose, campaign, entries }) => {
             open={open}
             onClose={sending ? () => {} : onClose}
             title="Message creators"
-            subtitle="They get it in the Newbi app, and by email if you turn that on."
+            subtitle="In the Newbi app, by email, and on WhatsApp with an approved template."
             size="md"
             footer={(
                 <div className="flex gap-2">
@@ -93,7 +131,7 @@ export const MessageSheet = ({ open, onClose, campaign, entries }) => {
                             <MessageCircle size={14} /> WhatsApp
                         </Button>
                     )}
-                    <Button variant="accent" onClick={send} disabled={sending || !body.trim() || !title.trim()} className="h-11 flex-1">
+                    <Button variant="accent" onClick={send} disabled={sending || !canSend} className="h-11 flex-1">
                         {sending ? <Spinner /> : <Send size={14} />} {sending && email ? `Sending… ${progress}%` : 'Send'}
                     </Button>
                 </div>
@@ -101,20 +139,37 @@ export const MessageSheet = ({ open, onClose, campaign, entries }) => {
         >
             <div className="space-y-4">
                 <Recipients entries={entries} />
-                <Field label="Title">
-                    <input className={fieldCls} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} />
-                </Field>
-                <Field label="Message">
-                    <textarea className={areaCls} rows={6} value={body} onChange={(e) => setBody(e.target.value)} placeholder="e.g. Reminder: stories go live tomorrow at 6 PM. Tag @newbi.live and keep them up for 24 hours." />
-                </Field>
-                <div className="rounded-xl border border-black/[0.06] px-3.5 py-2.5 dark:border-white/[0.08]">
+                <div className="space-y-1 rounded-xl border border-black/[0.06] px-3.5 py-2.5 dark:border-white/[0.08]">
+                    <Toggle label="In the Newbi app" hint="A notification and push" checked={inApp} onChange={setInApp} />
                     <Toggle
-                        label="Also send as email"
+                        label="Email"
                         hint={withEmail.length === entries.length ? 'From creators@newbi.live' : `${withEmail.length} of ${entries.length} have an email address`}
                         checked={email}
                         onChange={setEmail}
                     />
+                    <Toggle
+                        label="WhatsApp"
+                        hint={`An approved template · ${withPhone.length} of ${entries.length} have a number`}
+                        checked={whatsapp}
+                        onChange={setWhatsapp}
+                    />
                 </div>
+                {needsText && (
+                    <>
+                        <Field label="Title">
+                            <input className={fieldCls} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} />
+                        </Field>
+                        <Field label="Message">
+                            <textarea className={areaCls} rows={6} value={body} onChange={(e) => setBody(e.target.value)} placeholder="e.g. Reminder: stories go live tomorrow at 6 PM. Tag @newbi.live and keep them up for 24 hours." />
+                        </Field>
+                    </>
+                )}
+                {whatsapp && (
+                    <div className="space-y-2 rounded-xl border border-black/[0.06] p-3.5 dark:border-white/[0.08]">
+                        <p className="text-[13px] font-bold">WhatsApp message</p>
+                        <WhatsAppTemplateFields wa={template} campaign={campaign} sampleName={withPhone[0]?.creator.name || ''} />
+                    </div>
+                )}
             </div>
         </Sheet>
     );
