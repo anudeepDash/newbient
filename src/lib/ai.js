@@ -268,10 +268,10 @@ const getAbsoluteFailproofMock = (type, userPrompt) => {
             clientAddress: "Corporate Headquarters, Commercial Business District, India",
             campaignName: campaignTitle,
             campaignDuration: "Scheduled Execution 2026–27",
-            introParagraph: `NewBi Entertainment & Marketing LLP is pleased to present this comprehensive strategic promotion and execution proposal for ${campaignTitle}, curated exclusively for ${clientName}. Our approach combines targeted community engagement, multi-channel influencer networks, and rigorous on-ground execution.`,
+            introParagraph: `Newbi Entertainment & Marketing LLP is pleased to present this comprehensive strategic promotion and execution proposal for ${campaignTitle}, curated exclusively for ${clientName}. Our approach combines targeted community engagement, multi-channel influencer networks, and rigorous on-ground execution.`,
             preparedForText: `This quotation has been prepared exclusively for ${clientName}, in connection with ${campaignTitle}. All figures and scope items are indicative and open to discussion ahead of final sign-off.`,
             executiveParagraphs: [
-                `This proposal outlines the strategic marketing and execution plan NewBi will deliver for ${campaignTitle} presented by ${clientName}. NewBi is an entertainment and youth marketing company connecting high-value audience segments with premium cultural and live experiences.`,
+                `This proposal outlines the strategic marketing and execution plan Newbi will deliver for ${campaignTitle} presented by ${clientName}. Newbi is an entertainment and youth marketing company connecting high-value audience segments with premium cultural and live experiences.`,
                 `Through a calibrated combination of fan community engagement, creator marketing, and targeted campus outreach, our primary objective is to maximize brand equity and attendance across all designated target markets.`
             ],
             primaryObjectiveText: `To build a highly engaged audience base and manage end-to-end promotional rollout for ${campaignTitle}, supporting scalable conversions across all target cities.`,
@@ -287,7 +287,7 @@ const getAbsoluteFailproofMock = (type, userPrompt) => {
             clientGst: "Unregistered",
             invoiceDate: new Date().toISOString().split('T')[0],
             dueDate: new Date(Date.now() + 15*24*60*60*1000).toISOString().split('T')[0],
-            note: "Thank you for your partnership with Newbi Entertainment. Please process payment within 15 days.",
+            note: "Thank you for your partnership with Newbi Entertainment & Marketing LLP. Please process payment within 15 days.",
             items: [
                 { name: "Professional Services", description: "Strategic Consultation & Operational Production", qty: 1, price: 75000 }
             ]
@@ -297,12 +297,12 @@ const getAbsoluteFailproofMock = (type, userPrompt) => {
     // Default fallback for contracts/agreements
     return {
         parties: {
-            firstParty: { name: "Newbi Entertainment", role: "Service Provider" },
+            firstParty: { name: "Newbi Entertainment & Marketing LLP", role: "Service Provider" },
             secondParty: { name: clientName, role: "Client" }
         },
         details: { 
             projectName: campaignTitle, 
-            purpose: `This agreement establishes the framework for professional entertainment production and strategic marketing collaboration between Newbi Entertainment and ${clientName}.`,
+            purpose: `This agreement establishes the framework for professional entertainment production and strategic marketing collaboration between Newbi Entertainment & Marketing LLP and ${clientName}.`,
             duration: "12 Months", territory: "India" 
         },
         commercials: { totalValue: "250000", paymentSchedule: "50% Advance, Balance on Delivery", currency: "INR" },
@@ -518,7 +518,7 @@ const SCHEMAS = {
         closingSub: "string — 'CLOSING'",
         closingTitle: "string — '06 · Next Steps'",
         closingText: "string — Closing invitation and next steps",
-        preparedBy: "string — 'NewBi Entertainment & Marketing LLP'"
+        preparedBy: "string — 'Newbi Entertainment & Marketing LLP'"
     },
     bulk_proposal: {
         templateVersion: "string — MUST be 'v2'",
@@ -566,11 +566,11 @@ const SCHEMAS = {
         closingSub: "string — 'CLOSING'",
         closingTitle: "string — '06 · Next Steps'",
         closingText: "string",
-        preparedBy: "string — 'NewBi Entertainment & Marketing LLP'"
+        preparedBy: "string — 'Newbi Entertainment & Marketing LLP'"
     },
     contract: {
         parties: {
-            firstParty: { name: "Newbi Entertainment", address: "string", role: "Service Provider", email: "string" },
+            firstParty: { name: "Newbi Entertainment & Marketing LLP", address: "string", role: "Service Provider", email: "string" },
             secondParty: { name: "string", address: "string", role: "Client", email: "string" }
         },
         details: { projectName: "string", purpose: "string — 2-3 paragraphs", duration: "string", territory: "string" },
@@ -579,7 +579,7 @@ const SCHEMAS = {
     },
     agreement: {
         parties: {
-            firstParty: { name: "Newbi Entertainment", address: "string", role: "Service Provider", email: "string" },
+            firstParty: { name: "Newbi Entertainment & Marketing LLP", address: "string", role: "Service Provider", email: "string" },
             secondParty: { name: "string", address: "string", role: "Client", email: "string" }
         },
         details: { projectName: "string", purpose: "string — 2-3 paragraphs", duration: "string", territory: "string" },
@@ -605,7 +605,7 @@ const today = new Date().toISOString().split('T')[0];
 const dueDate = new Date(Date.now() + 15*24*60*60*1000).toISOString().split('T')[0];
 
 const SYSTEM_PROMPTS = {
-    proposal: `You are an elite proposal writer and strategic consultant for Newbi Entertainment, a premier entertainment, youth marketing, and event production agency in India.
+    proposal: `You are an elite proposal writer and strategic consultant for Newbi Entertainment & Marketing LLP, a premier entertainment, youth marketing, and event production agency in India.
 Generate an 8-page master executive strategic quotation proposal following the modern Newbi v2 standard.
 
 MUST RETURN JSON MATCHING THE SCHEMA WITH "templateVersion": "v2":
@@ -615,11 +615,11 @@ MUST RETURN JSON MATCHING THE SCHEMA WITH "templateVersion": "v2":
 - Page 5 Scope Deliverables: deliverablesSub ("SCOPE SUMMARY"), deliverablesTitle ("Per City Deliverables"), deliverablesTable (array of deliverables with id, deliverable, qty, timeline), deliverablesIndicativeNote, cityNoteTitle, cityNoteText.
 - Page 6 Commercials: commercialsSub ("COMMERCIALS"), commercialsTitle ("04 · Pricing Structure"), commercialsSubtitle, pricingTable (packages with package, scope, price in INR), whatsIncludedTitle ("WHAT'S INCLUDED"), whatsIncludedText, paymentScalingTitle ("PAYMENT & SCALING"), paymentScalingText.
 - Page 7 Deep Dive: deepDiveSub ("CITY DEEP-DIVE · PRIMARY HUB"), deepDiveTitle ("05 · Primary Hub Management"), deepDiveIntro, deepDiveSubsections (array of 2-3 subsections with badge like '5.1', title, and bullets).
-- Page 8 Closing: closingSub ("CLOSING"), closingTitle ("06 · Next Steps"), closingText, preparedBy ("NewBi Entertainment & Marketing LLP").
+- Page 8 Closing: closingSub ("CLOSING"), closingTitle ("06 · Next Steps"), closingText, preparedBy ("Newbi Entertainment & Marketing LLP").
 
 Ensure tone is authoritative, corporate, and tailored to the client's industry and scale. Return ONLY valid JSON.`,
 
-    bulk_proposal: `You are an elite proposal architect and document structurer for Newbi Entertainment, India.
+    bulk_proposal: `You are an elite proposal architect and document structurer for Newbi Entertainment & Marketing LLP, India.
 The user is providing pre-generated proposal text, a comprehensive brief, raw unformatted draft, meeting notes, or pasted proposal document.
 Parse and extract all information into the 8-page master executive strategic quotation proposal following the Newbi v2 standard with "templateVersion": "v2".
 
@@ -634,11 +634,11 @@ Extract/map:
 - closingText
 Return ONLY valid JSON matching the schema.`,
 
-    contract: `You are an expert legal drafter for Newbi Entertainment, a premium entertainment & marketing company in India.
+    contract: `You are an expert legal drafter for Newbi Entertainment & Marketing LLP, a premium entertainment & marketing company in India.
     
     RULES:
     - ALL text: plain text, NO HTML
-    - firstParty.name = "Newbi Entertainment" always
+    - firstParty.name = "Newbi Entertainment & Marketing LLP" always
     - 5-8 detailed clauses covering: Scope, Confidentiality, IP, Payment, Termination, Liability, Force Majeure, Disputes
     - Each clause: 2-4 legally-precise sentences
     - commercials.totalValue: number as string like "50000"
@@ -646,7 +646,7 @@ Return ONLY valid JSON matching the schema.`,
     - Make ALL content specific to the user's prompt
     - Return valid JSON matching the schema`,
 
-    revision: `You are an elite AI document editor for Newbi Entertainment. You will receive an existing business document in JSON format and a user's revision instruction.
+    revision: `You are an elite AI document editor for Newbi Entertainment & Marketing LLP. You will receive an existing business document in JSON format and a user's revision instruction.
     
     RULES:
     - Modify the JSON document EXACTLY according to the user's instructions.
@@ -655,11 +655,11 @@ Return ONLY valid JSON matching the schema.`,
     - Retain ALL other information exactly as it was. Do not delete or summarize unrelated fields.
     - Return ONLY the updated valid JSON object.`,
 
-    agreement: `You are an expert legal drafter for Newbi Entertainment, a premium entertainment & marketing company in India.
+    agreement: `You are an expert legal drafter for Newbi Entertainment & Marketing LLP, a premium entertainment & marketing company in India.
     
     RULES:
     - ALL text: plain text, NO HTML
-    - firstParty.name = "Newbi Entertainment" always
+    - firstParty.name = "Newbi Entertainment & Marketing LLP" always
     - 5-8 detailed clauses covering: Scope, Confidentiality, IP, Payment, Termination, Liability, Force Majeure, Disputes
     - Each clause: 2-4 legally-precise sentences
     - commercials.totalValue: number as string like "50000"
@@ -667,7 +667,7 @@ Return ONLY valid JSON matching the schema.`,
     - Make ALL content specific to the user's prompt
     - Return valid JSON matching the schema`,
 
-    invoice: `You are a billing specialist for Newbi Entertainment, a premium entertainment & marketing agency in India.
+    invoice: `You are a billing specialist for Newbi Entertainment & Marketing LLP, a premium entertainment & marketing agency in India.
 
 RULES:
 - ALL text: plain text, NO HTML
@@ -693,7 +693,7 @@ const tidyParsed = (type, parsed) => {
     }
     if ((type === 'agreement' || type === 'contract') && parsed.clauses) {
         parsed.clauses = parsed.clauses.map(c => ({ ...c, isActive: c.isActive !== false }));
-        if (parsed.parties?.firstParty) parsed.parties.firstParty.name = parsed.parties.firstParty.name || 'Newbi Entertainment';
+        if (parsed.parties?.firstParty) parsed.parties.firstParty.name = parsed.parties.firstParty.name || 'Newbi Entertainment & Marketing LLP';
     }
     return parsed;
 };
@@ -756,7 +756,7 @@ CRITICAL: Every field must have specific, relevant content based on the request.
         if ((type === 'agreement' || type === 'contract') && parsed.clauses) {
             parsed.clauses = parsed.clauses.map(c => ({ ...c, isActive: c.isActive !== false }));
             if (parsed.parties?.firstParty) {
-                parsed.parties.firstParty.name = parsed.parties.firstParty.name || "Newbi Entertainment";
+                parsed.parties.firstParty.name = parsed.parties.firstParty.name || "Newbi Entertainment & Marketing LLP";
             }
         }
 

@@ -93,7 +93,7 @@ const ReviewSection = ({ id, formData, live, totals, checks, onGoto, ensureSaved
     const nativeShare = () => withSaved('share', async (pid) => {
         if (!navigator.share) { await copyToClipboard(await urlFor(pid, 'link')); addToast('Link copied.', 'success'); markShared(pid, 'link'); return; }
         try {
-            await navigator.share({ title: `Proposal for ${formData.clientName || 'you'}`, text: 'Your proposal from Newbi Entertainment.', url: await urlFor(pid, 'share') });
+            await navigator.share({ title: `Proposal for ${formData.clientName || 'you'}`, text: 'Your proposal from Newbi Entertainment & Marketing LLP.', url: await urlFor(pid, 'share') });
             markShared(pid, 'share');
         } catch (err) {
             if (err?.name !== 'AbortError') addToast('Use Copy link instead.', 'error', { title: "Couldn't open sharing" });

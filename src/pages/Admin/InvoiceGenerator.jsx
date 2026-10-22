@@ -592,7 +592,7 @@ const InvoiceGenerator = () => {
             const ok = await copyToClipboard(shareUrl(savedId, 'link'));
             addToast(ok ? 'Invoice link copied.' : 'Please try again.', ok ? 'success' : 'error', ok ? undefined : { title: "Couldn't copy the link" });
         } else if (how === 'whatsapp') {
-            const text = `Hi${formData.clientName ? ` ${formData.clientName}` : ''}, here is invoice ${formData.invoiceNumber || ''} from Newbi Entertainment for ${rupees(balanceDue)}: ${shareUrl(savedId, 'whatsapp')}`;
+            const text = `Hi${formData.clientName ? ` ${formData.clientName}` : ''}, here is invoice ${formData.invoiceNumber || ''} from Newbi Entertainment & Marketing LLP for ${rupees(balanceDue)}: ${shareUrl(savedId, 'whatsapp')}`;
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
         } else if (how === 'open') {
             window.open(`/invoice/${savedId}`, '_blank', 'noopener');

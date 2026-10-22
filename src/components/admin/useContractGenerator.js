@@ -23,7 +23,7 @@ const makeInitialForm = () => ({
   // Local date: toISOString() is UTC, a day behind in India before 5:30 am.
   effectiveDate: todayKey(),
   parties: {
-    firstParty: { name: 'Newbi Entertainment', address: 'Bangalore, India', role: 'Service Provider', email: '' },
+    firstParty: { name: 'Newbi Entertainment & Marketing LLP', address: 'Bangalore, India', role: 'Service Provider', email: '' },
     secondParty: { name: '', address: '', role: 'Client', email: '' }
   },
   details: { projectName: '', purpose: '', duration: '', territory: 'India' },

@@ -193,7 +193,7 @@ const ProposalManagement = () => {
     const share = async (p) => {
         if (navigator.share) {
             try {
-                await navigator.share({ title: `Proposal for ${p.clientName || 'you'}`, text: 'Your proposal from Newbi Entertainment.', url: await linkFor(p, 'share') });
+                await navigator.share({ title: `Proposal for ${p.clientName || 'you'}`, text: 'Your proposal from Newbi Entertainment & Marketing LLP.', url: await linkFor(p, 'share') });
                 markShared(p, 'share');
                 return;
             } catch (err) {
