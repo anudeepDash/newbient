@@ -167,7 +167,8 @@ const Question = ({ field, value, onChange, error, preview, accent }) => {
     );
 };
 
-const FormRenderer = ({ form, preview = false, onSubmitted, className }) => {
+/* prefill: { [fieldId]: value } filled in where the person hasn't answered yet (e.g. from their profile). */
+const FormRenderer = ({ form, preview = false, onSubmitted, prefill, className }) => {
     const user = useStore(s => s.user);
     const setAuthModal = useStore(s => s.setAuthModal);
     const accent = form.highlightColor || '#FF4F8B';
@@ -194,6 +195,17 @@ const FormRenderer = ({ form, preview = false, onSubmitted, className }) => {
             return next;
         });
     }, [user, fields, preview]);
+
+    useEffect(() => {
+        if (preview || !prefill) return;
+        setAnswers(prev => {
+            const next = { ...prev };
+            Object.entries(prefill).forEach(([id, v]) => {
+                if (v && !next[id] && fields.some(f => f.id === id)) next[id] = v;
+            });
+            return next;
+        });
+    }, [prefill, fields, preview]);
 
     // Keep an unsent draft on this device (files excluded).
     useEffect(() => {

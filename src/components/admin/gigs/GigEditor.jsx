@@ -13,6 +13,8 @@ import { BuilderCard, ImageSlot } from '../events/EditorParts';
 import { Field, Toggle, Choice, fieldCls, areaCls } from '../uploads/UploadKit';
 import CityInput, { cleanCity } from '../CityInput';
 import { isNativeForm, formState } from '../forms/formSchema';
+import { syncGigFormDays } from '../../../lib/gigApplications';
+import { ensureGigForm } from './gigForm';
 import { ColorDots, EditorBar, PhoneBar, dayKeyOf, formatDay, todayKey, useConfirm, useImageField, useUnsavedWarning } from '../forms/kit';
 import ThemedSelect from '../ThemedSelect';
 
@@ -30,8 +32,6 @@ const EMPTY = {
     city: '',
     description: '',
     status: 'Open',
-    applyType: 'link',
-    applyLink: '',
     formId: '',
     whatsappLink: '',
     slots: '',
@@ -69,8 +69,7 @@ const GigEditor = ({ gig, forms, onDone }) => {
         ...EMPTY,
         ...gig,
         dates: gigDates(gig),
-        applyType: gig.formId ? 'form' : (gig.applyType || 'link'),
-        applyLink: gig.formId ? '' : (gig.applyLink || ''),
+        formId: gig.formId || '',
         slots: gig.slots || '',
         imageTransform: gig.imageTransform || EMPTY.imageTransform,
     } : EMPTY));
@@ -87,8 +86,12 @@ const GigEditor = ({ gig, forms, onDone }) => {
     const set = (patch) => { setData(prev => ({ ...prev, ...patch })); setDirty(true); };
     const image = useImageField(data.image, (url) => set({ image: url }));
 
-    const nativeForms = useMemo(() => (forms || []).filter(isNativeForm), [forms]);
+    // Forms a gig can take applications through: its own, or a shared one (not another gig's).
+    const nativeForms = useMemo(() => (forms || []).filter(f => isNativeForm(f) && (!f.gigId || f.gigId === gig?.id)), [forms, gig?.id]);
     const linkedForm = nativeForms.find(f => f.id === data.formId);
+    const ownForm = Boolean(linkedForm && linkedForm.gigId && linkedForm.gigId === gig?.id);
+    // Older gigs sent people to an outside link or WhatsApp; saving moves them into the app.
+    const legacyApply = editing && !gig.formId && (gig.applyType === 'whatsapp' || /^https?:\/\//i.test(gig.applyLink || ''));
 
     const addDate = (value = newDate) => {
         if (!value) return;
@@ -101,17 +104,12 @@ const GigEditor = ({ gig, forms, onDone }) => {
         const p = {};
         if (!data.title.trim()) p.title = 'Give the gig a title.';
         if (!String(data.location || '').trim()) p.location = 'Add where it happens.';
-        if (data.applyType === 'form' && !data.formId) p.apply = 'Pick the form people fill to apply.';
-        if (data.applyType === 'link' && data.applyLink && !/^https?:\/\/\S+/i.test(data.applyLink.trim())) p.apply = 'The link should start with https://';
-        if (data.applyType === 'whatsapp' && String(data.applyLink).replace(/\D/g, '').length < 10) p.apply = 'Add the WhatsApp number with country code, e.g. 919876543210.';
+        if (data.whatsappLink && !/^https:\/\/\S+/i.test(String(data.whatsappLink).trim())) p.crew = 'The crew group link should start with https://';
         if (data.slots !== '' && (!Number.isInteger(Number(data.slots)) || Number(data.slots) < 1)) p.slots = 'Spots must be a whole number above 0.';
         return p;
     }, [data]);
 
-    const previewData = useMemo(() => ({
-        ...data,
-        applyLink: data.applyType === 'form' && data.formId ? `/forms/${data.formId}` : data.applyLink,
-    }), [data]);
+    const previewData = useMemo(() => ({ ...data, applyType: 'form', applyLink: `/community?gig=${gig?.id || ''}` }), [data, gig?.id]);
 
     const save = async (e) => {
         e?.preventDefault();
@@ -135,9 +133,10 @@ const GigEditor = ({ gig, forms, onDone }) => {
             city: cleanCity(data.city),
             description: data.description || '',
             status: data.status || 'Open',
-            applyType: data.applyType,
-            applyLink: data.applyType === 'form' ? `/forms/${data.formId}` : String(data.applyLink || '').trim(),
-            formId: data.applyType === 'form' ? data.formId : '',
+            // Applications always happen in the app; an empty formId gets the standard crew form below.
+            applyType: 'form',
+            applyLink: data.formId ? `/forms/${data.formId}` : '',
+            formId: data.formId || '',
             whatsappLink: String(data.whatsappLink || '').trim(),
             slots: data.slots === '' ? null : Number(data.slots),
             image: data.image || '',
@@ -152,13 +151,23 @@ const GigEditor = ({ gig, forms, onDone }) => {
         setSaving(true);
         try {
             const store = useStore.getState();
+            let gigId = gig?.id;
             if (editing) {
                 await store.updateVolunteerGig(gig.id, payload);
                 if (payload.formId && payload.status !== (gig.status || 'Open')) {
                     await syncGigForm(payload.formId, payload.status, forms).catch(err => console.warn('Form status sync failed:', err));
                 }
+                // The gig's own form keeps its title and its "which days" question in step.
+                if (ownForm) {
+                    const patch = {};
+                    const days = syncGigFormDays(linkedForm.fields, payload);
+                    if (days) patch.fields = days;
+                    if (payload.title !== gig.title) patch.title = `${payload.title} · crew application`;
+                    if (Object.keys(patch).length) await store.updateForm(linkedForm.id, { ...patch, updatedAt: payload.updatedAt }).catch(err => console.warn('Gig form sync failed:', err));
+                }
             } else {
                 const ref = await store.addVolunteerGig(payload);
+                gigId = ref?.id;
                 if (homeCard && ref?.id) {
                     await store.addUpcomingEvent({
                         title: payload.title,
@@ -167,7 +176,7 @@ const GigEditor = ({ gig, forms, onDone }) => {
                         location: payload.location || 'GLOBAL',
                         date: payload.dates[0] || new Date().toISOString(),
                         buttonText: 'JOIN SQUAD',
-                        link: payload.applyType !== 'whatsapp' && payload.applyLink ? payload.applyLink : '/community',
+                        link: `/community?gig=${ref.id}`,
                         highlightColor: payload.highlightColor,
                         category: 'volunteer',
                         relatedVolunteerGigId: ref.id,
@@ -175,11 +184,21 @@ const GigEditor = ({ gig, forms, onDone }) => {
                         isVolunteerGig: true,
                     }).catch(err => { console.warn(err); addToast("We couldn't add it to the home page.", 'warning', { title: 'Gig saved' }); });
                 }
-                if (notify) {
-                    notifyAllUsers('New volunteer opportunity', `${payload.title} is looking for volunteers. Apply now in the community tab.`, '/community', payload.image || '')
+                if (notify && ref?.id) {
+                    notifyAllUsers('New volunteer opportunity', `${payload.title} is looking for volunteers. Apply in the app.`, `/community?gig=${ref.id}`, payload.image || '')
                         .catch(err => console.warn('Gig notification failed:', err));
                 }
             }
+            let imported = 0;
+            if (!payload.formId && gigId) {
+                try {
+                    imported = (await ensureGigForm(gigId)).imported || 0;
+                } catch (err) {
+                    console.error(err);
+                    addToast('Open the gig again and press Save to retry.', 'warning', { title: "Gig saved, but applications aren't set up" });
+                }
+            }
+            if (imported) addToast(`${imported} ${imported === 1 ? 'person' : 'people'} who tapped “I’m interested” are now in Applicants.`, 'info');
             setDirty(false);
             addToast(editing ? 'Gig saved.' : 'Gig published.', 'success');
             onDone(true);
@@ -264,49 +283,39 @@ const GigEditor = ({ gig, forms, onDone }) => {
                         </div>
                     </BuilderCard>
 
-                    <BuilderCard title="How people apply" hint="Use a Newbi form to see and manage applicants here">
+                    <BuilderCard title="Applications" hint="People apply in the Newbi app. You review and confirm them under Applicants.">
                         <div className="space-y-3">
-                            <Choice
-                                value={data.applyType}
-                                onChange={(v) => set({ applyType: v })}
-                                options={[
-                                    { value: 'form', label: 'Newbi form', hint: 'Applicants listed here' },
-                                    { value: 'link', label: 'Link', hint: 'Google Form or site' },
-                                    { value: 'whatsapp', label: 'WhatsApp', hint: 'Message a number' },
-                                ]}
-                            />
-                            {data.applyType === 'form' && (
-                                <Field label="Application form" hint={linkedForm ? `${formState(linkedForm) === 'closed' ? 'This form is closed, so no one can apply. ' : ''}People open /forms/${linkedForm.id}` : null}>
-                                    <ThemedSelect className={cn(fieldCls, 'cursor-pointer', err('apply') && 'border-red-500/60')} value={data.formId || ''} onChange={(e) => set({ formId: e.target.value })}>
-                                        <option value="">Choose a form…</option>
-                                        {nativeForms.map(f => <option key={f.id} value={f.id}>{f.title || 'Untitled form'}{formState(f) === 'closed' ? ' (closed)' : ''}</option>)}
-                                    </ThemedSelect>
-                                </Field>
+                            {legacyApply && (
+                                <p className="rounded-xl bg-amber-500/10 px-3.5 py-3 text-[13px] font-semibold text-amber-800 dark:text-amber-200">
+                                    This gig still sends people to {gig.applyType === 'whatsapp' ? 'WhatsApp' : 'an outside link'}. Saving moves applications into the app, and anyone who tapped “I’m interested” shows up under Applicants.
+                                </p>
                             )}
-                            {data.applyType === 'form' && (
-                                <a href="/admin/forms/create" target="_blank" rel="noopener noreferrer" className="inline-flex h-10 items-center gap-1.5 text-[13px] font-semibold text-orange-600 dark:text-orange-300">
-                                    {nativeForms.length ? 'Make a new form' : 'No built-in forms yet. Make one'} in a new tab <ExternalLink size={13} />
+                            <Field label="Application questions" hint={linkedForm && formState(linkedForm) === 'closed' && (data.status || 'Open') !== 'Closed' ? 'This form is closed, so no one can apply. Reopen it in Forms.' : null}>
+                                <ThemedSelect className={cn(fieldCls, 'cursor-pointer')} value={data.formId || ''} onChange={(e) => set({ formId: e.target.value })}>
+                                    {/* Once the gig has its own form, that form is the standard one (its applicants live there). */}
+                                    {!nativeForms.some(f => f.gigId && f.gigId === gig?.id) && <option value="">Standard crew application (recommended)</option>}
+                                    {nativeForms.map(f => <option key={f.id} value={f.id}>{f.gigId === gig?.id ? 'This gig’s application' : (f.title || 'Untitled form')}{formState(f) === 'closed' ? ' (closed)' : ''}</option>)}
+                                </ThemedSelect>
+                            </Field>
+                            <p className="text-[12px] text-gray-500">
+                                {data.formId
+                                    ? `${(linkedForm?.fields || []).filter(f => f.type !== 'heading').length} questions. People sign in once and apply inside the gig; one application each.`
+                                    : 'Name, WhatsApp number, email, city and college, Instagram, which days they can do, past experience and a note. Made for this gig when you save.'}
+                            </p>
+                            {data.formId && (
+                                <a href={`/admin/forms/edit/${data.formId}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 items-center gap-1.5 text-[13px] font-semibold text-orange-600 dark:text-orange-300">
+                                    Edit the questions in a new tab <ExternalLink size={13} />
                                 </a>
                             )}
-                            {data.applyType === 'link' && (
-                                <Field label="Apply link" optional hint="Without a link the card opens the community page">
-                                    <input className={cn(fieldCls, err('apply') && 'border-red-500/60')} inputMode="url" autoCapitalize="off" value={data.applyLink || ''} onChange={(e) => set({ applyLink: e.target.value })} placeholder="https://forms.gle/…" />
-                                </Field>
-                            )}
-                            {data.applyType === 'whatsapp' && (
-                                <Field label="WhatsApp number" hint="With country code, no spaces">
-                                    <input className={cn(fieldCls, err('apply') && 'border-red-500/60')} inputMode="tel" value={data.applyLink || ''} onChange={(e) => set({ applyLink: e.target.value })} placeholder="919876543210" />
-                                </Field>
-                            )}
-                            {err('apply') && <p role="alert" className="text-[13px] font-semibold text-red-600 dark:text-red-400">{err('apply')}</p>}
                             <div className="grid gap-3 sm:grid-cols-[160px_minmax(0,1fr)]">
                                 <Field label="Spots" optional hint="Crew size you need">
                                     <input className={cn(fieldCls, err('slots') && 'border-red-500/60')} type="number" min="1" inputMode="numeric" value={data.slots ?? ''} onChange={(e) => set({ slots: e.target.value })} placeholder="No limit" />
                                 </Field>
-                                <Field label="Crew group link" optional hint="WhatsApp group for confirmed volunteers">
-                                    <input className={fieldCls} inputMode="url" autoCapitalize="off" value={data.whatsappLink || ''} onChange={(e) => set({ whatsappLink: e.target.value })} placeholder="https://chat.whatsapp.com/…" />
+                                <Field label="Crew group link" optional hint="Shown only to confirmed volunteers, inside the app">
+                                    <input className={cn(fieldCls, err('crew') && 'border-red-500/60')} inputMode="url" autoCapitalize="off" value={data.whatsappLink || ''} onChange={(e) => set({ whatsappLink: e.target.value })} placeholder="https://chat.whatsapp.com/…" />
                                 </Field>
                             </div>
+                            {err('crew') && <p role="alert" className="text-[13px] font-semibold text-red-600 dark:text-red-400">{err('crew')}</p>}
                         </div>
                     </BuilderCard>
 

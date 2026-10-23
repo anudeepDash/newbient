@@ -45,7 +45,10 @@ const STATUS_ORDER = ['new', 'shortlisted', 'confirmed', 'waitlist', 'rejected']
 const statusOf = (r) => (VOLUNTEER_STATUS[r.status] ? r.status : 'new');
 
 const NOTIFY_COPY = {
-    confirmed: (gig) => ['You are on the crew', `You're confirmed for ${gig?.title || 'the gig'}. We'll share the details soon.`],
+    shortlisted: (gig) => ['You are shortlisted', `You made the shortlist for ${gig?.title || 'the gig'}. The team may reach out on WhatsApp before confirming the crew.`],
+    confirmed: (gig) => ['You are on the crew', gig?.whatsappLink
+        ? `You're confirmed for ${gig?.title || 'the gig'}. Open the gig in the app to join the crew group.`
+        : `You're confirmed for ${gig?.title || 'the gig'}. We'll share the details soon.`],
     waitlist: (gig) => ['You are on the waitlist', `Thanks for applying to ${gig?.title || 'the gig'}. You're on the waitlist and we'll tell you if a spot opens up.`],
     rejected: (gig) => ['Thanks for applying', `We couldn't fit you into ${gig?.title || 'this gig'} this time. Keep an eye out for the next one.`],
 };
@@ -177,7 +180,7 @@ const ResponsesSheet = ({ open, onClose, form, mode = 'form', gig, onCloseGig })
             let notified = 0;
             if (volunteer && notify && NOTIFY_COPY[next]) {
                 const [title, body] = NOTIFY_COPY[next](gig);
-                await Promise.all(targets.filter(x => x.r.userId).map(x => notifySpecificUser(x.r.userId, title, body, '/community', 'gig').then(() => { notified += 1; }).catch(() => {})));
+                await Promise.all(targets.filter(x => x.r.userId).map(x => notifySpecificUser(x.r.userId, title, body, gig?.id ? `/community?gig=${gig.id}` : '/community', 'gig').then(() => { notified += 1; }).catch(() => {})));
             }
             // Confirmed volunteers also get the gig details on WhatsApp (the server sends each one once).
             if (volunteer && notify && next === 'confirmed') notifyEvent('gig-selected', { responseIds: targets.map(x => x.r.id) }).catch(() => {});
@@ -255,7 +258,7 @@ const ResponsesSheet = ({ open, onClose, form, mode = 'form', gig, onCloseGig })
                 bodyClassName="space-y-4"
             >
                 {!form ? (
-                    <EmptyState icon={AlertCircle} tone="amber" title="No form linked" description="Link a built-in form to this gig to collect applications here." />
+                    <EmptyState icon={AlertCircle} tone="amber" title="Applications aren't set up" description="Use Set up applications on this gig so people can apply in the app." />
                 ) : (
                     <>
                         {volunteer ? (
@@ -292,7 +295,7 @@ const ResponsesSheet = ({ open, onClose, form, mode = 'form', gig, onCloseGig })
                             <EmptyState
                                 icon={Inbox}
                                 title={rows.length ? 'Nothing matches' : volunteer ? 'No applicants yet' : 'No responses yet'}
-                                description={rows.length ? 'Try another search or status.' : 'Share the form link. Answers appear here as soon as people submit.'}
+                                description={rows.length ? 'Try another search or status.' : volunteer ? 'Share the gig link. Applications appear here as soon as people apply in the app.' : 'Share the form link. Answers appear here as soon as people submit.'}
                             />
                         ) : (
                             <div className="overflow-hidden rounded-2xl border border-black/[0.06] dark:border-white/[0.08]">

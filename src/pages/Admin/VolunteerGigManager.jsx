@@ -23,7 +23,7 @@ import ArrowDown from 'lucide-react/dist/esm/icons/arrow-down';
 import Timer from 'lucide-react/dist/esm/icons/timer';
 import Radio from 'lucide-react/dist/esm/icons/radio';
 import Zap from 'lucide-react/dist/esm/icons/zap';
-import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
+import Wand2 from 'lucide-react/dist/esm/icons/wand-2';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
@@ -34,6 +34,7 @@ import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLay
 import ExportMenu from '../../components/admin/ExportMenu';
 import { Badge, Button, EmptyState, Menu, MenuItem, SearchInput, SegmentedTabs, Select, StatTile, ViewToggle, useViewMode } from '../../components/admin/ui';
 import GigEditor, { gigDates, syncGigForm } from '../../components/admin/gigs/GigEditor';
+import { ensureGigForm } from '../../components/admin/gigs/gigForm';
 import ResponsesSheet from '../../components/admin/forms/ResponsesSheet';
 import { countFormResponses } from '../../components/admin/forms/formResponses';
 import { formatDay, todayKey, toDate, useConfirm } from '../../components/admin/forms/kit';
@@ -41,7 +42,6 @@ import { formatDay, todayKey, toDate, useConfirm } from '../../components/admin/
 const FILTERS = ['all', 'open', 'filling', 'closed', 'past'];
 const FILTER_LABEL = { all: 'All', open: 'Open', filling: 'Filling fast', closed: 'Closed', past: 'Past' };
 const STATE_BADGE = { open: { label: 'Open', tone: 'green' }, filling: { label: 'Filling fast', tone: 'amber' }, closed: { label: 'Closed', tone: 'red' }, past: { label: 'Past', tone: 'gray' } };
-const APPLY_LABEL = { form: 'Newbi form', link: 'Link', whatsapp: 'WhatsApp' };
 
 const gigState = (gig, dates, today) => {
     if (dates.length && dates.every(d => d < today)) return 'past';
@@ -76,6 +76,7 @@ const VolunteerGigManager = () => {
     const [sort, setSort] = useState('order');
     const [applicants, setApplicants] = useState({});
     const [busyId, setBusyId] = useState(null);
+    const [settingUp, setSettingUp] = useState(false);
     const [confirm, confirmEl] = useConfirm();
 
     const filter = FILTERS.includes(params.get('filter')) ? params.get('filter') : 'all';
@@ -110,7 +111,7 @@ const VolunteerGigManager = () => {
             dates,
             next: dates.find(d => d >= today) || null,
             state: gigState(g, dates, today),
-            applyType: g.formId ? 'form' : (g.applyType || 'link'),
+            inApp: Boolean(g.formId),
             applicants: g.formId ? (applicants[g.formId] === -1 || applicants[g.formId] === undefined
                 ? (applicants[g.formId] === -1 ? (forms.find(f => f.id === g.formId)?.responseCount ?? 0) : null)
                 : applicants[g.formId]) : null,
@@ -123,6 +124,8 @@ const VolunteerGigManager = () => {
         enriched.forEach(e => { c.all += 1; c[e.state] += 1; c.applicants += e.applicants || 0; });
         return c;
     }, [enriched]);
+    // Gigs still running that don't take applications in the app yet (older ones used a link or WhatsApp).
+    const notSetUp = useMemo(() => enriched.filter(e => !e.inApp && e.state !== 'past'), [enriched]);
     const nextUp = useMemo(() => enriched.filter(e => e.next && e.state !== 'past').sort((a, b) => a.next.localeCompare(b.next))[0], [enriched]);
 
     const canReorder = sort === 'order' && filter === 'all' && !search.trim();
@@ -152,6 +155,36 @@ const VolunteerGigManager = () => {
         } finally {
             setBusyId(null);
         }
+    };
+
+    const setUpOne = (g) => run(g.id, async () => {
+        const out = await ensureGigForm(g.id);
+        if (out.imported) addToast(`${out.imported} ${out.imported === 1 ? 'person' : 'people'} who tapped “I’m interested” moved into Applicants.`, 'info');
+    }, 'Applications now happen in the app.');
+
+    const setUpAll = async () => {
+        if (settingUp || !notSetUp.length) return;
+        if (!(await confirm({
+            title: `Move ${notSetUp.length} gig${notSetUp.length === 1 ? '' : 's'} into the app?`,
+            body: 'Each gets the standard crew application. Outside links and WhatsApp buttons stop showing, and anyone who tapped “I’m interested” shows up under Applicants.',
+            confirmLabel: 'Move them',
+            tone: 'accent',
+        }))) return;
+        setSettingUp(true);
+        let done = 0;
+        let imported = 0;
+        for (const e of notSetUp) {
+            try {
+                const out = await ensureGigForm(e.g.id);
+                done += 1;
+                imported += out.imported || 0;
+            } catch (err) {
+                console.error(err);
+            }
+        }
+        setSettingUp(false);
+        if (done === notSetUp.length) addToast(`${imported ? `${imported} interested ${imported === 1 ? 'person' : 'people'} moved into Applicants.` : 'Every gig now takes applications in the app.'}`, 'success', { title: 'Done' });
+        else addToast(`${notSetUp.length - done} couldn't be moved. Check your connection and try again.`, 'error', { title: `${done} of ${notSetUp.length} moved` });
     };
 
     // Closing or reopening a gig also closes or reopens its application form.
@@ -184,7 +217,7 @@ const VolunteerGigManager = () => {
             location: g.location || 'GLOBAL',
             date: e.next || e.dates[0] || new Date().toISOString(),
             buttonText: 'JOIN SQUAD',
-            link: e.applyType !== 'whatsapp' && g.applyLink ? g.applyLink : '/community',
+            link: `/community?gig=${g.id}`,
             highlightColor: g.highlightColor || '#39FF14',
             category: 'volunteer',
             relatedVolunteerGigId: g.id,
@@ -195,7 +228,7 @@ const VolunteerGigManager = () => {
 
     const notify = async (g) => {
         if (!(await confirm({ title: 'Notify everyone?', body: `Every user gets a notification asking for volunteers for "${g.title}".`, confirmLabel: 'Send', tone: 'accent' }))) return;
-        run(g.id, () => notifyAllUsers(`Volunteers needed for ${g.title}`, `Join the crew for ${g.title}${g.location ? ` at ${g.location}` : ''}. Apply now in the community tab.`, `/community?gig=${g.id}`, g.image || ''), 'Notification sent.');
+        run(g.id, () => notifyAllUsers(`Volunteers needed for ${g.title}`, `Join the crew for ${g.title}${g.location ? ` at ${g.location}` : ''}. Apply in the app.`, `/community?gig=${g.id}`, g.image || ''), 'Notification sent.');
     };
 
     const announce = async (g) => {
@@ -205,22 +238,26 @@ const VolunteerGigManager = () => {
             content: g.description || `We are looking for volunteers for ${g.title} at ${g.location}. Apply now!`,
             date: new Date().toISOString().split('T')[0],
             isPinned: false,
-            link: g.applyLink || `/community?gig=${g.id}`,
+            link: `/community?gig=${g.id}`,
             image: g.image || '',
             type: 'volunteer_gig',
         }), 'Announcement posted.');
     };
 
     const duplicate = (g) => run(g.id, async () => {
-        const { id, order, createdAt, updatedAt, ...copy } = g;
-        const ref = await useStore.getState().addVolunteerGig({ ...JSON.parse(JSON.stringify(copy)), title: `${g.title || 'Gig'} (copy)`, isPinned: false, status: 'Open' });
-        if (ref?.id) setParam({ edit: ref.id });
+        // The copy gets its own application (never the original's applicants).
+        const { id, order, createdAt, updatedAt, formId, applyType, applyLink, interestedCount, ...copy } = g;
+        const ref = await useStore.getState().addVolunteerGig({ ...JSON.parse(JSON.stringify(copy)), title: `${g.title || 'Gig'} (copy)`, isPinned: false, status: 'Open', applyType: 'form', formId: '' });
+        if (ref?.id) {
+            await ensureGigForm(ref.id).catch(err => console.warn('Copy application setup failed:', err));
+            setParam({ edit: ref.id });
+        }
     }, 'Copy made. You are editing it now.');
 
     const remove = async (e) => {
         const ok = await confirm({
             title: `Delete "${e.g.title || 'this gig'}"?`,
-            body: `It disappears from the community page${e.home ? ' and the home page' : ''}.${e.applicants ? ` Its ${e.applicants} applicants stay in the linked form.` : ''} This can't be undone.`,
+            body: `It disappears from the community page${e.home ? ' and the home page' : ''}.${e.applicants ? ` Its ${e.applicants} applications stay in Forms.` : ''} This can't be undone.`,
             confirmLabel: 'Delete gig',
         });
         if (!ok) return;
@@ -245,13 +282,12 @@ const VolunteerGigManager = () => {
             { header: 'Dates', value: e => e.dates.map(d => formatDay(d)).join(', ') },
             { header: 'Reporting time', value: e => to12h(e.g.time) },
             { header: 'Location', value: e => e.g.location || '' },
-            { header: 'Apply via', value: e => APPLY_LABEL[e.applyType] || e.applyType },
-            { header: 'Apply link / number', value: e => (e.applyType === 'form' ? `${window.location.origin}/forms/${e.g.formId}` : e.g.applyLink || '') },
+            { header: 'Applications', value: e => (e.inApp ? 'In the app' : 'Not set up') },
             { header: 'Spots', type: 'number', value: e => e.g.slots || null },
             { header: 'Applicants', key: 'applicants', type: 'number', value: e => e.applicants },
             { header: 'Spotlight', value: e => (e.g.isPinned ? 'Yes' : '') },
             { header: 'On home page', value: e => (e.home ? 'Yes' : '') },
-            { header: 'Community link', value: e => `${window.location.origin}/community?gig=${e.g.id}` },
+            { header: 'Gig link', value: e => `${window.location.origin}/community?gig=${e.g.id}` },
         ],
     });
 
@@ -270,6 +306,7 @@ const VolunteerGigManager = () => {
             <Button size="sm" variant="ghost" onClick={toggle} aria-label="More actions" className="h-10 w-10 px-0"><MoreHorizontal size={16} /></Button>
         )}>
             {e.g.formId && <MenuItem icon={Users} onClick={() => setParam({ applicants: e.g.id })}>Applicants</MenuItem>}
+            {!e.g.formId && <MenuItem icon={Wand2} onClick={() => setUpOne(e.g)}>Take applications in the app</MenuItem>}
             <MenuItem icon={Edit} onClick={() => setParam({ edit: e.g.id })}>Edit</MenuItem>
             <MenuItem as="a" href={`/community?gig=${e.g.id}`} target="_blank" rel="noopener noreferrer" icon={ExternalLink}>Open on community page</MenuItem>
             <MenuItem icon={Link2} onClick={() => copyLink(e.g)}>Copy link</MenuItem>
@@ -298,8 +335,8 @@ const VolunteerGigManager = () => {
 
     const capacity = (e) => {
         const slots = Number(e.g.slots) || 0;
-        if (e.applyType !== 'form') {
-            return <p className="text-[12px] text-gray-500">Applies via {APPLY_LABEL[e.applyType] || 'link'}{slots ? ` · ${slots} spots` : ''}</p>;
+        if (!e.inApp) {
+            return <p className="text-[12px] font-semibold text-amber-700 dark:text-amber-300">Not taking applications in the app yet{slots ? ` · ${slots} spots` : ''}</p>;
         }
         if (e.applicants === null) return <p className="text-[12px] text-gray-500">Counting applicants…</p>;
         return (
@@ -317,7 +354,7 @@ const VolunteerGigManager = () => {
     const primary = (e) => (e.g.formId ? (
         <Button size="sm" variant="accent" onClick={() => setParam({ applicants: e.g.id })} className="h-10 flex-1"><Users size={14} /> Applicants{e.applicants ? ` (${e.applicants})` : ''}</Button>
     ) : (
-        <Button size="sm" variant="secondary" onClick={() => setParam({ edit: e.g.id })} className="h-10 flex-1"><Edit size={14} /> Edit</Button>
+        <Button size="sm" variant="secondary" onClick={() => setUpOne(e.g)} disabled={busyId === e.g.id} className="h-10 flex-1"><Wand2 size={14} /> Set up applications</Button>
     ));
 
     const applicantsGig = gigs.find(g => g.id === applicantsId) || null;
@@ -332,9 +369,19 @@ const VolunteerGigManager = () => {
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                     <StatTile icon={Radio} tone="green" label="Open" value={tally.open} hint="Taking applications" active={filter === 'open'} onClick={() => setParam({ filter: filter === 'open' ? null : 'open' }, true)} />
                     <StatTile icon={Timer} tone="amber" label="Filling fast" value={tally.filling} hint="Marked as urgent" active={filter === 'filling'} onClick={() => setParam({ filter: filter === 'filling' ? null : 'filling' }, true)} />
-                    <StatTile icon={Users} tone="orange" label="Applicants" value={tally.applicants} hint="Through Newbi forms" />
+                    <StatTile icon={Users} tone="orange" label="Applicants" value={tally.applicants} hint="Applied in the app" />
                     <StatTile icon={CalendarDays} tone="violet" label="Next up" value={nextUp ? formatDay(nextUp.next, false) : '—'} hint={nextUp ? nextUp.g.title : 'No upcoming dates'} onClick={nextUp ? () => setParam({ edit: nextUp.g.id }) : undefined} />
                 </div>
+
+                {notSetUp.length > 0 && (
+                    <div className="flex flex-col gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/[0.06] p-4 sm:flex-row sm:items-center">
+                        <div className="min-w-0 flex-1">
+                            <p className="text-[14px] font-bold">{notSetUp.length} gig{notSetUp.length === 1 ? '' : 's'} still {notSetUp.length === 1 ? 'uses' : 'use'} an outside link or WhatsApp</p>
+                            <p className="mt-0.5 text-[13px] text-gray-600 dark:text-zinc-300">Move {notSetUp.length === 1 ? 'it' : 'them'} into the app so people apply inside the gig and you see every applicant here. Anyone who tapped “I’m interested” comes along.</p>
+                        </div>
+                        <Button variant="primary" onClick={setUpAll} disabled={settingUp} className="h-11 shrink-0"><Wand2 size={15} /> {settingUp ? 'Moving…' : 'Move into the app'}</Button>
+                    </div>
+                )}
 
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
                     <SearchInput value={search} onChange={setSearch} placeholder="Search gigs or places" className="lg:w-80" />
@@ -361,7 +408,7 @@ const VolunteerGigManager = () => {
                         <EmptyState
                             icon={Briefcase}
                             title={gigs.length ? 'No matching gigs' : 'No volunteer gigs yet'}
-                            description={gigs.length ? 'Try another filter or search.' : 'Post a crew role. Link a Newbi form to see and confirm applicants here.'}
+                            description={gigs.length ? 'Try another filter or search.' : 'Post a crew role. People apply in the app, and you confirm the crew here.'}
                             action={!gigs.length && <Button variant="primary" onClick={() => setParam({ new: '1' })}><Plus size={14} /> New gig</Button>}
                         />
                     </div>
@@ -388,8 +435,7 @@ const VolunteerGigManager = () => {
                                     <div className="mb-4 mt-3">{capacity(e)}</div>
                                     <div className="mt-auto flex items-center gap-2 border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
                                         {primary(e)}
-                                        {e.g.formId && <Button size="sm" variant="secondary" onClick={() => setParam({ edit: e.g.id })} className="h-10"><Edit size={14} /> Edit</Button>}
-                                        {e.applyType === 'whatsapp' && !e.g.formId && <Button size="sm" variant="secondary" as="a" href={`https://wa.me/${String(e.g.applyLink || '').replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="h-10 w-10 px-0" aria-label="Open WhatsApp"><MessageCircle size={14} /></Button>}
+                                        <Button size="sm" variant="secondary" onClick={() => setParam({ edit: e.g.id })} className="h-10"><Edit size={14} /> Edit</Button>
                                         {menu(e)}
                                     </div>
                                 </div>

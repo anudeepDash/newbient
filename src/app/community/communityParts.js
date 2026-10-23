@@ -1,3 +1,5 @@
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import { useStore as useLegacyStore } from '../../lib/store.js';
 import { t } from '../../i18n';
 
@@ -28,4 +30,17 @@ export const shareLink = ({ title, text, url }) => {
     navigator.clipboard?.writeText(url)
         .then(() => toast?.(t('Link copied.'), 'success'))
         .catch(() => toast?.(t('Copy this link from the address bar.'), 'info'));
+};
+
+/* One form: the cached public API first, then Firestore. null when there's none. */
+export const loadForm = async (id) => {
+    if (!id) return null;
+    try {
+        const res = await fetch(`/api/forms?id=${encodeURIComponent(id)}`);
+        const json = await res.json();
+        if (json?.success && json.form) return json.form;
+    } catch { /* fall back to Firestore */ }
+    if (!db) return null;
+    const snap = await getDoc(doc(db, 'forms', id)).catch(() => null);
+    return snap?.exists() ? { id: snap.id, ...snap.data() } : null;
 };

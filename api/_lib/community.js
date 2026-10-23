@@ -8,7 +8,10 @@
  *   POST giveaway-enter   {giveawayId, answer?, college?, city?, instagram?, referredBy?}
  *   POST giveaway-task    {giveawayId, taskId, instagram?}
  *   POST giveaway-spin    {giveawayId}
- *   POST gig-interest     {gigId, note?}
+ *   POST gig-interest     {gigId, note?}                             older gigs without their form yet
+ *   POST gig-form         {gigId}                                    team: give a gig its in-app application
+ *   POST gig-application  {gigId}                                    your application's status (+ crew link)
+ *   POST gig-withdraw     {gigId}                                    take back your application
  *
  * Giveaway scores are worked out here, every time, from what the entry holds:
  *   1 for entering + each completed task's points + 3 per referral + the spin.
@@ -17,8 +20,9 @@ import crypto from 'node:crypto';
 import { getDb, FieldValue, nowIso } from './db.js';
 import { verifyToken } from './auth.js';
 import { notify } from './notify.js';
-import { normalizeEmail } from './mailing.js';
+import { normalizeEmail, staffRoleOf } from './mailing.js';
 import { toE164 } from './whatsapp.js';
+import { gigFormDoc, interestToAnswers, applicantStatus, canWithdraw } from '../../src/lib/gigApplications.js';
 
 class CommunityError extends Error {
     constructor(code, message, status = 400, extra = {}) {
@@ -306,12 +310,116 @@ const gigInterestAction = async (db, body, caller) => {
     return { success: true, alreadyInterested: existed };
 };
 
+/* Roles that may set up a gig's application (the ones that can edit gigs). */
+const GIG_EDITOR_ROLES = ['founder', 'super_admin', 'developer', 'admin', 'editor', 'content_admin'];
+
+/**
+ * Gives a gig its in-app application form when it has none (or only an
+ * outside link), and brings over everyone who tapped "I'm interested" as
+ * applications. Safe to run again: an existing built-in form is kept.
+ */
+export const setUpGigForm = async (db, gigId) => {
+    const gigRef = db.collection('volunteer_gigs').doc(gigId);
+    const gigSnap = await gigRef.get();
+    if (!gigSnap.exists) throw new CommunityError('NOT_FOUND', "We couldn't find this gig.", 404);
+    const gig = { id: gigSnap.id, ...gigSnap.data() };
+
+    if (idOk(gig.formId || '')) {
+        const existing = await db.collection('forms').doc(gig.formId).get();
+        const fields = existing.exists ? existing.data().fields : null;
+        if (Array.isArray(fields) && fields.length) return { formId: gig.formId, created: false, imported: 0 };
+    }
+
+    const now = nowIso();
+    const formRef = db.collection('forms').doc();
+    const form = gigFormDoc(gig, now);
+    const interests = await db.collection('gig_applications').where('gigId', '==', gigId).get();
+    const imported = [];
+    interests.docs.forEach(d => {
+        const i = d.data() || {};
+        if (!i.userId) return;
+        imported.push({
+            id: `${formRef.id}_${i.userId}`,
+            data: {
+                formId: formRef.id,
+                formTitle: form.title,
+                answers: interestToAnswers(i),
+                fields: form.fields.map(f => ({ id: f.id, label: f.label, type: f.type })),
+                userId: i.userId,
+                email: i.email || null,
+                name: i.name || null,
+                status: 'new',
+                submittedAt: i.createdAt || i.updatedAt || now,
+                source: 'interest',
+            },
+        });
+    });
+
+    await formRef.set({ ...form, responseCount: imported.length });
+    for (const r of imported) await db.collection('form_responses').doc(r.id).set(r.data);
+    await gigRef.update({ formId: formRef.id, applyType: 'form', applyLink: `/forms/${formRef.id}`, updatedAt: now });
+    return { formId: formRef.id, created: true, imported: imported.length };
+};
+
+const gigFormAction = async (db, body, caller) => {
+    requireUser(caller);
+    const role = await staffRoleOf(caller.token, db);
+    if (!GIG_EDITOR_ROLES.includes(role)) throw new CommunityError('FORBIDDEN', 'Only the team can set up gig applications.', 403);
+    const gigId = str(body.gigId, 128);
+    if (!idOk(gigId)) throw new CommunityError('VALIDATION', 'Missing gig.');
+    return { success: true, ...(await setUpGigForm(db, gigId)) };
+};
+
+const loadGigWithForm = async (db, gigId) => {
+    if (!idOk(gigId)) throw new CommunityError('VALIDATION', 'Missing gig.');
+    const snap = await db.collection('volunteer_gigs').doc(gigId).get();
+    if (!snap.exists) throw new CommunityError('NOT_FOUND', "We couldn't find this gig.", 404);
+    const gig = snap.data();
+    return { gig, formId: idOk(gig.formId || '') ? gig.formId : null };
+};
+
+/** Your own application to a gig: its status, and the crew group link once you're confirmed. */
+const gigApplicationAction = async (db, body, caller) => {
+    requireUser(caller);
+    const { gig, formId } = await loadGigWithForm(db, str(body.gigId, 128));
+    if (!formId) {
+        // An older gig without its form yet: an "I'm interested" tap is all there is.
+        const tap = await db.collection('gig_applications').doc(`${str(body.gigId, 128)}_${caller.uid}`).get();
+        return { success: true, application: tap.exists ? { status: 'new', submittedAt: tap.data().createdAt || null, interestOnly: true } : null };
+    }
+    const snap = await db.collection('form_responses').doc(`${formId}_${caller.uid}`).get();
+    if (!snap.exists) return { success: true, application: null };
+    const r = snap.data();
+    const status = applicantStatus(r.status);
+    const crewLink = status === 'confirmed' && /^https:\/\//.test(String(gig.whatsappLink || '')) ? gig.whatsappLink : null;
+    return { success: true, application: { status, submittedAt: r.submittedAt || null, crewLink } };
+};
+
+/** Take back your application (only before you're confirmed or turned down). */
+const gigWithdrawAction = async (db, body, caller) => {
+    requireUser(caller);
+    const { formId } = await loadGigWithForm(db, str(body.gigId, 128));
+    if (!formId) throw new CommunityError('NOT_FOUND', 'There is no application to withdraw.', 404);
+    const ref = db.collection('form_responses').doc(`${formId}_${caller.uid}`);
+    await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) throw new CommunityError('NOT_FOUND', 'There is no application to withdraw.', 404);
+        if (!canWithdraw(snap.data().status)) throw new CommunityError('LOCKED', 'The team has already decided on your application. Message them if your plans changed.', 409);
+        tx.delete(ref);
+        tx.update(db.collection('forms').doc(formId), { responseCount: FieldValue.increment(-1) });
+    });
+    return { success: true };
+};
+
 const ACTIONS = {
     giveaway: giveawayAction,
     'giveaway-enter': enterAction,
     'giveaway-task': taskAction,
     'giveaway-spin': spinAction,
     'gig-interest': gigInterestAction,
+    'gig-form': gigFormAction,
+    'gig-application': gigApplicationAction,
+    'gig-withdraw': gigWithdrawAction,
 };
 
 export const handleCommunity = async (req, res) => {
