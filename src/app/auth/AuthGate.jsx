@@ -38,6 +38,7 @@ export const INTENTS = {
     guestlistRegister: 'guestlist-register',
     giveawayEnter: 'giveaway-enter',
     gigInterest: 'gig-interest',
+    gigApply: 'gig-apply',
     creatorApply: 'creator-apply',
     creatorConnectInstagram: 'creator-connect-instagram',
     joinCommunity: 'join-community',

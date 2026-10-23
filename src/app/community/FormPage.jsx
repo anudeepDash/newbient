@@ -1,9 +1,7 @@
 import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Navigate, useParams } from 'react-router-dom';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
 import { useAppStore } from '../../lib/store/appStore';
 import { Button, CARD_TYPES } from '../../components/app';
 import { isPresent } from '../../lib/present';
@@ -11,7 +9,7 @@ import useDynamicMeta from '../../hooks/useDynamicMeta';
 import { appPath } from '../host';
 import { ROW } from '../pages/DetailLayout';
 import { ActionBar, BackButton, BarStatus, ExpandedHero, ExpandedMissing, ExpandedPage, ExpandedSkeleton, ExpandedTitle, useCloseExpanded } from '../pages/ExpandedCard';
-import { plainText, shareLink } from './communityParts';
+import { loadForm, plainText, shareLink } from './communityParts';
 import { useT } from '../../i18n';
 
 const FormIcon = CARD_TYPES.form.icon;
@@ -22,17 +20,6 @@ const FormRenderer = lazy(() => import('../../components/admin/forms/FormRendere
  * Firestore), and nobody is asked to sign in just for opening it. A form that
  * needs an account (one entry per person) asks when it's submitted.
  */
-
-const loadForm = async (id) => {
-    try {
-        const res = await fetch(`/api/forms?id=${encodeURIComponent(id)}`);
-        const json = await res.json();
-        if (json?.success && json.form) return json.form;
-    } catch { /* fall back to Firestore */ }
-    if (!db) return null;
-    const snap = await getDoc(doc(db, 'forms', id)).catch(() => null);
-    return snap?.exists() ? { id: snap.id, ...snap.data() } : null;
-};
 
 const embedUrl = (form, email) => {
     let raw = form?.formUrl || form?.link || form?.applyLink || '';
@@ -81,6 +68,9 @@ const FormPage = ({ overlay = false }) => {
             />
         );
     }
+
+    // A gig's application lives inside the gig (old shared links land there).
+    if (form.gigId) return <Navigate to={`${appPath('/community')}?gig=${encodeURIComponent(form.gigId)}`} replace />;
 
     const description = plainText(form.description);
     const share = () => shareLink({ title: form.title, url: window.location.href });

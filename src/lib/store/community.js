@@ -3,6 +3,7 @@ import { db } from '../firebase';
 import { isPresent } from '../present';
 import { closingDate, isOpen, itemDate } from '../feedItems';
 import { fetchAppFeed } from '../appFeed';
+import { gigDayKeys } from '../gigApplications';
 
 export { itemDate };
 
@@ -108,15 +109,18 @@ export const buildFeed = ({ events = [], guestlists = [], gigs = [], giveaways =
             items.push(normalise('guestlist', g, link(`/community/g/${g.id}`)));
             return;
         }
+        // People apply inside the gig's sheet (its built-in form, formId); older gigs without one take an "I'm interested" tap.
         items.push(normalise('gig', g, null, {
-            applyType: g.formId ? 'form' : (g.applyType || 'link'),
-            applyLink: g.formId ? link(`/forms/${g.formId}`) : (g.applyLink || ''),
+            formId: g.formId || null,
+            days: gigDayKeys(g),
+            gigStatus: g.status || 'Open',
             interestedCount: Number(g.interestedCount) || 0,
             slots: Number(g.slots || g.totalSlots || g.maxVolunteers) || 0,
         }));
     });
     giveaways.filter(isOpen).forEach(g => items.push(normalise('giveaway', g, link(`/community/giveaways/${g.slug || g.id}`))));
-    forms.filter(isOpen).forEach(f => items.push(normalise('form', f, link(`/forms/${f.id}`))));
+    // A gig's application form shows inside the gig, not as a card of its own.
+    forms.filter(f => isOpen(f) && !f.gigId).forEach(f => items.push(normalise('form', f, link(`/forms/${f.id}`))));
 
     return items.filter(item => isPresent(item.title) && !isPast(item.closesAt)).sort(sortFeed);
 };

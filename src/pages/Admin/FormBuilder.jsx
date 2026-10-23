@@ -105,6 +105,7 @@ const FormBuilder = () => {
     }, [id, existing, upcomingEvents]);
 
     const set = (patch) => { setForm(prev => ({ ...prev, ...patch })); setDirty(true); };
+    const wasGoogle = Boolean(existing && !(existing.fields || []).length && existing.formUrl);
     const image = useImageField(form.image, (url) => set({ image: url }));
 
     // ── questions ──
@@ -282,16 +283,24 @@ const FormBuilder = () => {
                             </div>
                         </BuilderCard>
 
-                        <BuilderCard title="How people answer">
-                            <Choice
-                                value={mode}
-                                onChange={(v) => { setMode(v); setDirty(true); setPreviewTab(v === 'native' ? 'form' : 'card'); }}
-                                options={[
-                                    { value: 'native', label: 'Build it here', hint: 'Responses, file uploads and limits in the admin' },
-                                    { value: 'google', label: 'Use a Google Form', hint: 'Embed a form you already have' },
-                                ]}
-                            />
-                        </BuilderCard>
+                        {/* New forms are always built here. Only an older Google Form still offers the switch, so it can be rebuilt. */}
+                        {wasGoogle && (
+                            <BuilderCard title="How people answer" hint="Google Forms are being retired. Rebuild this one here to see responses in the admin.">
+                                <Choice
+                                    value={mode}
+                                    onChange={(v) => { setMode(v); setDirty(true); setPreviewTab(v === 'native' ? 'form' : 'card'); }}
+                                    options={[
+                                        { value: 'native', label: 'Rebuild it here', hint: 'Responses, file uploads and limits in the admin' },
+                                        { value: 'google', label: 'Keep the Google Form', hint: 'Only until it is rebuilt' },
+                                    ]}
+                                />
+                            </BuilderCard>
+                        )}
+                        {form.gigId && (
+                            <p className="rounded-xl bg-orange-500/10 px-3.5 py-3 text-[13px] font-semibold text-orange-800 dark:text-orange-200">
+                                This is a volunteer gig’s application. People fill it inside the gig in the app; review them in Volunteer gigs → Applicants.
+                            </p>
+                        )}
 
                         {mode === 'native' ? (
                             <BuilderCard

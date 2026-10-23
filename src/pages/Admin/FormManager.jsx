@@ -41,7 +41,7 @@ const isOnHome = (form, upcomingEvents) => (upcomingEvents || []).some(e =>
 const FormManager = () => {
     useStoreSubscription(['forms', 'upcomingEvents']);
     const navigate = useNavigate();
-    const forms = useStore(s => s.forms) || [];
+    const allForms = useStore(s => s.forms) || [];
     const upcomingEvents = useStore(s => s.upcomingEvents) || [];
     const loaded = useStore(s => s.subscriptionsLoaded?.forms);
     const addToast = useStore(s => s.addToast);
@@ -60,6 +60,9 @@ const FormManager = () => {
         if (value) next.set(key, value); else next.delete(key);
         setParams(next, { replace: key === 'filter' });
     };
+
+    // A gig's own application form is looked after in Volunteer gigs, not listed here.
+    const forms = useMemo(() => allForms.filter(f => !f.gigId), [allForms]);
 
     // Real response counts for built-in forms.
     const nativeIds = forms.filter(isNativeForm).map(f => f.id).join(',');
@@ -242,7 +245,7 @@ const FormManager = () => {
     const badges = (e) => (
         <>
             <Badge tone={FORM_STATE_LABEL[e.state].tone}>{FORM_STATE_LABEL[e.state].label}</Badge>
-            <Badge tone={e.native ? 'indigo' : 'gray'}>{e.native ? 'Built here' : 'Google Form'}</Badge>
+            <Badge tone={e.native ? 'indigo' : 'amber'}>{e.native ? 'Built here' : 'Google Form · rebuild'}</Badge>
             {e.f.isPinned && <Badge tone="amber"><Star size={10} /> Spotlight</Badge>}
             {e.onHome && <Badge tone="teal">Home page</Badge>}
         </>
@@ -298,7 +301,7 @@ const FormManager = () => {
                         <EmptyState
                             icon={ClipboardList}
                             title={forms.length ? 'No matching forms' : 'No forms yet'}
-                            description={forms.length ? 'Try another filter or search.' : 'Build a sign-up or feedback form with your own questions, or link a Google Form.'}
+                            description={forms.length ? 'Try another filter or search.' : 'Build a sign-up or feedback form with your own questions. People fill it in the app and you see every answer here.'}
                             action={!forms.length && <Button as={Link} to="/admin/forms/create" variant="primary"><Plus size={14} /> New form</Button>}
                         />
                     </div>

@@ -316,7 +316,7 @@ export const COMMUNITY_FIELDS = [
     'hubImage', 'image', 'posterUrl', 'poster', 'thumbnail', 'coverImage',
     'venue', 'location', 'city', 'targetCity',
     'isGuestlistEnabled', 'guestlistEnabled', 'eventId', 'isEmbedded', 'guestlistId',
-    'formId', 'applyType', 'applyLink', 'interestedCount', 'slots', 'totalSlots', 'maxVolunteers', 'slug',
+    'formId', 'gigId', 'interestedCount', 'slots', 'totalSlots', 'maxVolunteers', 'slug',
 ];
 
 const isPlainObject = (v) => v !== null && typeof v === 'object' && [Object.prototype, null].includes(Object.getPrototypeOf(v));

@@ -2997,7 +2997,9 @@ export const useStore = create((set, get) => ({
                 description: gig.description || '',
                 image: gig.image || '',
                 location: gig.location || 'GLOBAL',
-                highlightColor: gig.highlightColor || '#39FF14'
+                highlightColor: gig.highlightColor || '#39FF14',
+                // People apply inside the gig in the app, never an outside link.
+                link: `/community?gig=${id}`
             })));
         } catch (err) {
             console.warn('[updateVolunteerGig] Home card sync failed:', err);
