@@ -95,13 +95,15 @@ export function feedCard(item, { from = null } = {}) {
 
 /*
  * An upcoming show on Home: ticket sales, an event or a guestlist, each as
- * { id, title, image, day: 'YYYY-MM-DD', time, venue, city, category, ticketed, guestlist, price }.
+ * { id, title, image, day: 'YYYY-MM-DD', time, venue, city, category, ticketed, guestlist, price, gigId }.
  * from: the current location, so a guestlist opens as a sheet over the list.
+ * A volunteer gig's card opens the gig on Community, like the community rail.
  */
 export function showCard(e, { from = null } = {}) {
     const day = e.day ? new Date(`${e.day}T00:00:00`) : null;
+    const gig = !e.ticketed && !e.guestlist && e.gigId;
     return {
-        type: 'event',
+        type: gig ? 'gig' : 'event',
         image: e.image || null,
         title: e.title,
         eyebrow: e.category || null,
@@ -114,8 +116,10 @@ export function showCard(e, { from = null } = {}) {
             { label: e.ticketed ? t('Tickets') : t('Entry'), value: e.ticketed ? (e.price ? t('From ₹{price}', { price: Number(e.price).toLocaleString('en-IN') }) : t('On sale')) : e.guestlist ? t('Guestlist') : null, tone: 'accent' },
             { label: t('Venue'), value: e.venue },
         ],
-        cta: e.ticketed || e.guestlist ? { label: e.ticketed ? t('Get tickets') : t('Get on the list') } : false,
-        to: e.ticketed ? appPath(`/tickets/${encodeURIComponent(e.id)}`) : e.guestlist ? appPath(`/community/g/${e.id}`) : undefined,
+        cta: e.ticketed || e.guestlist || gig ? { label: e.ticketed ? t('Get tickets') : gig ? t('View gig') : t('Get on the list') } : false,
+        to: e.ticketed ? appPath(`/tickets/${encodeURIComponent(e.id)}`)
+            : e.guestlist ? appPath(`/community/g/${e.id}`)
+                : gig ? `${appPath('/community')}?gig=${encodeURIComponent(e.gigId)}` : undefined,
         // A show or guestlist opens as a sheet over Home.
         linkState: (e.ticketed || e.guestlist) && from ? { backgroundLocation: from } : undefined,
     };

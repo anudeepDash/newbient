@@ -125,6 +125,8 @@ function upcomingEvents(list, guestlists = []) {
             hasGuestlist: Boolean(e.isGuestlistEnabled || e.guestlistEnabled),
             // The guestlist an event card was made from, so links open (and sign up on) that list.
             guestlistId: str(e.guestlistId, 128) || undefined,
+            // A volunteer gig's card: it opens that gig in the app (older cards only have the link).
+            gigId: str(e.gigId || e.relatedVolunteerGigId || (String(e.link || '').match(/[?&]gig=([\w-]+)/) || [])[1], 128) || undefined,
             // Guestlists opt in to the app's Home; events opt out.
             showInApp: e.standaloneList ? e.showInApp === true : e.showInApp !== false,
         }));

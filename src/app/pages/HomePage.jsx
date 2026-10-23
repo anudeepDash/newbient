@@ -67,7 +67,7 @@ const useUpcomingShows = () => {
         // An event card made from a guestlist is keyed by that list, so the two show once.
         (feed?.events || []).filter(e => e.showInApp !== false).forEach(e => byId.set(e.guestlistId || e.id, {
             id: e.guestlistId || e.id, title: e.title, image: e.image, day: e.date, time: e.time, venue: e.location, city: e.city,
-            category: e.category, ticketed: e.isTicketed, guestlist: e.hasGuestlist,
+            category: e.category, ticketed: e.isTicketed, guestlist: e.hasGuestlist, gigId: e.gigId,
         }));
         (community || []).filter(i => i.type === 'guestlist' && i.showInApp && i.date).forEach(i => {
             const day = i.date instanceof Date ? format(i.date, 'yyyy-MM-dd') : String(i.date).slice(0, 10);

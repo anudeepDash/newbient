@@ -144,7 +144,9 @@ const EventPage = ({ overlay = false }) => {
     const back = !overlay ? <BackButton to={appPath('/tickets')}>{t('Tickets')}</BackButton> : null;
 
     if (!event) {
+        // In a fragment like the loaded page below, so the sheet stays put when the data arrives.
         return (
+            <>
             <ExpandedPage
                 overlay={overlay}
                 onClose={close}
@@ -154,6 +156,7 @@ const EventPage = ({ overlay = false }) => {
                     ? <ExpandedMissing title={t('Show not found')} message={t('This show isn’t selling tickets any more, or the link is wrong.')} action={<Button variant="secondary" to={appPath('/tickets')}>{t('See what’s on')}</Button>} />
                     : <ExpandedSkeleton />}
             />
+            </>
         );
     }
 

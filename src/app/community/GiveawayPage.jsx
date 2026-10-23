@@ -154,7 +154,9 @@ const GiveawayPage = ({ overlay = false }) => {
     const back = !overlay ? <BackButton to={appPath('/community')}>{t('Community')}</BackButton> : null;
 
     if (!g) {
+        // In a fragment like the loaded page below, so the sheet stays put when the data arrives.
         return (
+            <>
             <ExpandedPage
                 overlay={overlay}
                 onClose={close}
@@ -164,6 +166,7 @@ const GiveawayPage = ({ overlay = false }) => {
                     ? <ExpandedMissing title={t('Giveaway not found')} message={notFound ? t('It may have ended or the link is wrong.') : loadError} action={<Button variant="secondary" to={appPath('/community')}>{t('See what’s on')}</Button>} />
                     : <ExpandedSkeleton />}
             />
+            </>
         );
     }
 
