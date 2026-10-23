@@ -1,82 +1,9 @@
 import Sticker from '../components/Sticker';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight, Building2, Megaphone, Ticket, Music2 } from 'lucide-react';
+import { ArrowRight, Building2, Megaphone, Ticket, Music2 } from 'lucide-react';
 import { APP_LINKS } from '../links';
 import newbiIcon from '../../assets/logo/newbi-icon.svg';
 import { useT } from '../../i18n';
-
-/*
- * The three ways into Newbi. Brands and colleges go to the enquiry form;
- * creators and the community go straight into the app.
- */
-const PATHS = [
-    {
-        key: 'brand',
-        title: 'Plan a campaign or fest',
-        text: 'Activations, artist shows and creator campaigns, run end to end.',
-        cta: 'Work with us',
-        to: '/#enquire',
-    },
-    {
-        key: 'creator',
-        title: 'Join as a creator',
-        text: 'Paid and barter campaigns, concert access and tickets for the shows you post about.',
-        cta: 'Apply in 2 minutes',
-        href: APP_LINKS.creatorApply,
-        more: { label: 'How it works', to: '/creator' },
-        featured: true,
-    },
-    {
-        key: 'community',
-        title: 'Join the community',
-        text: 'Guestlists, volunteer gigs and giveaways for shows near you. Free.',
-        cta: 'Join free',
-        href: APP_LINKS.community,
-        more: { label: 'What you get', to: '/community' },
-    },
-];
-
-/*
- * A "liquid glass" card: a frosted, saturated pane with a bright top edge, a
- * diagonal sheen and a soft drop shadow. The whole card is one link (the
- * stretched CTA); the secondary link sits above it. The creator card is
- * tinted green glass with a solid pill. One backdrop blur per card.
- */
-function PathCard({ path, onChooseAudience }) {
-    const t = useT();
-    const featured = path.featured;
-    const pill = featured
-        ? 'bg-neon-green text-black shadow-[0_8px_24px_-8px_rgba(57,255,20,0.9),inset_0_1px_0_rgba(255,255,255,0.6)]'
-        : 'bg-white/70 text-gray-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_4px_14px_-6px_rgba(0,0,0,0.25)] ring-1 ring-inset ring-black/[0.06] dark:bg-white/[0.12] dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] dark:ring-white/10';
-    const ctaCls = `relative inline-flex h-10 items-center gap-1.5 rounded-full px-5 font-heading text-[15px] font-bold transition-transform group-hover:scale-[1.03] after:absolute after:inset-[-999px] after:content-[''] ${pill}`;
-    const cta = (
-        <>{t(path.cta)} <ArrowUpRight size={16} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" /></>
-    );
-
-    return (
-        <div className={`group relative isolate flex h-full flex-col overflow-hidden rounded-[26px] p-5 backdrop-blur-2xl backdrop-saturate-[1.8] transition-transform duration-300 hover:-translate-y-1 sm:px-6 sm:py-5 ${featured
-            ? 'bg-[rgba(57,255,20,0.16)] ring-1 ring-inset ring-[rgba(57,255,20,0.55)] shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_24px_60px_-24px_rgba(57,255,20,0.55)] dark:bg-[rgba(57,255,20,0.11)]'
-            : 'bg-white/45 ring-1 ring-inset ring-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_24px_60px_-28px_rgba(0,0,0,0.35)] dark:bg-white/[0.05] dark:ring-white/[0.14] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_24px_60px_-28px_rgba(0,0,0,0.8)]'}`}>
-            {/* Sheen: light catching the top-left of the glass */}
-            <span aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-white/60 via-white/[0.08] to-transparent opacity-80 dark:from-white/[0.16] dark:via-white/[0.03]" />
-            <span aria-hidden="true" className="pointer-events-none absolute -top-px left-8 right-8 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-90 dark:via-white/60" />
-
-            <h3 className="font-heading text-[22px] font-extrabold leading-[1.1] tracking-[-0.03em] text-gray-950 dark:text-white">{t(path.title)}</h3>
-            <p className="mt-1.5 text-[14px] leading-snug text-gray-700 dark:text-zinc-300">{t(path.text)}</p>
-
-            <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1 pt-4">
-                {path.href
-                    ? <a href={path.href} className={ctaCls}>{cta}</a>
-                    : <Link to={path.to} onClick={() => onChooseAudience?.(path.key)} className={ctaCls}>{cta}</Link>}
-                {path.more && (
-                    <Link to={path.more.to} className="relative z-10 inline-flex min-h-[44px] items-center gap-1 text-[13px] font-semibold text-gray-700 underline decoration-neon-green underline-offset-4 dark:text-zinc-300">
-                        {t(path.more.label)} <ArrowRight size={13} aria-hidden="true" />
-                    </Link>
-                )}
-            </div>
-        </div>
-    );
-}
 
 /*
  * Right-hand visual: the brand mark as a big sticker, with tags for what we do
@@ -112,9 +39,10 @@ export function BrandArt({ tags = TAGS }) {
 }
 
 /*
- * Home hero. Desktop: the headline, what we do and the two actions on the left,
- * the brand mark with what we do around it on the right, the three ways in below.
- * Phones: the mark first (small), then the headline and actions, then the ways in. The headline
+ * Home hero, for everyone. Desktop: the headline, what we do and the two actions
+ * (join free, or the brand section further down) on the left,
+ * the brand mark with what we do around it on the right.
+ * Phones: the mark first (small), then the headline and actions. The headline
  * lines still slide apart as you scroll away (CSS, off for reduced motion).
  */
 export default function Hero({ onChooseAudience }) {
@@ -129,9 +57,9 @@ export default function Hero({ onChooseAudience }) {
             </div>
 
             <div className="relative mx-auto w-full max-w-[1600px] px-4 pb-12 pt-4 sm:px-6 sm:pt-10 md:pt-16 lg:px-10 lg:pb-16">
-                {/* Phones: the N. mark (small), the headline and actions, then the ways in.
-                    Desktop: headline | brand art, ways in below. */}
-                <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-x-10 lg:gap-y-16">
+                {/* Phones: the N. mark (small), then the headline and actions.
+                    Desktop: headline | brand art. */}
+                <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-x-10">
                     <div className="order-2 lg:order-1">
                         <h1 className="font-heading font-extrabold leading-[0.92] tracking-[-0.045em] text-gray-950 dark:text-white text-[15vw] sm:text-[11vw] lg:text-[6.6vw] 2xl:text-[7.6rem]">
                             <span className="nb-exit-l block">{t('We make')}</span>{' '}
@@ -139,14 +67,14 @@ export default function Hero({ onChooseAudience }) {
                             <span className="nb-exit-l block"><Sticker tilt="-rotate-[2deg]">{t('show up.')}</Sticker></span>
                         </h1>
                         <p className="nb-exit-fade mt-6 max-w-md text-lg leading-snug text-gray-700 dark:text-zinc-300 md:text-xl">
-                            {t('Campus activations, live shows and creator campaigns across India.')}
+                            {t('Live shows, guestlists and paid creator campaigns across India. One free account gets you in.')}
                         </p>
                         <div className="nb-exit-fade mt-8 flex flex-col gap-3 sm:flex-row">
-                            <Link to="/#enquire" onClick={() => onChooseAudience?.('brand')} className="group inline-flex h-14 items-center justify-center gap-2 rounded-full border-[3px] border-black bg-neon-green px-8 font-heading text-base font-extrabold text-black shadow-[4px_4px_0_#000] transition hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#000] active:translate-y-0 active:shadow-[2px_2px_0_#000]">
-                                {t('Work with us')} <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" aria-hidden="true" />
-                            </Link>
-                            <Link to="/work" className="inline-flex h-14 items-center justify-center rounded-full bg-white/60 px-8 font-heading text-base font-bold text-gray-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_8px_24px_-12px_rgba(0,0,0,0.3)] ring-1 ring-inset ring-black/[0.08] backdrop-blur-xl transition hover:bg-white/80 dark:bg-white/[0.08] dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] dark:ring-white/15 dark:hover:bg-white/[0.14]">
-                                {t('See the work')}
+                            <a href={APP_LINKS.community} className="group inline-flex h-14 items-center justify-center gap-2 rounded-full border-[3px] border-black bg-neon-green px-8 font-heading text-base font-extrabold text-black shadow-[4px_4px_0_#000] transition hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#000] active:translate-y-0 active:shadow-[2px_2px_0_#000]">
+                                {t('Join free')} <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                            </a>
+                            <Link to="/#brands" onClick={() => onChooseAudience?.('brand')} className="inline-flex h-14 items-center justify-center rounded-full bg-white/60 px-8 font-heading text-base font-bold text-gray-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_8px_24px_-12px_rgba(0,0,0,0.3)] ring-1 ring-inset ring-black/[0.08] backdrop-blur-xl transition hover:bg-white/80 dark:bg-white/[0.08] dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] dark:ring-white/15 dark:hover:bg-white/[0.14]">
+                                {t('For brands & colleges')}
                             </Link>
                         </div>
                     </div>
@@ -155,11 +83,6 @@ export default function Hero({ onChooseAudience }) {
                         <BrandArt />
                     </div>
 
-                    <nav aria-label={t('Choose your way in')} className="relative order-3 grid gap-3 md:grid-cols-3 md:gap-4 lg:col-span-2">
-                        {/* Colour behind the glass: soft washes (gradients, no filter) for the panes to frost */}
-                        <span aria-hidden="true" className="pointer-events-none absolute -inset-x-6 -inset-y-10 -z-10" style={{ background: 'radial-gradient(40% 70% at 50% 55%, rgba(57,255,20,0.30), transparent 70%), radial-gradient(30% 60% at 12% 40%, rgba(16,185,129,0.20), transparent 70%), radial-gradient(30% 60% at 88% 45%, rgba(56,189,248,0.18), transparent 70%)' }} />
-                        {PATHS.map((p) => <PathCard key={p.key} path={p} onChooseAudience={onChooseAudience} />)}
-                    </nav>
                 </div>
             </div>
         </section>

@@ -16,7 +16,7 @@ export default function Process() {
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 grid gap-14 lg:grid-cols-[0.9fr_1.1fr] lg:gap-24">
                 <SectionHeading
                     id="process-title"
-                    index="02"
+                    index="04"
                     eyebrow="How it works"
                     title="From a brief to a"
                     highlight="full room."
