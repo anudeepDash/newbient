@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import Pencil from 'lucide-react/dist/esm/icons/pencil';
 import Share2 from 'lucide-react/dist/esm/icons/share-2';
 import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
@@ -125,6 +126,8 @@ const CampaignManage = ({
     const [confirm, setConfirm] = useState(null);
     const [confirmToggle, setConfirmToggle] = useState(true);
     const [taskFilter, setTaskFilter] = useState('all'); // a key of TASK_FILTERS
+    const [collapsedTasks, setCollapsedTasks] = useState(() => new Set()); // deliverables folded shut
+    const [approving, setApproving] = useState({}); // `${creator}|${task}` → true while that approval saves
     const [showBrief, setShowBrief] = useState(false);
     const [ticketsFor, setTicketsFor] = useState(null); // entries for the Send tickets sheet
     const [uploadOpen, setUploadOpen] = useState(false); // the client's shortlist CSV
@@ -334,36 +337,67 @@ const CampaignManage = ({
         }
     });
 
+    // The server tells each creator (email, push and the in-app alert). Runs in the background,
+    // so the next review doesn't wait on it.
+    const tellCreators = async (items, statusValue, reason) => {
+        const told = await notifyEvent('submission-reviewed', {
+            campaignId: campaign.id,
+            campaignPath: creatorCampaignPath(campaign.id),
+            reviews: items.map(({ entry, task }) => ({ uid: entry.key, taskId: task.id, taskTitle: task.title, status: statusValue === 'approved' ? 'approved' : 'changes', reason })),
+        }).catch(() => null);
+        if (!told?.success) {
+            await Promise.allSettled(items.map(({ entry, task }) => notifySpecificUser(
+                entry.key,
+                statusValue === 'approved' ? 'Task approved' : 'Changes requested on your task',
+                statusValue === 'approved'
+                    ? `Your submission for "${task.title}" has been approved. Great work!`
+                    : `Your submission for "${task.title}" needs a few changes: ${reason}`,
+                creatorCampaignPath(campaign.id),
+                'campaign'
+            )));
+        }
+    };
+
     const review = async (items, statusValue, reason = '') => {
         // items: [{ entry, task }]
         try {
             await useStore.getState().reviewTaskSubmissions(campaign.id, items.map(({ entry, task }) => ({
                 taskId: task.id, creatorUid: entry.key, keys: creatorKeys(entry.creator), status: statusValue, rejectionReason: reason,
             })));
-            // The server tells each creator (email, push and the in-app alert).
-            const told = await notifyEvent('submission-reviewed', {
-                campaignId: campaign.id,
-                campaignPath: creatorCampaignPath(campaign.id),
-                reviews: items.map(({ entry, task }) => ({ uid: entry.key, taskId: task.id, taskTitle: task.title, status: statusValue === 'approved' ? 'approved' : 'changes', reason })),
-            });
-            if (!told?.success) {
-                await Promise.allSettled(items.map(({ entry, task }) => notifySpecificUser(
-                    entry.key,
-                    statusValue === 'approved' ? 'Task approved' : 'Changes requested on your task',
-                    statusValue === 'approved'
-                        ? `Your submission for "${task.title}" has been approved. Great work!`
-                        : `Your submission for "${task.title}" needs a few changes: ${reason}`,
-                    creatorCampaignPath(campaign.id),
-                    'campaign'
-                )));
-            }
-            addToast(statusValue === 'approved' ? (items.length === 1 ? 'Approved.' : `${items.length} submissions approved.`) : 'Feedback sent.', 'success');
         } catch {
-            addToast('Check your connection and try again.', 'error', { title: 'Review not saved' });
+            addToast('Check your connection and try again.', 'error', { title: items.length === 1 ? `${items[0].entry.creator.name || 'Review'} not saved` : 'Review not saved' });
             throw new Error('review failed');
         }
+        tellCreators(items, statusValue, reason);
+        addToast(statusValue === 'approved' ? (items.length === 1 ? 'Approved.' : `${items.length} submissions approved.`) : 'Feedback sent.', 'success');
     };
-    const approve = (entry, task) => guard(() => review([{ entry, task }], 'approved').catch(() => {}));
+
+    // Approvals don't lock the tab: the row shows as approved at once and saves on its own,
+    // so the team can go down the list without waiting on each one.
+    const approveKey = (entry, task) => `${entry.key}|${task.id}`;
+    const approveItems = async (items) => {
+        const fresh = items.filter(i => !approving[approveKey(i.entry, i.task)]);
+        if (!fresh.length) return;
+        const keys = fresh.map(i => approveKey(i.entry, i.task));
+        setApproving(cur => ({ ...cur, ...Object.fromEntries(keys.map(k => [k, true])) }));
+        try {
+            await review(fresh, 'approved');
+        } catch {
+            // review() already said what went wrong; the rows go back to "To review".
+        } finally {
+            setApproving(cur => {
+                const next = { ...cur };
+                keys.forEach(k => { delete next[k]; });
+                return next;
+            });
+        }
+    };
+    const approve = (entry, task) => approveItems([{ entry, task }]);
+    const toggleTask = (id) => setCollapsedTasks(cur => {
+        const next = new Set(cur);
+        if (next.has(id)) next.delete(id); else next.add(id);
+        return next;
+    });
 
     // From "Add completed work": add anyone new to the campaign, then mark their deliverables done.
     const saveCompleted = async ({ adds, items, guests: newGuests = [], welcome, sheet }) => {
@@ -508,7 +542,7 @@ const CampaignManage = ({
         if (c.kind === 'select') await selectEntries(c.entries, confirmToggle);
         if (c.kind === 'decline') await setStage(c.entries, 'declined', confirmToggle);
         if (c.kind === 'unselect') await unselectEntries(c.entries);
-        if (c.kind === 'approveAll') await guard(() => review(c.items, 'approved').catch(() => {}));
+        if (c.kind === 'approveAll') approveItems(c.items);
         if (c.kind === 'removeSubmission') await removeSubmission(c.entry, c.task);
         setConfirm(null);
     };
@@ -589,26 +623,33 @@ const CampaignManage = ({
                 </Card>
             ) : tasks.map((task, idx) => {
                 const rows = deliverableRows.get(task.id) || [];
-                const pending = rows.filter(r => r.item?.status === 'submitted');
-                const approved = rows.filter(r => r.item?.status === 'approved').length;
-                const shown = rows.filter(r => TASK_FILTERS[taskFilter].test(r.item?.status || 'not_started'));
+                // An approval still saving already counts as approved.
+                const statusOf = (r) => (approving[approveKey(r.a, task)] ? 'approved' : r.item?.status || 'not_started');
+                const pending = rows.filter(r => statusOf(r) === 'submitted');
+                const approved = rows.filter(r => statusOf(r) === 'approved').length;
+                const shown = rows.filter(r => TASK_FILTERS[taskFilter].test(statusOf(r)));
+                const collapsed = collapsedTasks.has(task.id || idx);
                 const TypeIcon = taskTypeOf(task.taskType).icon;
                 const due = daysUntil(task.deadline);
                 if (taskFilter !== 'all' && shown.length === 0) return null;
                 return (
                     <Card key={task.id || idx} className="overflow-hidden rounded-2xl">
-                        <div className="flex flex-wrap items-center gap-3 border-b border-black/[0.06] p-4 dark:border-white/[0.06]">
-                            <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', accent('pink').chip)}><TypeIcon size={18} /></span>
-                            <div className="min-w-0 flex-1">
-                                <p className="truncate text-[15px] font-bold">{task.title || `Deliverable ${idx + 1}`}</p>
-                                <p className="flex flex-wrap items-center gap-x-2.5 text-[12px] text-gray-500">
-                                    <span>{platformOf(task.platform).label}</span>
-                                    {!isRequiredTask(task) && <span>Optional</span>}
-                                    {task.deadline && <span className={cn(due !== null && due < 0 && 'font-semibold text-rose-600 dark:text-rose-300')}>Due {formatDay(task.deadline)}</span>}
-                                    <span>{approved} of {rows.length} approved</span>
-                                    {{ open: <Badge tone="green">Open for submissions</Badge>, upcoming: <Badge tone="gray">Not open yet</Badge>, closed: <Badge tone="gray">Closed</Badge> }[taskWindow(task)]}
-                                </p>
-                            </div>
+                        <div className={cn('flex flex-wrap items-center gap-3 p-4', !collapsed && 'border-b border-black/[0.06] dark:border-white/[0.06]')}>
+                            <button type="button" onClick={() => toggleTask(task.id || idx)} aria-expanded={!collapsed} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                                <ChevronDown size={16} className={cn('shrink-0 text-gray-400 transition-transform', collapsed && '-rotate-90')} />
+                                <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', accent('pink').chip)}><TypeIcon size={18} /></span>
+                                <span className="min-w-0 flex-1">
+                                    <span className="block truncate text-[15px] font-bold">{task.title || `Deliverable ${idx + 1}`}</span>
+                                    <span className="flex flex-wrap items-center gap-x-2.5 text-[12px] text-gray-500">
+                                        <span>{platformOf(task.platform).label}</span>
+                                        {!isRequiredTask(task) && <span>Optional</span>}
+                                        {task.deadline && <span className={cn(due !== null && due < 0 && 'font-semibold text-rose-600 dark:text-rose-300')}>Due {formatDay(task.deadline)}</span>}
+                                        <span>{approved} of {rows.length} approved</span>
+                                        {pending.length > 0 && <span className="font-semibold text-amber-600 dark:text-amber-300">{pending.length} to review</span>}
+                                        {{ open: <Badge tone="green">Open for submissions</Badge>, upcoming: <Badge tone="gray">Not open yet</Badge>, closed: <Badge tone="gray">Closed</Badge> }[taskWindow(task)]}
+                                    </span>
+                                </span>
+                            </button>
                             <div className="flex items-center gap-2">
                                 {/* Deliverables open one at a time, and the team closes each when it's done. */}
                                 <Button
@@ -621,14 +662,16 @@ const CampaignManage = ({
                                     {{ open: <><Lock size={14} /> Close</>, upcoming: <><Unlock size={14} /> Open submissions</>, closed: <><Unlock size={14} /> Reopen</> }[taskWindow(task)]}
                                 </Button>
                                 {pending.length > 1 && (
-                                    <Button size="sm" variant="success" onClick={() => askApproveAll(task, pending.map(r => ({ entry: r.a, task })))} disabled={busy} className="h-10"><CheckCheck size={14} /> Approve all {pending.length}</Button>
+                                    <Button size="sm" variant="success" onClick={() => askApproveAll(task, pending.map(r => ({ entry: r.a, task })))} className="h-10"><CheckCheck size={14} /> Approve all {pending.length}</Button>
                                 )}
                                 <Button size="sm" variant="ghost" onClick={() => onCopyTaskLink(campaign.id, task.id)} aria-label="Copy task link" className="h-10 w-10 px-0"><Share2 size={14} /></Button>
                             </div>
                         </div>
-                        <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
-                            {shown.map(({ a, item }) => {
-                                const st = item?.status || 'not_started';
+                        {!collapsed && <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                            {shown.map((row) => {
+                                const { a, item } = row;
+                                const st = statusOf(row);
+                                const saving = Boolean(approving[approveKey(a, task)]);
                                 const sub = item?.sub;
                                 const link = sub?.contentLink && /^https?:\/\//i.test(sub.contentLink) ? sub.contentLink : sub?.proofUrl;
                                 const wa = waNumber(a.creator.phone);
@@ -646,6 +689,7 @@ const CampaignManage = ({
                                                     <Badge tone={st === 'approved' ? 'green' : st === 'submitted' ? 'amber' : st === 'rejected' ? 'rose' : 'gray'}>
                                                         {st === 'approved' ? 'Approved' : st === 'submitted' ? 'To review' : st === 'rejected' ? 'Changes asked' : 'Not started'}
                                                     </Badge>
+                                                    {saving && <span>Saving…</span>}
                                                     {sub?.submittedAt && <span>{formatDay(sub.submittedAt)}</span>}
                                                     {sub?.test && <Badge tone="violet">Test</Badge>}
                                                     {!a.orphan && !sub?.test && !isSelected(campaign, a.creator) && a.stage !== 'paid' && <Badge tone="gray">Not shortlisted</Badge>}
@@ -658,12 +702,12 @@ const CampaignManage = ({
                                             )}
                                             {st === 'submitted' && (
                                                 <>
-                                                    <Button size="sm" variant="success" onClick={() => approve(a, task)} disabled={busy} className="h-10 flex-1 sm:flex-none"><Check size={14} /> Approve</Button>
-                                                    <Button size="sm" variant="secondary" onClick={() => setChanges({ entry: a, task })} disabled={busy} className="h-10 flex-1 sm:flex-none"><X size={14} /> Changes</Button>
+                                                    <Button size="sm" variant="success" onClick={() => approve(a, task)} className="h-10 flex-1 sm:flex-none"><Check size={14} /> Approve</Button>
+                                                    <Button size="sm" variant="secondary" onClick={() => setChanges({ entry: a, task })} className="h-10 flex-1 sm:flex-none"><X size={14} /> Changes</Button>
                                                 </>
                                             )}
                                             {sub && (
-                                                <Button size="sm" variant="ghost" onClick={() => askRemoveSubmission(a, task)} disabled={busy} aria-label="Delete submission" title="Delete submission" className="h-10 w-10 px-0 text-gray-400 hover:text-rose-600 dark:hover:text-rose-300"><Trash2 size={15} /></Button>
+                                                <Button size="sm" variant="ghost" onClick={() => askRemoveSubmission(a, task)} disabled={busy || saving} aria-label="Delete submission" title="Delete submission" className="h-10 w-10 px-0 text-gray-400 hover:text-rose-600 dark:hover:text-rose-300"><Trash2 size={15} /></Button>
                                             )}
                                             {st === 'not_started' && wa && (
                                                 <Button
@@ -677,7 +721,7 @@ const CampaignManage = ({
                                     </li>
                                 );
                             })}
-                        </ul>
+                        </ul>}
                     </Card>
                 );
             })}
