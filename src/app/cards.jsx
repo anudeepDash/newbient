@@ -115,8 +115,8 @@ export function showCard(e, { from = null } = {}) {
             { label: t('Venue'), value: e.venue },
         ],
         cta: e.ticketed || e.guestlist ? { label: e.ticketed ? t('Get tickets') : t('Get on the list') } : false,
-        to: e.ticketed ? `${appPath('/tickets')}?event=${encodeURIComponent(e.id)}` : e.guestlist ? appPath(`/community/g/${e.id}`) : undefined,
-        // A guestlist opens as a sheet over Home.
-        linkState: !e.ticketed && e.guestlist && from ? { backgroundLocation: from } : undefined,
+        to: e.ticketed ? appPath(`/tickets/${encodeURIComponent(e.id)}`) : e.guestlist ? appPath(`/community/g/${e.id}`) : undefined,
+        // A show or guestlist opens as a sheet over Home.
+        linkState: (e.ticketed || e.guestlist) && from ? { backgroundLocation: from } : undefined,
     };
 }

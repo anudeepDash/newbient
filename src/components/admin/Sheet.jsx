@@ -35,7 +35,7 @@ const Sheet = ({ open, onClose, title, subtitle, header, children, footer, varia
     }, [open]);
 
     const asBottomSheet = isMobile;
-    const widths = { sm: 'sm:max-w-md', md: 'sm:max-w-xl', lg: 'sm:max-w-2xl', xl: 'sm:max-w-3xl' };
+    const widths = { sm: 'sm:max-w-md', md: 'sm:max-w-xl', lg: 'sm:max-w-2xl', xl: 'sm:max-w-3xl', full: 'sm:max-w-[min(1240px,100vw)]' };
 
     const panelMotion = asBottomSheet
         ? { initial: { y: '100%' }, animate: { y: 0 }, exit: { y: '100%' } }

@@ -286,6 +286,11 @@ export const PAGES = {
         title: 'Tickets',
         description: 'Tickets for the shows Newbi runs: pick your night, pay once and your pass lands in the app.',
     },
+    'ticket-event': {
+        site: 'app', path: '/tickets/:id', image: 'app',
+        title: 'Tickets',
+        description: 'Book tickets for this Newbi show: pick your tickets, pay by UPI and your pass lands in the app.',
+    },
     pass: {
         site: 'app', path: '/p/:id', noindex: true, image: 'app',
         title: 'Your pass',

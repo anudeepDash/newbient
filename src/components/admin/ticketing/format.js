@@ -40,6 +40,7 @@ export const safeFileName = (text) => String(text || 'event').replace(/[^\w-]+/g
 
 export const ORDER_STATUS = {
     pending: { label: 'Awaiting check', tone: 'amber' },
+    awaiting_payment: { label: 'Paying online', tone: 'gray' },
     approved: { label: 'Paid', tone: 'blue' },
     dispatched: { label: 'Ticket sent', tone: 'green' },
     confirmed: { label: 'Free', tone: 'green' },

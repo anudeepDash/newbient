@@ -337,6 +337,16 @@ const TicketingManagement = ({ mode = 'tickets' }) => {
     const activeTab = tabs.some(t => t.value === requestedTab) ? requestedTab : (isScanner ? 'checkin' : 'overview');
     const listFilter = params.get('filter') || undefined;
 
+    // ?edit=map (or any editor section) opens the sale editor there, once.
+    const editParam = params.get('edit');
+    React.useEffect(() => {
+        if (!editParam || !event?.isTicketed || event.source !== 'event' || isScanner) return;
+        setSaleEditor({ event, section: editParam });
+        const next = new URLSearchParams(params);
+        next.delete('edit');
+        setParams(next, { replace: true });
+    }, [editParam, event?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
     const setTab = (tab, filter) => {
         const next = new URLSearchParams(params);
         next.set('tab', tab);
@@ -366,8 +376,9 @@ const TicketingManagement = ({ mode = 'tickets' }) => {
         <TicketSaleEditor
             open={Boolean(saleEditor)}
             event={saleEditor?.event || null}
+            initialSection={saleEditor?.section}
             onClose={() => setSaleEditor(null)}
-            onSaved={(id, { created } = {}) => { if (created && id) openEvent(id, 'settings'); }}
+            onSaved={(id, { created } = {}) => { if (created && id) openEvent(id, 'overview'); }}
         />
     );
 
@@ -439,8 +450,8 @@ const TicketingManagement = ({ mode = 'tickets' }) => {
                 <div className="flex flex-wrap items-center gap-2">
                     <Button variant="ghost" onClick={closeEvent} className="-ml-2 h-10"><ArrowLeft size={15} /> All events</Button>
                     <div className="ml-auto flex items-center gap-2">
-                        {/* Sales made here are edited here; events made in Events are edited there. */}
-                        {!isScanner && event.createdIn === 'ticketing' && (
+                        {/* Every ticketed event's sale (details, ticket types, venue map, payments) is edited here. */}
+                        {!isScanner && event.isTicketed && event.source === 'event' && (
                             <Button variant="secondary" className="h-11" onClick={() => setSaleEditor({ event })}><Pencil size={14} /> Edit sale</Button>
                         )}
                         {!isScanner && (
@@ -474,7 +485,7 @@ const TicketingManagement = ({ mode = 'tickets' }) => {
             {activeTab === 'guestlist' && <GuestlistPanel key={`gl-${listFilter}`} event={event} entries={guestEntries} loading={guestLoading} error={guestError} initialFilter={listFilter} />}
             {activeTab === 'checkin' && <CheckInDesk eventId={event.id} orders={orders} guestEntries={guestEntries} />}
             {activeTab === 'coupons' && <CouponsPanel eventId={event.id} coupons={coupons || []} orders={orders} canSeeMoney={canSeeMoney} />}
-            {activeTab === 'settings' && <SettingsPanel event={event} onEditGuestlist={(gl) => setEditor({ guestlist: gl })} onDeleted={closeEvent} />}
+            {activeTab === 'settings' && <SettingsPanel event={event} onEditGuestlist={(gl) => setEditor({ guestlist: gl })} onDeleted={closeEvent} onEditSale={(section) => setSaleEditor({ event, section })} />}
             <ShareDraftsSheet
                 open={sharing}
                 onClose={() => setSharing(false)}
@@ -485,7 +496,7 @@ const TicketingManagement = ({ mode = 'tickets' }) => {
                     guestlist: hasGuestlist(event) && !event.isTicketed,
                     link: hasGuestlist(event) && !event.isTicketed
                         ? `${APP_ORIGIN}/community/g/${encodeURIComponent(event.guestlistId || event.id)}`
-                        : `${APP_ORIGIN}/tickets?event=${encodeURIComponent(event.id)}`,
+                        : `${APP_ORIGIN}/tickets/${encodeURIComponent(event.id)}`,
                 } : null}
             />
             {editorSheet}

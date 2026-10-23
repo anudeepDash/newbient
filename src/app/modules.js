@@ -33,6 +33,7 @@ const CreatorHome = lazy(() => import('./creator/home/CreatorHome'));
 const CreatorApplyPage = lazy(() => import('./creator/apply/CreatorApplyPage'));
 const CampaignPage = lazy(() => import('./creator/campaign/CampaignPage'));
 const TicketsPage = lazy(() => import('./tickets/TicketsPage'));
+const EventPage = lazy(() => import('./tickets/EventPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const GuestlistPage = lazy(() => import('./community/GuestlistPage'));
 const GiveawayPage = lazy(() => import('./community/GiveawayPage'));
@@ -90,7 +91,7 @@ export const APP_MODULES = [
         tab: { label: 'Tickets', icon: Ticket },
         capability: null,
         launched: true,
-        routes: [{ path: '', Component: TicketsPage }],
+        routes: [{ path: '', Component: TicketsPage }, { path: ':id', Component: EventPage }],
         onboarding: ['name'],
     },
     {

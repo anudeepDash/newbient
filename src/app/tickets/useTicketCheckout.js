@@ -1,28 +1,35 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { addDoc, collection, doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../../lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import { useStore as useLegacyStore } from '../../lib/store.js';
 import { callTicketApi } from '../../lib/ticketApi';
 import {
-    applyCoupon, BASE_TIER_ID, eventTiers, makeBookingRef, MAX_TICKETS_PER_TIER,
-    normalizeCouponCode, priceCart, purchasableCount,
+    applyCoupon, cartProblem, eventMaxPerOrder, eventSaleState, eventTiers, isValidUtr, linesAdmit,
+    normalizeCouponCode, normalizeUtr, priceCart, tierMaxPerOrder, tierMinPerOrder, tierSaleState,
 } from '../../lib/ticketing';
+import { uploadProof } from '../creator/api';
 
 /*
- * The paid ticket checkout for one event, without any UI: the cart, seats
- * left, the coupon, the server check before paying, and the order.
+ * The ticket checkout for one event, without any UI.
  *
- * Same rules and calls as the old EventTicketingModal:
- *   ticket-availability  seats left per tier and overall
- *   ticket-coupon        validate a code (falls back to the browser check)
- *   ticket-check         seats and coupon again, and the amount to pay
- *   ticket-order         saves the order in one transaction, emails the buyer
- * When the ticket API can't be reached, the order is saved from the browser
- * as before (source 'checkout-fallback'), so sales never stop.
+ *   tickets  pick ticket types (list or venue map), within each type's
+ *            limits, the order limit, seats left and sale windows
+ *   review   the order, a coupon, the buyer's details, the terms
+ *   pay      UPI: open a UPI app (or scan the QR) for the exact amount, then
+ *            enter the 12-digit UTR (and, optionally, a screenshot). The order
+ *            is then "pending" until the team checks the payment.
+ *            Razorpay (when the event has it on): pay in their checkout and
+ *            the order confirms itself.
+ *   done     the booking reference; the pass lives at /p/{ref}
  *
- * The draft (cart, coupon, step, UTR) is kept in sessionStorage per event, so
- * a phone that reloads the page after switching to the UPI app comes back to
- * the payment screen.
+ * Server calls (api/_lib/tickets.js): ticket-availability, ticket-coupon,
+ * ticket-check (seats, coupon and the amount, plus a booking reference that
+ * goes in the UPI note so the payment can be found), ticket-order,
+ * ticket-gateway-start / -confirm.
+ *
+ * The draft (cart, coupon, step, reference, UTR) is kept in sessionStorage per
+ * event, so a phone that reloads the page after switching to the UPI app
+ * comes back to the payment screen.
  */
 
 const DRAFT_KEY = (id) => `newbi:tickets:${id}`;
@@ -50,28 +57,50 @@ const loadPaymentInfo = () => {
     return paymentInfo;
 };
 
-export const upiLink = (upiId, amount) => `upi://pay?pa=${encodeURIComponent(upiId)}&pn=NewBi&am=${amount}`;
+/* Razorpay's checkout script, loaded only when someone picks card payment. */
+let razorpayScript = null;
+const loadRazorpay = () => {
+    if (window.Razorpay) return Promise.resolve(window.Razorpay);
+    if (!razorpayScript) {
+        razorpayScript = new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            s.async = true;
+            s.onload = () => (window.Razorpay ? resolve(window.Razorpay) : reject(new Error('no Razorpay')));
+            s.onerror = () => { razorpayScript = null; reject(new Error('script failed')); };
+            document.head.appendChild(s);
+        });
+    }
+    return razorpayScript;
+};
+
+const UNREACHABLE = 'We couldn’t reach the ticket service. Check your connection and try again.';
 
 export function useTicketCheckout(event, { open }) {
     const eventId = event?.id;
-    const hasCategories = Array.isArray(event?.ticketCategories) && event.ticketCategories.length > 0;
-    const hasLayout = Boolean(event?.venueLayout) && hasCategories;
     const tiers = useMemo(() => eventTiers(event), [event]);
+    const visibleTiers = useMemo(() => tiers.filter(t => !t.hidden), [tiers]);
+    const hasCategories = Array.isArray(event?.ticketCategories) && event.ticketCategories.length > 0;
 
-    const [step, setStep] = useState('pick'); // pick | pay | done
+    const [step, setStep] = useState('tickets');
     const [cart, setCart] = useState({});
-    const [baseCount, setBaseCount] = useState(1);
     const [availability, setAvailability] = useState(null);
     const [coupon, setCoupon] = useState(null);
     const [couponInput, setCouponInput] = useState('');
     const [couponBusy, setCouponBusy] = useState(false);
     const [couponError, setCouponError] = useState('');
     const [amountDue, setAmountDue] = useState(0);
-    const [utr, setUtr] = useState('');
+    const [bookingRef, setBookingRef] = useState('');
+    const [utr, setUtrRaw] = useState('');
+    const [proof, setProof] = useState('');
+    const [proofBusy, setProofBusy] = useState(false);
+    const [launched, setLaunched] = useState(false);
+    const [agreed, setAgreed] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
     const [result, setResult] = useState(null);
     const [payment, setPayment] = useState({});
+    const [now, setNow] = useState(() => new Date());
 
     // A fresh checkout each time the sheet opens on an event, picking up a saved draft.
     const initFor = useRef(null);
@@ -80,14 +109,19 @@ export function useTicketCheckout(event, { open }) {
         if (!eventId || initFor.current === eventId) return;
         initFor.current = eventId;
         const draft = readDraft(eventId);
+        // Older drafts said 'pick'.
+        const draftStep = draft?.step === 'pick' ? 'tickets' : draft?.step;
         setCart(draft?.cart || {});
-        setBaseCount(draft?.baseCount || 1);
         setCoupon(draft?.coupon || null);
         setCouponInput(draft?.coupon?.code || '');
         setCouponError('');
         setAmountDue(draft?.amountDue || 0);
-        setUtr(draft?.utr || '');
-        setStep(draft?.step === 'pay' && draft?.amountDue > 0 ? 'pay' : 'pick');
+        setBookingRef(draft?.bookingRef || '');
+        setUtrRaw(draft?.utr || '');
+        setProof(draft?.proof || '');
+        setLaunched(Boolean(draft?.launched));
+        setAgreed(Boolean(draft?.agreed));
+        setStep(draftStep === 'pay' && draft?.amountDue > 0 ? 'pay' : draftStep === 'review' ? 'review' : 'tickets');
         setResult(null);
         setError('');
         setBusy(false);
@@ -96,8 +130,8 @@ export function useTicketCheckout(event, { open }) {
     useEffect(() => {
         if (!open || !eventId || initFor.current !== eventId) return;
         if (step === 'done') { writeDraft(eventId, null); return; }
-        writeDraft(eventId, { cart, baseCount, coupon, step, amountDue, utr });
-    }, [open, eventId, cart, baseCount, coupon, step, amountDue, utr]);
+        writeDraft(eventId, { cart, coupon, step, amountDue, bookingRef, utr, proof, launched, agreed });
+    }, [open, eventId, cart, coupon, step, amountDue, bookingRef, utr, proof, launched, agreed]);
 
     const refreshAvailability = useCallback(async () => {
         if (!eventId || !event?.isTicketed) return null;
@@ -107,13 +141,19 @@ export function useTicketCheckout(event, { open }) {
     }, [eventId, event?.isTicketed]);
 
     useEffect(() => {
-        if (!open || !eventId) return;
+        if (!open || !eventId) return undefined;
         setAvailability(null);
         refreshAvailability();
         loadPaymentInfo().then(setPayment);
+        // Sale windows open and close while the page is open.
+        const timer = setInterval(() => setNow(new Date()), 30000);
+        return () => clearInterval(timer);
     }, [open, eventId, refreshAvailability]);
 
     // ── the cart ─────────────────────────────────────────────────────────────
+
+    const sale = event ? eventSaleState(event, now) : { state: 'closed' };
+    const soldOut = Boolean(availability?.soldOut);
 
     /* Seats left in a tier (null = no limit, or not known yet). */
     const tierLeft = useCallback((tierId) => {
@@ -122,55 +162,74 @@ export function useTicketCheckout(event, { open }) {
         return values.length ? Math.min(...values) : null;
     }, [availability]);
 
-    const baseMax = availability
-        ? Math.max(1, Math.min(MAX_TICKETS_PER_TIER, purchasableCount(availability, BASE_TIER_ID, 0)))
-        : MAX_TICKETS_PER_TIER;
-    const soldOut = Boolean(availability?.soldOut);
+    /* One tier's state for the buyer: on_sale, upcoming, closed, sold_out, hidden. */
+    const tierState = useCallback((tier) => tierSaleState(tier, { left: tierLeft(tier.id), now }), [tierLeft, now]);
 
-    const pricingCart = hasCategories ? cart : { [BASE_TIER_ID]: baseCount };
-    const { lines, subtotal } = event ? priceCart(event, pricingCart) : { lines: [], subtotal: 0 };
+    const { lines, subtotal } = event ? priceCart(event, cart) : { lines: [], subtotal: 0 };
     const { discount, total } = applyCoupon(subtotal, coupon);
     const count = lines.reduce((a, l) => a + l.count, 0);
+    const people = linesAdmit(lines);
+    const orderMax = event ? eventMaxPerOrder(event) : 10;
 
-    /* Can one more of this tier go in the cart? */
-    const canAdd = (tierId) => {
-        if (!availability) return (cart[tierId] || 0) < MAX_TICKETS_PER_TIER;
-        // With a venue map a booking is for one ticket type, so other tiers don't count.
-        const elsewhere = hasLayout ? 0 : Object.entries(cart).reduce((a, [id, n]) => a + (id === tierId ? 0 : n), 0);
-        const here = cart[tierId] || 0;
-        const total = availability.total?.remaining;
-        const allowed = Math.min(
-            purchasableCount(availability, tierId, here),
-            total === null || total === undefined ? Infinity : total - elsewhere - here
-        );
-        return allowed > 0;
+    /* The most of this tier the cart can hold right now. */
+    const tierCap = (tier) => {
+        const elsewhere = Object.entries(cart).reduce((a, [id, n]) => a + (id === tier.id ? 0 : n), 0);
+        const left = tierLeft(tier.id);
+        const totalLeft = availability?.total?.remaining;
+        return Math.max(0, Math.min(
+            tierMaxPerOrder(event, tier),
+            orderMax - elsewhere,
+            left === null ? Infinity : left,
+            totalLeft === null || totalLeft === undefined ? Infinity : totalLeft - elsewhere,
+        ));
     };
 
     const changeTier = (tierId, delta) => {
         setError('');
-        if (delta > 0 && !canAdd(tierId)) {
-            setError(tierLeft(tierId) === 0 ? 'That ticket type is sold out.' : 'You can’t add more of this ticket type.');
+        const tier = tiers.find(t => t.id === tierId);
+        if (!tier) return;
+        const st = tierState(tier).state;
+        const here = cart[tierId] || 0;
+        if (delta > 0) {
+            if (st !== 'on_sale') { setError(st === 'sold_out' ? `${tier.name} is sold out.` : `${tier.name} isn’t on sale right now.`); return; }
+            const min = tierMinPerOrder(tier);
+            const next = here === 0 ? min : here + delta;
+            const cap = tierCap(tier);
+            if (next > cap) {
+                setError(cap < min && here === 0
+                    ? (tierLeft(tier.id) === 0 ? `${tier.name} is sold out.` : `Not enough ${tier.name} tickets left for a set of ${min}.`)
+                    : `You can book up to ${cap} ${tier.name} ${cap === 1 ? 'ticket' : 'tickets'} in this order.`);
+                return;
+            }
+            setCart(prev => ({ ...prev, [tierId]: next }));
             return;
         }
         setCart(prev => {
-            // On a venue map, picking a new zone replaces the previous one.
-            const next = hasLayout && delta > 0 && !prev[tierId] ? {} : { ...prev };
-            const n = Math.max(0, (next[tierId] || 0) + delta);
-            if (n === 0) delete next[tierId];
+            const next = { ...prev };
+            const n = (next[tierId] || 0) + delta;
+            if (n < tierMinPerOrder(tier)) delete next[tierId];
             else next[tierId] = n;
             return next;
         });
     };
 
-    const changeBase = (delta) => {
-        setError('');
-        setBaseCount(n => Math.max(1, Math.min(baseMax, n + delta)));
-    };
+    const canAdd = (tier) => tierState(tier).state === 'on_sale' && (cart[tier.id] || 0) < tierCap(tier)
+        && ((cart[tier.id] || 0) > 0 || tierCap(tier) >= tierMinPerOrder(tier));
 
-    // Keep the plain count inside what's left once availability arrives.
+    // Drop anything from a restored cart that can't be bought any more.
     useEffect(() => {
-        if (!hasCategories && baseCount > baseMax) setBaseCount(baseMax);
-    }, [hasCategories, baseCount, baseMax]);
+        if (!availability || !event) return;
+        setCart(prev => {
+            const next = {};
+            let changed = false;
+            Object.entries(prev).forEach(([id, n]) => {
+                const tier = tiers.find(t => t.id === id);
+                if (tier && tierSaleState(tier, { left: tierLeft(id), now }).state === 'on_sale') next[id] = n;
+                else changed = true;
+            });
+            return changed ? next : prev;
+        });
+    }, [availability]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ── coupon ───────────────────────────────────────────────────────────────
 
@@ -181,12 +240,9 @@ export function useTicketCheckout(event, { open }) {
         setCouponError('');
         try {
             const res = await callTicketApi('ticket-coupon', { eventId, code });
-            let found;
-            if (res.ok) found = res.data.coupon;
-            else if (res.unavailable) found = await useLegacyStore.getState().validateCoupon(code, eventId);
-            else throw new Error(res.error);
-            setCoupon(found);
-            setCouponInput(found.code || code);
+            if (!res.ok) throw new Error(res.unavailable ? UNREACHABLE : res.error);
+            setCoupon(res.data.coupon);
+            setCouponInput(res.data.coupon.code || code);
         } catch (err) {
             setCoupon(null);
             setCouponError(err?.message || 'Couldn’t apply that coupon. Check the code and try again.');
@@ -201,29 +257,41 @@ export function useTicketCheckout(event, { open }) {
         setCouponError('');
     };
 
-    // ── check, pay, order ────────────────────────────────────────────────────
+    // ── steps ────────────────────────────────────────────────────────────────
 
-    const itemsForApi = () => (hasCategories
-        ? Object.entries(cart).map(([id, n]) => ({ id, count: n }))
-        : [{ id: BASE_TIER_ID, count: baseCount }]);
+    const itemsForApi = () => Object.entries(cart).map(([id, n]) => ({ id, count: n }));
 
-    /* A refusal from the server: back to picking, with the reason. */
+    /* A refusal from the server: back to the step that can fix it, with the reason. */
     const refused = (res) => {
         setError(res.error || 'Those tickets aren’t available any more.');
-        if (res.code === 'COUPON_INVALID') { setCoupon(null); setCouponError(res.error || ''); }
-        if (res.code === 'SOLD_OUT') refreshAvailability();
-        setStep('pick');
+        if (res.code === 'COUPON_INVALID') { setCoupon(null); setCouponError(res.error || ''); setStep('review'); return; }
+        if (res.code === 'SOLD_OUT' || res.code === 'NOT_ON_SALE' || res.code === 'VALIDATION') { refreshAvailability(); setStep('tickets'); }
     };
 
-    /* Re-checks seats and the coupon on the server, then shows the payment screen. */
-    const goToPayment = async () => {
+    const goToReview = () => {
+        setError('');
+        if (!count) { setError('Pick at least one ticket.'); return false; }
+        const problem = cartProblem(event, cart, now);
+        if (problem) { setError(problem); return false; }
+        setStep('review');
+        return true;
+    };
+
+    /* Re-checks seats and the coupon on the server; free orders are placed, paid ones go to payment. */
+    const goToPayment = async (customer) => {
         setBusy(true);
         setError('');
         try {
-            const res = await callTicketApi('ticket-check', { eventId, items: itemsForApi(), couponCode: coupon?.code || null });
-            if (!res.ok && !res.unavailable) { refused(res); return false; }
-            if (res.ok) setAvailability(res.data.availability);
-            setAmountDue(res.ok ? res.data.total : total);
+            const res = await callTicketApi('ticket-check', { eventId, items: itemsForApi(), couponCode: coupon?.code || null, bookingRef: bookingRef || null });
+            if (!res.ok) {
+                if (res.unavailable) setError(UNREACHABLE);
+                else refused(res);
+                return false;
+            }
+            setAvailability(res.data.availability);
+            setBookingRef(res.data.bookingRef || '');
+            setAmountDue(res.data.total);
+            if (res.data.total <= 0) return placeOrder(customer, { free: true, ref: res.data.bookingRef });
             setStep('pay');
             return true;
         } finally {
@@ -231,11 +299,29 @@ export function useTicketCheckout(event, { open }) {
         }
     };
 
+    const finish = (done, customer, paidAmount) => {
+        setResult({
+            bookingRef: done.bookingRef,
+            status: done.status,
+            total: done.totalAmount ?? paidAmount,
+            count,
+            people,
+            lines,
+            email: customer.email,
+            emailed: done.emailed,
+            flagged: Boolean(done.overCapacity || done.couponRejected),
+            utr: done.status === 'pending' ? normalizeUtr(utr) : '',
+        });
+        setStep('done');
+    };
+
     /* Places the order. customer: { name, email, phone } from the profile. */
-    const placeOrder = async (customer) => {
-        const paid = total > 0;
-        const ref = utr.trim();
-        if (paid && !ref) { setError('Enter the UTR (transaction reference) from your UPI app.'); return false; }
+    const placeOrder = async (customer, { free = false, ref = null } = {}) => {
+        const clean = normalizeUtr(utr);
+        if (!free) {
+            if (!clean) { setError('Enter the 12-digit UTR from your UPI app.'); return false; }
+            if (!isValidUtr(clean)) { setError('A UTR is 12 digits. Copy it from the payment in your UPI app.'); return false; }
+        }
         setBusy(true);
         setError('');
         try {
@@ -243,92 +329,111 @@ export function useTicketCheckout(event, { open }) {
                 eventId,
                 items: itemsForApi(),
                 couponCode: coupon?.code || null,
-                paymentRef: paid ? ref : '',
+                paymentRef: free ? '' : clean,
+                paymentProof: free ? '' : proof,
+                bookingRef: ref || bookingRef || null,
                 customer,
-            });
-
-            let done;
-            if (res.ok) {
-                done = { ...res.data };
-            } else if (!res.unavailable) {
-                if (res.code === 'SOLD_OUT' || res.code === 'COUPON_INVALID') refused(res);
+            }, { timeoutMs: 25000 });
+            if (!res.ok) {
+                if (res.unavailable) setError(free ? UNREACHABLE : 'We couldn’t reach the ticket service. Your UTR is saved here: try again in a moment.');
+                else if (['SOLD_OUT', 'COUPON_INVALID', 'NOT_ON_SALE'].includes(res.code)) refused(res);
                 else setError(res.error || 'We couldn’t complete your booking.');
                 return false;
-            } else {
-                done = await fallbackOrder({ event, customer, lines, coupon, paid, ref, amount: amountDue || total });
-                if (done.error) { setError(done.error); return false; }
             }
-
-            setResult({
-                bookingRef: done.bookingRef,
-                status: done.status || (paid ? 'pending' : 'confirmed'),
-                total: done.totalAmount ?? (paid ? amountDue || total : 0),
-                count,
-                tier: lines.map(l => l.name).join(', '),
-                email: customer.email,
-                emailed: done.emailed,
-                flagged: Boolean(done.overCapacity || done.couponRejected),
-            });
-            setStep('done');
+            finish(res.data, customer, free ? 0 : amountDue);
             return true;
         } catch (err) {
             console.warn('[app/tickets] order failed:', err);
-            setError('We couldn’t complete your booking. If you’ve already paid, don’t worry: contact us with your UTR.');
+            setError('We couldn’t complete your booking. If you’ve already paid, don’t worry: your UTR is saved here, try again.');
             return false;
         } finally {
             setBusy(false);
         }
     };
 
-    const upiId = event?.upiId || event?.paymentDetails?.upiId || payment?.upiId || 'newbi@upi';
-    const qrCodeUrl = event?.qrCodeUrl || payment?.qrCodeUrl || null;
+    /* Card / netbanking / UPI through Razorpay. */
+    const payOnline = async (customer) => {
+        setBusy(true);
+        setError('');
+        try {
+            const [Razorpay, res] = await Promise.all([
+                loadRazorpay().catch(() => null),
+                callTicketApi('ticket-gateway-start', { eventId, items: itemsForApi(), couponCode: coupon?.code || null, bookingRef: bookingRef || null, customer }),
+            ]);
+            if (!res.ok) {
+                if (res.unavailable) setError(UNREACHABLE);
+                else if (['SOLD_OUT', 'COUPON_INVALID', 'NOT_ON_SALE'].includes(res.code)) refused(res);
+                else setError(res.error || 'Card payment isn’t working right now. Please pay by UPI.');
+                return false;
+            }
+            if (!Razorpay) { setError('The payment window didn’t load. Check your connection, or pay by UPI.'); return false; }
+            const start = res.data;
+            setBookingRef(start.bookingRef);
+            return await new Promise((resolve) => {
+                const rzp = new Razorpay({
+                    key: start.keyId,
+                    order_id: start.gatewayOrderId,
+                    amount: start.amount,
+                    currency: start.currency,
+                    name: start.name,
+                    description: start.description,
+                    prefill: { name: customer.name, email: customer.email, contact: customer.phone },
+                    notes: { bookingRef: start.bookingRef },
+                    theme: { color: '#16a34a' },
+                    handler: async (resp) => {
+                        setBusy(true);
+                        const conf = await callTicketApi('ticket-gateway-confirm', { orderId: start.orderId, ...resp }, { timeoutMs: 25000 });
+                        setBusy(false);
+                        if (conf.ok) { finish({ ...conf.data, totalAmount: start.amount / 100 }, customer, start.amount / 100); resolve(true); }
+                        else { setError(conf.error || `Payment received, but we couldn’t confirm it yet. Keep your booking reference ${start.bookingRef}; your ticket will follow.`); resolve(false); }
+                    },
+                    modal: { ondismiss: () => { setBusy(false); resolve(false); } },
+                });
+                rzp.on('payment.failed', (e) => setError(e?.error?.description || 'The payment didn’t go through. Try again or pay by UPI.'));
+                setBusy(false);
+                rzp.open();
+            });
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const attachProof = async (file) => {
+        if (!file) return;
+        if (!file.type?.startsWith('image/')) { setError('Pick a screenshot (an image).'); return; }
+        if (file.size > 8 * 1024 * 1024) { setError('That image is too big. Pick one under 8 MB.'); return; }
+        setProofBusy(true);
+        setError('');
+        try { setProof(await uploadProof(file)); } catch { setError('The screenshot didn’t upload. You can still confirm with the UTR alone.'); }
+        finally { setProofBusy(false); }
+    };
+
+    const setUtr = (v) => { setUtrRaw(String(v || '').replace(/[^\dA-Za-z:\s-]/g, '').slice(0, 40)); setError(''); };
+
+    const upiId = event?.upiId || event?.paymentDetails?.upiId || payment?.upiId || '';
+    const payments = {
+        upi: availability?.payments ? availability.payments.upi : event?.payments?.upi !== false,
+        gateway: Boolean(availability?.payments?.gateway),
+    };
 
     return {
         step, setStep,
-        tiers, hasCategories, hasLayout,
-        cart, baseCount, baseMax, changeTier, changeBase, canAdd, tierLeft,
-        availability, soldOut,
-        lines, subtotal, discount, total, count,
+        tiers, visibleTiers, hasCategories,
+        cart, changeTier, canAdd, tierLeft, tierState, tierCap,
+        availability, soldOut, sale, now,
+        lines, subtotal, discount, total, count, people, orderMax,
         coupon, couponInput, setCouponInput, couponBusy, couponError, applyCode, removeCoupon,
-        amountDue, utr, setUtr,
-        upiId, qrCodeUrl, gatewayUrl: event?.gatewayUrl || null,
+        amountDue, bookingRef, utr, setUtr, utrValid: isValidUtr(utr),
+        proof, setProof, proofBusy, attachProof,
+        launched, setLaunched, agreed, setAgreed,
+        upi: {
+            upiId,
+            payeeName: event?.upiName || payment?.upiName || payment?.accountName || 'Newbi Entertainment',
+            merchant: event?.upiMerchant ? { code: event.upiMerchantCode || '' } : null,
+            qrCodeUrl: event?.qrCodeUrl || payment?.qrCodeUrl || null,
+        },
+        payments,
         busy, error, setError,
-        goToPayment, placeOrder, result,
+        goToReview, goToPayment, placeOrder, payOnline, result,
     };
-}
-
-/* The original in-browser order, used only when the ticket API can't be reached. */
-async function fallbackOrder({ event, customer, lines, coupon, paid, ref, amount }) {
-    if (!db) return { error: 'We couldn’t reach the ticket service. Please try again.' };
-    if (paid) {
-        const { query, where, getDocs } = await import('firebase/firestore');
-        const snap = await getDocs(query(collection(db, 'ticket_orders'), where('paymentRef', '==', ref)));
-        if (!snap.empty) return { error: 'This payment reference has already been used. Check your UTR number.' };
-    }
-    const bookingRef = makeBookingRef();
-    const uid = auth?.currentUser?.uid || null;
-    await addDoc(collection(db, 'ticket_orders'), {
-        eventId: event.id,
-        userId: uid,
-        customerName: customer.name,
-        customerEmail: customer.email,
-        customerPhone: customer.phone,
-        items: lines.map(l => ({ id: l.id, name: l.name, count: l.count, price: l.price })),
-        totalAmount: paid ? amount : 0,
-        paymentRef: paid ? ref : 'FREE',
-        bookingRef,
-        appliedCoupon: coupon ? { id: coupon.id, code: coupon.code, discountValue: coupon.discountValue, discountType: coupon.discountType } : null,
-        source: 'checkout-fallback',
-        createdAt: new Date().toISOString(),
-        status: paid ? 'pending' : 'confirmed',
-    });
-    if (coupon?.id) {
-        try {
-            const { increment, updateDoc } = await import('firebase/firestore');
-            await updateDoc(doc(db, 'coupons', coupon.id), { usedCount: increment(1) });
-        } catch (err) {
-            console.warn('[app/tickets] coupon count not updated:', err);
-        }
-    }
-    return { bookingRef, status: paid ? 'pending' : 'confirmed', totalAmount: paid ? amount : 0 };
 }

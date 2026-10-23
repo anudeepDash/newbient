@@ -10,6 +10,11 @@ import Undo2 from 'lucide-react/dist/esm/icons/undo-2';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 import Inbox from 'lucide-react/dist/esm/icons/inbox';
 import Eye from 'lucide-react/dist/esm/icons/eye';
+import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
+import ImageIcon from 'lucide-react/dist/esm/icons/image';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import { callTicketApi } from '../../../lib/ticketApi';
+import StatementMatchSheet from './StatementMatchSheet';
 import { useStore } from '../../../lib/store';
 import { cn } from '../../../lib/utils';
 import { orderItems, orderTicketCount, isOrderCheckedIn, SOLD_STATUSES, computeAvailability } from '../../../lib/ticketing';
@@ -19,10 +24,14 @@ import { accent } from '../theme';
 import { Panel, ContactLinks, CopyChip, SelectBox, useConfirm, useBusy } from './kit';
 import { inr, formatDateTime, ORDER_STATUS, personName } from './format';
 import WhatsAppSendSheet from '../whatsapp/WhatsAppSendSheet';
+import { APP_ORIGIN } from '../../../app/host';
 
 /*
- * Ticket orders for one event: verify payments (match the UTR with the bank),
- * send tickets, cancel. Check-in lives on the Check-in tab.
+ * Ticket orders for one event: verify payments (match the UTR with the bank,
+ * one by one or a whole statement at once), send tickets, cancel. "Verify &
+ * send" does both in one tap. Orders paid through Razorpay confirm themselves;
+ * ones still "paying online" can be checked with Razorpay. Check-in lives on
+ * the Check-in tab.
  */
 
 const FILTERS = [
@@ -30,6 +39,7 @@ const FILTERS = [
     { value: 'approved', label: 'Paid, not sent' },
     { value: 'sold', label: 'Sold' },
     { value: 'flagged', label: 'Needs a look' },
+    { value: 'online', label: 'Paying online' },
     { value: 'rejected', label: 'Rejected' },
     { value: 'all', label: 'All' },
 ];
@@ -42,6 +52,7 @@ const matchesFilter = (o, filter) => {
         case 'checkedin': return SOLD_STATUSES.includes(o.status) && isOrderCheckedIn(o);
         case 'flagged': return o.status !== 'rejected' && Boolean(o.overCapacity || o.couponRejected);
         case 'rejected': return o.status === 'rejected';
+        case 'online': return o.status === 'awaiting_payment';
         default: return true;
     }
 };
@@ -54,12 +65,15 @@ const sortValue = (o) => {
 const statusOf = (o) => ORDER_STATUS[o.status] || { label: o.status || 'Unknown', tone: 'gray' };
 const isPaid = (o) => Number(o.totalAmount) > 0;
 const hasUtr = (o) => o.paymentRef && o.paymentRef !== 'FREE';
+const isOnline = (o) => o.paymentMethod === 'gateway' || Boolean(o.gatewayOrderId);
 
 const OrderFlags = ({ o }) => (
     <>
         {SOLD_STATUSES.includes(o.status) && isOrderCheckedIn(o) && o.status !== 'attended' && <Badge tone="green"><UserCheck size={10} /> In</Badge>}
         {o.overCapacity && o.status !== 'rejected' && <Badge tone="red"><AlertTriangle size={10} /> Over capacity</Badge>}
         {o.couponRejected && o.status !== 'rejected' && <Badge tone="amber">Coupon {o.requestedCoupon} refused</Badge>}
+        {isOnline(o) && <Badge tone="blue">Razorpay</Badge>}
+        {o.paymentProof && o.status === 'pending' && <Badge tone="violet"><ImageIcon size={10} /> Screenshot</Badge>}
     </>
 );
 
@@ -95,6 +109,7 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
     const [waPeople, setWaPeople] = useState(null); // [{ name, phone }] for Send on WhatsApp
     const [openId, setOpenId] = useState(null);
     const [bulk, setBulk] = useState(null); // { label, done, total }
+    const [matching, setMatching] = useState(false);
     const [busy, run] = useBusy();
     const [ask, confirmSheet] = useConfirm();
 
@@ -145,6 +160,20 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
         doIt();
     };
 
+    // Verify the payment and send the ticket in one go (the usual case).
+    const verifyAndSend = (o) => run(o.id, 'approve', async () => {
+        await updateTicketOrderStatus(o.id, 'approved');
+        const res = await updateTicketOrderStatus(o.id, 'dispatched');
+        if (res?.emailed === false) addToast(`Verified, but the email to ${o.customerEmail || personName(o)} didn't go out. The pass is in their app.`, 'warning', { title: 'Ticket email didn\'t go out' });
+        else addToast(`Ticket sent to ${o.customerEmail || personName(o)}.`, 'success', { title: `Payment verified for ${personName(o, 'the buyer')}` });
+    });
+
+    const checkGateway = (o) => run(o.id, 'gateway', async () => {
+        const res = await callTicketApi('ticket-gateway-confirm', { orderId: o.id, sync: true });
+        if (!res.ok) throw new Error(res.error || "Couldn't reach Razorpay.");
+        addToast(res.data.paid ? 'Razorpay has the payment. The ticket was sent.' : 'Razorpay has no payment for this order yet.', res.data.paid ? 'success' : 'info');
+    });
+
     const reject = (o) => ask({
         title: o.status === 'pending' ? 'Reject this order?' : 'Cancel this order?',
         body: `${personName(o)}'s ${orderTicketCount(o) === 1 ? 'seat is' : 'seats are'} released${o.appliedCoupon ? ' and the coupon use is given back' : ''}.${isPaid(o) && o.status !== 'pending' ? ' Refund them yourself if they paid.' : ''}`,
@@ -190,11 +219,15 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
         ask({
             title: `Verify ${list.length} ${list.length === 1 ? 'payment' : 'payments'}?`,
             body: `Only do this after matching every UTR with your bank${canSeeMoney ? ` (${inr(total)} in total)` : ''}.`,
-            confirmLabel: 'Verify all',
+            confirmLabel: 'Verify & send all',
             action: async () => {
-                const failed = await runBulk('Verifying', list, (o) => updateTicketOrderStatus(o.id, 'approved'));
+                const failed = await runBulk('Verifying and sending', list, async (o) => {
+                    await updateTicketOrderStatus(o.id, 'approved');
+                    const res = await updateTicketOrderStatus(o.id, 'dispatched');
+                    return res?.emailed !== false;
+                });
                 addToast(
-                    failed ? `${failed} couldn't be verified. Try those again.` : `${list.length} ${list.length === 1 ? 'payment' : 'payments'} verified.`,
+                    failed ? `${failed} were verified but their email didn't go out, or failed. Check those.` : `${list.length} ${list.length === 1 ? 'payment' : 'payments'} verified and tickets sent.`,
                     failed ? 'warning' : 'success',
                     failed ? { title: `Verified ${list.length - failed} of ${list.length}` } : undefined,
                 );
@@ -237,6 +270,20 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
         },
     });
 
+    // From the statement sheet: verify and send each matched order.
+    const verifyMatched = async (list) => {
+        const failed = await runBulk('Verifying and sending', list, async (o) => {
+            await updateTicketOrderStatus(o.id, 'approved');
+            const res = await updateTicketOrderStatus(o.id, 'dispatched');
+            return res?.emailed !== false;
+        });
+        addToast(
+            failed ? `${failed} had a problem (often the email). Check them in the list.` : `${list.length} ${list.length === 1 ? 'payment' : 'payments'} verified and tickets sent.`,
+            failed ? 'warning' : 'success',
+            { title: 'Statement matched' },
+        );
+    };
+
     const readyToSend = orders.filter(o => o.status === 'approved');
     const selPending = selectedOrders.filter(o => o.status === 'pending').length;
     const selApproved = selectedOrders.filter(o => o.status === 'approved');
@@ -248,13 +295,18 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
             <>
                 {o.status === 'pending' && (
                     <>
-                        <Button variant="success" onClick={(e) => { e.stopPropagation(); verify(o); }} disabled={Boolean(working)} className={cn('h-11', inSheet ? 'flex-[2]' : 'flex-1 md:flex-none')}>
-                            <Check size={15} /> {working === 'approve' ? 'Verifying…' : 'Verify payment'}
+                        <Button variant="success" onClick={(e) => { e.stopPropagation(); verifyAndSend(o); }} disabled={Boolean(working)} className={cn('h-11', inSheet ? 'flex-[2]' : 'flex-1 md:flex-none')}>
+                            <Check size={15} /> {working === 'approve' ? 'Verifying…' : 'Verify & send'}
                         </Button>
                         <Button variant="secondary" onClick={(e) => { e.stopPropagation(); reject(o); }} disabled={Boolean(working)} className={cn('h-11 text-red-600 dark:text-red-400', inSheet && 'flex-1')} aria-label="Reject order">
                             <X size={15} /><span className={inSheet ? '' : 'md:hidden'}>Reject</span>
                         </Button>
                     </>
+                )}
+                {o.status === 'awaiting_payment' && isOnline(o) && (
+                    <Button variant="secondary" onClick={(e) => { e.stopPropagation(); checkGateway(o); }} disabled={Boolean(working)} className={cn('h-11', inSheet ? 'flex-1' : 'flex-1 md:flex-none')}>
+                        <RefreshCw size={15} /> {working === 'gateway' ? 'Checking…' : 'Check Razorpay'}
+                    </Button>
                 )}
                 {o.status === 'approved' && (
                     <Button variant="accent" onClick={(e) => { e.stopPropagation(); send(o); }} disabled={Boolean(working)} className={cn('h-11', inSheet ? 'flex-1' : 'flex-1 md:flex-none')}>
@@ -270,8 +322,9 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
             <Button variant="ghost" onClick={(e) => { e.stopPropagation(); toggle(e); }} aria-label="More actions" className="h-11 w-11 px-0"><MoreHorizontal size={17} /></Button>
         )}>
             <MenuItem icon={Eye} onClick={() => setOpenId(o.id)}>Details</MenuItem>
+            {o.status === 'pending' && <MenuItem icon={Check} onClick={() => verify(o)} hint="Send the ticket later">Verify without sending</MenuItem>}
             {o.bookingRef && (
-                <MenuItem as="a" href={`/ticket/${encodeURIComponent(o.bookingRef)}`} target="_blank" rel="noopener noreferrer" icon={ExternalLink}>Open ticket page</MenuItem>
+                <MenuItem as="a" href={`${APP_ORIGIN}/p/${encodeURIComponent(o.bookingRef)}`} target="_blank" rel="noopener noreferrer" icon={ExternalLink}>Open ticket page</MenuItem>
             )}
             {['dispatched', 'confirmed'].includes(o.status) && <MenuItem icon={Send} onClick={() => send(o)} hint="Emails the ticket again">Resend ticket email</MenuItem>}
             {o.status === 'rejected' && <MenuItem icon={Undo2} onClick={() => verify(o)} hint="If it was rejected by mistake">Verify payment after all</MenuItem>}
@@ -285,8 +338,13 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
         <div className="space-y-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
                 <SearchInput value={search} onChange={setSearch} placeholder="Name, phone, email, UTR or booking ref" className="lg:w-96" />
+                {canReview && counts.pending > 0 && (
+                    <Button variant="secondary" className="h-11 lg:ml-auto" onClick={() => setMatching(true)} disabled={Boolean(bulk)}>
+                        <FileSpreadsheet size={14} /> Match bank statement
+                    </Button>
+                )}
                 {canReview && readyToSend.length > 0 && (
-                    <Button variant="accent" className="h-11 lg:ml-auto" onClick={() => sendTo(readyToSend)} disabled={Boolean(bulk)}>
+                    <Button variant="accent" className={cn('h-11', !counts.pending && 'lg:ml-auto')} onClick={() => sendTo(readyToSend)} disabled={Boolean(bulk)}>
                         <Send size={14} /> Send tickets to paid buyers ({readyToSend.length})
                     </Button>
                 )}
@@ -303,6 +361,7 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
             </div>
 
             <WhatsAppSendSheet open={Boolean(waPeople)} onClose={() => setWaPeople(null)} people={waPeople || []} />
+            <StatementMatchSheet open={matching} onClose={() => setMatching(false)} orders={orders} onVerify={verifyMatched} />
             {canReview && (selected.size > 0 || bulk) && (
                 <div className={cn('sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 flex flex-wrap items-center gap-2 rounded-2xl border p-2.5 backdrop-blur lg:top-2', accent('orange').border, 'bg-white/95 dark:bg-[#0d0f15]/95')}>
                     {bulk ? (
@@ -310,7 +369,7 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
                     ) : (
                         <>
                             <p className="px-2 text-[13px] font-bold">{selected.size} selected</p>
-                            {selPending > 0 && <Button variant="success" size="sm" className="h-10" onClick={bulkVerify}><Check size={14} /> Verify {selPending}</Button>}
+                            {selPending > 0 && <Button variant="success" size="sm" className="h-10" onClick={bulkVerify}><Check size={14} /> Verify & send {selPending}</Button>}
                             {selApproved.length > 0 && <Button variant="accent" size="sm" className="h-10" onClick={() => sendTo(selApproved)}><Send size={14} /> Send {selApproved.length}</Button>}
                             {selRejectable > 0 && <Button variant="secondary" size="sm" className="h-10 text-red-600 dark:text-red-400" onClick={bulkReject}><X size={14} /> Reject {selRejectable}</Button>}
                             <Button variant="secondary" size="sm" className="h-10" onClick={() => setWaPeople(selectedOrders.map(o => ({ name: personName(o, ''), phone: o.customerPhone || o.phone })))}><MessageCircle size={14} /> WhatsApp</Button>
@@ -396,7 +455,7 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
                         <p className="truncate text-[13px] text-gray-500">{orderTicketCount(open)} {orderTicketCount(open) === 1 ? 'ticket' : 'tickets'} · {isPaid(open) ? inr(open.totalAmount) : 'Free'}</p>
                     </div>
                 )}
-                footer={open && canReview && ['pending', 'approved'].includes(open.status) ? (
+                footer={open && canReview && ['pending', 'approved', 'awaiting_payment'].includes(open.status) ? (
                     <div className="flex gap-2">{rowActions(open, true)}</div>
                 ) : null}
                 bodyClassName="space-y-5"
@@ -408,8 +467,13 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
                             <div className={cn('rounded-2xl border p-4', accent('amber').border, accent('amber').soft)}>
                                 <p className="text-[14px] font-bold">Check this payment</p>
                                 <p className="mt-1 text-[13px] text-gray-600 dark:text-zinc-300">
-                                    Find {canSeeMoney ? <b>{inr(open.totalAmount)}</b> : 'the payment'} with UTR <b className="font-mono">{open.paymentRef || '—'}</b> in your bank or UPI app, then verify.
+                                    Find {canSeeMoney ? <b>{inr(open.totalAmount)}</b> : 'the payment'} with UTR <b className="font-mono">{open.paymentRef || '—'}</b>{open.bookingRef ? <> (note <b className="font-mono">{open.bookingRef}</b>)</> : null} in your bank or UPI app{open.paidTo ? <>, paid to <b className="font-mono">{open.paidTo}</b></> : null}, then verify.
                                 </p>
+                                {open.paymentProof && (
+                                    <a href={open.paymentProof} target="_blank" rel="noopener noreferrer" className="mt-3 block w-fit overflow-hidden rounded-xl border border-black/10 dark:border-white/10">
+                                        <img src={open.paymentProof} alt="Payment screenshot from the buyer" className="max-h-72 w-auto object-contain" />
+                                    </a>
+                                )}
                             </div>
                         )}
                         {(open.overCapacityNote || open.couponRejectedNote) && open.status !== 'rejected' && (
@@ -445,7 +509,7 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
                         </section>
                         <div className="flex flex-wrap gap-2">
                             {open.bookingRef && (
-                                <Button as="a" href={`/ticket/${encodeURIComponent(open.bookingRef)}`} target="_blank" rel="noopener noreferrer" variant="secondary" className="h-11"><ExternalLink size={14} /> Ticket page</Button>
+                                <Button as="a" href={`${APP_ORIGIN}/p/${encodeURIComponent(open.bookingRef)}`} target="_blank" rel="noopener noreferrer" variant="secondary" className="h-11"><ExternalLink size={14} /> Ticket page</Button>
                             )}
                             {canReview && ['dispatched', 'confirmed'].includes(open.status) && <Button variant="secondary" className="h-11" onClick={() => send(open)} disabled={Boolean(busy[open.id])}><Send size={14} /> {busy[open.id] === 'send' ? 'Sending…' : 'Resend email'}</Button>}
                             {canReview && open.status === 'rejected' && <Button variant="secondary" className="h-11" onClick={() => verify(open)}><Undo2 size={14} /> Verify after all</Button>}

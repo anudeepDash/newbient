@@ -464,7 +464,7 @@ export default async function handler(req, res) {
 
     // Public ticketing (availability, coupons, orders) shares this function.
     if (isTicketAction(action)) {
-        return handleTicketAction(action, req, res, adminDb, decodedToken);
+        return handleTicketAction(action, req, res, adminDb, decodedToken, { isStaff });
     }
 
     // The app's creator module: apply, Instagram verification, campaign apply and submissions.
