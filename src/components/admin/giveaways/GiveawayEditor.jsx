@@ -13,9 +13,6 @@ import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import ArrowUp from 'lucide-react/dist/esm/icons/arrow-up';
 import ArrowDown from 'lucide-react/dist/esm/icons/arrow-down';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
-import Gift from 'lucide-react/dist/esm/icons/gift';
-import Clock from 'lucide-react/dist/esm/icons/clock';
-import Trophy from 'lucide-react/dist/esm/icons/trophy';
 import { useStore } from '../../../lib/store';
 import { notifyAllUsers } from '../../../lib/notificationTriggers';
 import { cn } from '../../../lib/utils';
@@ -24,7 +21,8 @@ import { Button } from '../ui';
 import { BuilderCard, ImageSlot } from '../events/EditorParts';
 import { Field, Toggle, Choice, fieldCls, areaCls } from '../uploads/UploadKit';
 import CityInput, { cleanCity } from '../CityInput';
-import { EditorBar, PhoneBar, formatDay, slugify, todayKey, useConfirm, useImageField, useUnsavedWarning } from '../forms/kit';
+import LivePreview from '../LivePreview';
+import { EditorBar, PhoneBar, slugify, todayKey, useConfirm, useImageField, useUnsavedWarning } from '../forms/kit';
 import { TASK_PRESETS, TASK_PRESET_MAP, giveawayEndsAt } from './giveawayUtils';
 
 export const TASK_ICONS = {
@@ -57,54 +55,6 @@ const EMPTY = {
 };
 
 const taskId = () => Math.random().toString(36).slice(2, 11);
-
-const countdown = (g) => {
-    const end = giveawayEndsAt(g);
-    if (!end) return 'No end date';
-    const ms = end - Date.now();
-    if (ms <= 0) return 'Ended';
-    const d = Math.floor(ms / 86400000);
-    const h = Math.floor((ms % 86400000) / 3600000);
-    return d ? `${d} days ${h} h left` : `${h} h left`;
-};
-
-/** A compact look at the public giveaway page. */
-const GiveawayPreview = ({ data }) => (
-    <div className="overflow-hidden rounded-2xl border border-black/[0.06] bg-white dark:border-white/[0.08] dark:bg-zinc-950">
-        <div className="relative aspect-[4/5] bg-gray-100 dark:bg-white/[0.04]">
-            {data.posterUrl ? <img src={data.posterUrl} alt="" className="h-full w-full object-cover" /> : (
-                <span className="absolute inset-0 flex items-center justify-center text-rose-500"><Gift size={40} /></span>
-            )}
-            <div className="absolute inset-x-0 bottom-0 bg-black/60 p-4 text-white backdrop-blur-sm">
-                <p className="text-[22px] font-extrabold leading-tight">{data.name || 'Giveaway name'}</p>
-                <div className="mt-2 flex flex-wrap gap-3 text-[12px] font-semibold text-white/80">
-                    <span className="flex items-center gap-1"><Gift size={12} /> {Number(data.ticketsAvailable) || 0} available</span>
-                    <span className="flex items-center gap-1"><Clock size={12} /> {countdown(data)}</span>
-                    {data.winnerAnnouncementDate && <span className="flex items-center gap-1"><Trophy size={12} /> Winners {formatDay(data.winnerAnnouncementDate)}</span>}
-                </div>
-            </div>
-        </div>
-        <div className="space-y-3 p-4">
-            {data.description && <p className="line-clamp-4 whitespace-pre-line text-[13px] text-gray-600 dark:text-zinc-300">{data.description}</p>}
-            {(data.tasks || []).length > 0 && (
-                <div className="space-y-1.5">
-                    <p className="text-[12px] font-bold text-gray-500">Earn more chances</p>
-                    {data.tasks.map(t => {
-                        const Icon = TASK_ICONS[t.type] || Sparkles;
-                        return (
-                            <div key={t.id} className="flex items-center gap-2.5 rounded-xl border border-black/[0.06] px-3 py-2 dark:border-white/[0.08]">
-                                <span className={cn('flex h-8 w-8 items-center justify-center rounded-lg', accent(TASK_PRESET_MAP[t.type]?.tone || 'violet').chip)}><Icon size={14} /></span>
-                                <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">{t.label || 'Task'}</span>
-                                <span className="text-[12px] font-bold text-rose-600 dark:text-rose-300">+{Number(t.entryScore) || 0} pts</span>
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
-            <div className="flex h-11 items-center justify-center rounded-xl bg-gray-900 text-[14px] font-bold text-white dark:bg-white dark:text-black">Enter the giveaway</div>
-        </div>
-    </div>
-);
 
 const GiveawayEditor = ({ giveaway, giveaways, onDone }) => {
     const addToast = useStore(s => s.addToast);
@@ -358,7 +308,7 @@ const GiveawayEditor = ({ giveaway, giveaways, onDone }) => {
 
                 <aside className={cn('mx-auto w-full max-w-sm space-y-3 xl:sticky xl:top-24 xl:max-w-none xl:self-start', !showPreview && 'hidden xl:block')}>
                     <p className="text-[12px] font-bold text-gray-500">Live preview</p>
-                    <GiveawayPreview data={data} />
+                    <LivePreview type="giveaway" data={data} />
                 </aside>
             </div>
 

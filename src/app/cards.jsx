@@ -6,9 +6,11 @@ import Flame from 'lucide-react/dist/esm/icons/flame';
 import Award from 'lucide-react/dist/esm/icons/award';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
+import Clock from 'lucide-react/dist/esm/icons/clock';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import { GlassChip } from '../components/app';
 import { getCampaignSpotsInfo } from '../lib/utils';
+import { isPresent } from '../lib/present';
 import { appPath } from './host';
 import { TicketReadyBadge } from './creator/YourTicket';
 import { t } from '../i18n';
@@ -88,5 +90,33 @@ export function feedCard(item, { from = null } = {}) {
         cta: { label: t(FEED_CTA[item.type] || 'Open') },
         to,
         linkState: from && to && item.type !== 'gig' ? { backgroundLocation: from } : undefined,
+    };
+}
+
+/*
+ * An upcoming show on Home: ticket sales, an event or a guestlist, each as
+ * { id, title, image, day: 'YYYY-MM-DD', time, venue, city, category, ticketed, guestlist, price }.
+ * from: the current location, so a guestlist opens as a sheet over the list.
+ */
+export function showCard(e, { from = null } = {}) {
+    const day = e.day ? new Date(`${e.day}T00:00:00`) : null;
+    return {
+        type: 'event',
+        image: e.image || null,
+        title: e.title,
+        eyebrow: e.category || null,
+        chips: [{ icon: MapPin, label: e.city }],
+        meta: [
+            { icon: CalendarDays, label: day && !Number.isNaN(day.getTime()) ? dateLabel(day) : null },
+            { icon: Clock, label: isPresent(e.time) ? e.time : null },
+        ],
+        stats: [
+            { label: e.ticketed ? t('Tickets') : t('Entry'), value: e.ticketed ? (e.price ? t('From ₹{price}', { price: Number(e.price).toLocaleString('en-IN') }) : t('On sale')) : e.guestlist ? t('Guestlist') : null, tone: 'accent' },
+            { label: t('Venue'), value: e.venue },
+        ],
+        cta: e.ticketed || e.guestlist ? { label: e.ticketed ? t('Get tickets') : t('Get on the list') } : false,
+        to: e.ticketed ? `${appPath('/tickets')}?event=${encodeURIComponent(e.id)}` : e.guestlist ? appPath(`/community/g/${e.id}`) : undefined,
+        // A guestlist opens as a sheet over Home.
+        linkState: !e.ticketed && e.guestlist && from ? { backgroundLocation: from } : undefined,
     };
 }

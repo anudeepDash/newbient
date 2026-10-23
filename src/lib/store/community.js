@@ -29,7 +29,8 @@ const isPast = (date) => {
     return endOfDay.getTime() < Date.now();
 };
 
-const normalise = (type, item, to, extra = {}) => {
+/* One feed item from a raw document (exported for the admin's live card preview). */
+export const normalise = (type, item, to, extra = {}) => {
     const date = itemDate(item);
     return {
         key: `${type}:${item.id}`,

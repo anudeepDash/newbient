@@ -23,16 +23,13 @@ import AccountBanner from '../auth/AccountBanner';
 import JoinPaths from './JoinPaths';
 import { useAppContent } from '../useAppContent';
 import useDynamicMeta from '../../hooks/useDynamicMeta';
-import { campaignCard, feedCard } from '../cards';
+import { campaignCard, feedCard, showCard } from '../cards';
 import { bySoonest, isUpcomingPass } from '../passes/passCards';
 import PassTicket from '../passes/PassTicket';
 import { PageBody } from './PageHeader';
 import { SectionHeader, Rail, CardSkeleton, EmptyState, HeroPanel, GLASS } from './parts';
 import { cn } from '../../lib/utils';
 import { isPresent } from '../../lib/present';
-import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
-import Clock from 'lucide-react/dist/esm/icons/clock';
-import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import { useT } from '../../i18n';
 import { useLocalizedCampaigns, useLocalizedFeed } from '../../i18n/useHinglish';
 
@@ -56,11 +53,6 @@ const QUICK = [
     { to: '/community', icon: ListChecks, label: 'Guestlists' },
     { to: '/community', icon: Gift, label: 'Giveaways' },
 ];
-
-const dayLabel = (day) => {
-    const d = day ? new Date(`${day}T00:00:00`) : null;
-    return d && !Number.isNaN(d.getTime()) ? format(d, 'EEE d MMM') : null;
-};
 
 /*
  * Upcoming shows for Home, soonest first: ticket sales (Tickets), the site's upcoming
@@ -93,25 +85,6 @@ const useUpcomingShows = () => {
     }, [ticketed, loaded, feed, community]);
 };
 
-const showCard = (e, t, from) => ({
-    type: 'event',
-    image: e.image || null,
-    title: e.title,
-    eyebrow: e.category || null,
-    chips: [{ icon: MapPin, label: e.city }],
-    meta: [
-        { icon: CalendarDays, label: dayLabel(e.day) },
-        { icon: Clock, label: isPresent(e.time) ? e.time : null },
-    ],
-    stats: [
-        { label: e.ticketed ? t('Tickets') : t('Entry'), value: e.ticketed ? (e.price ? t('From ₹{price}', { price: Number(e.price).toLocaleString('en-IN') }) : t('On sale')) : e.guestlist ? t('Guestlist') : null, tone: 'accent' },
-        { label: t('Venue'), value: e.venue },
-    ],
-    cta: e.ticketed || e.guestlist ? { label: e.ticketed ? t('Get tickets') : t('Get on the list') } : false,
-    to: e.ticketed ? `${appPath('/tickets')}?event=${encodeURIComponent(e.id)}` : e.guestlist ? appPath(`/community/g/${e.id}`) : undefined,
-    // A guestlist opens as a sheet over Home.
-    linkState: !e.ticketed && e.guestlist && from ? { backgroundLocation: from } : undefined,
-});
 
 const HomePage = () => {
     const t = useT();
@@ -174,7 +147,7 @@ const HomePage = () => {
             {!showsLoaded ? (
                 <Rail><CardSkeleton /><CardSkeleton /></Rail>
             ) : (
-                <Rail>{shows.map(e => <Card key={e.id} {...showCard(e, t, location)} />)}</Rail>
+                <Rail>{shows.map(e => <Card key={e.id} {...showCard(e, { from: location })} />)}</Rail>
             )}
         </section>
     );

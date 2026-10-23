@@ -1,56 +1,47 @@
 import React from 'react';
-import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
-import { Pin, Calendar, MapPin, Users, Share2, ArrowRight, ClipboardList, Sparkles, Ticket, Clock, Image as ImageIcon, Play, Megaphone } from 'lucide-react';
+import { Pin, ArrowRight, ClipboardList, Clock, Play } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import CommunityCard from '../community/CommunityCard';
-import CampaignCard from '../ui/CampaignCard';
+import AppCard from '../app/Card';
+import { campaignCard, feedCard, showCard } from '../../app/cards';
+import { normalise } from '../../lib/store/community';
+import { eventDay, fromPrice } from '../../app/tickets/useTicketedEvents';
 
-const formatDate = (dateValue) => {
-    if (!dateValue || dateValue === 'TBD') return 'TBD';
-    
-    // Handle array of dates
-    if (Array.isArray(dateValue)) {
-        if (dateValue.length === 0) return 'TBD';
-        const sorted = [...dateValue]
-            .map(d => new Date(d))
-            .filter(d => !isNaN(d.getTime()))
-            .sort((a, b) => a.getTime() - b.getTime());
-            
-        if (sorted.length === 0) return 'TBD';
-        const first = sorted[0];
-        return first.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }).toUpperCase() + (sorted.length > 1 ? ` +${sorted.length - 1}` : '');
-    }
-
-    // Handle timestamps
-    let val = dateValue;
-    if (val.seconds) val = new Date(val.seconds * 1000).toISOString();
-
-    if (typeof val === 'string' && val.includes('T')) {
-        try {
-            const d = new Date(val);
-            if (!isNaN(d.getTime())) {
-                const datePart = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
-                const timePart = d.toLocaleTimeString('en-US', { hour: '2-digit', minute:'2-digit', hour12: true });
-                return `${datePart} • ${timePart}`;
-            }
-        } catch (e) {}
-    }
-    
-    // Fallback split logic
-    try {
-        const strVal = String(val);
-        if (strVal.includes('-')) {
-            const [y, m, d] = strVal.split('-');
-            const day = d ? d.split('T')[0] : '';
-            return `${day}-${m}-${y}`;
-        }
-    } catch (e) {}
-    
-    return String(val).toUpperCase();
+/*
+ * The card the app shows for this item, built by the app's own card builders
+ * (src/app/cards.jsx) so the preview can't drift from what people see. Links
+ * are dropped; onAction (the event editor's hub preview) runs on a click.
+ */
+const appCardProps = (type, data) => {
+    if (type === 'campaign') return campaignCard({ ...data, id: 'preview', tasks: data.tasks || [] });
+    if (type === 'event') return showCard({
+        id: 'preview',
+        title: data.title,
+        image: data.image || null,
+        day: eventDay(data.date),
+        time: data.time || data.doorsOpen,
+        venue: data.location || data.venue,
+        city: data.city,
+        category: data.category || data.performanceType,
+        ticketed: Boolean(data.isTicketed),
+        guestlist: Boolean(data.isGuestlistEnabled || data.guestlistEnabled),
+        price: data.isTicketed ? fromPrice(data) : null,
+    });
+    // A gig that runs a guestlist is listed as that guestlist (lib/store/community.js).
+    const kind = type === 'gl' || type === 'guestlist' || (type === 'gig' && data.guestlistEnabled) ? 'guestlist' : type;
+    return feedCard(normalise(kind, { ...data, id: 'preview' }, null));
 };
 
+const APP_CARD_TYPES = ['campaign', 'event', 'gig', 'form', 'gl', 'guestlist', 'giveaway'];
+
 const LivePreview = ({ type, data = {}, categories = [], hideDecorations = false, onAction }) => {
+    if (APP_CARD_TYPES.includes(type)) {
+        return (
+            <div className="mx-auto w-full max-w-[380px]">
+                <AppCard {...appCardProps(type, data)} to={undefined} linkState={undefined} onClick={onAction} />
+            </div>
+        );
+    }
+
     return (
         <div className="h-full flex flex-col">
             {!hideDecorations && (
@@ -152,23 +143,6 @@ const LivePreview = ({ type, data = {}, categories = [], hideDecorations = false
 
                                 {/* Scanlines effect */}
                                 <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%]" />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* SHARED COMMUNITY CARD PREVIEW (GIG, FORM, GUESTLIST, EVENT) */}
-                    {(type === 'gig' || type === 'form' || type === 'guestlist' || type === 'gl' || type === 'event') && (
-                        <div className="w-full flex justify-center h-full">
-                            <div className="w-full h-full flex flex-col justify-center max-w-[380px]">
-                                <CommunityCard 
-                                    type={type === 'gl' ? 'gl' : type}
-                                    item={{
-                                        ...data,
-                                        id: 'preview'
-                                    }}
-                                    handleShare={() => {}}
-                                    onAction={onAction}
-                                />
                             </div>
                         </div>
                     )}
@@ -302,21 +276,6 @@ const LivePreview = ({ type, data = {}, categories = [], hideDecorations = false
                         </div>
                     )}
 
-                    {/* CAMPAIGN SPECIFIC PREVIEW */}
-                    {type === 'campaign' && (
-                        <div className="w-full h-full flex items-center justify-center p-4">
-                            <div className="w-full max-w-sm">
-                                <CampaignCard 
-                                    campaign={{
-                                        ...data,
-                                        id: 'preview',
-                                        tasks: data.tasks || []
-                                    }}
-                                    onOpenMission={() => {}}
-                                />
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
         </div>
