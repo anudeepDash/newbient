@@ -10,6 +10,7 @@ import X from 'lucide-react/dist/esm/icons/x';
 import { cn } from '../../../lib/utils';
 import { useStore } from '../../../lib/store';
 import { downloadCsv, fileDate } from '../../../lib/xlsx';
+import GoogleSheetsButton from '../GoogleSheetsButton';
 import { passesPost, fileToBase64 } from '../../../lib/passesApi';
 import Sheet from '../Sheet';
 import { Avatar, Badge, Button, SegmentedTabs } from '../ui';
@@ -161,14 +162,15 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
         });
     };
 
-    const downloadTemplate = () => {
+    const templateSpec = () => {
         const rows = templateRows(eligible.length ? eligible : applicants, campaign);
-        downloadCsv({
+        return {
             filename: `tickets_${(campaign?.title || 'campaign').replace(/[^\w]+/g, '-').toLowerCase()}_${fileDate()}`,
             columns: TEMPLATE_COLUMNS.map(key => ({ header: key, key })),
             rows: rows.length ? rows : [{ creator: 'creator@example.com', name: '', ticket_url: 'https://', ticket_file: '', qty: '1', tier: '', note: '' }],
-        });
+        };
     };
+    const downloadTemplate = () => downloadCsv(templateSpec());
 
     const startLog = async (totals, fileName) => {
         const res = await passesPost('upload-start', { campaignId: campaign.id, mode, totals, fileName });
@@ -370,6 +372,7 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
                                 <Button onClick={() => pdfInput.current?.click()} className="h-11 px-2 sm:justify-start sm:px-4" disabled={sending}><FileText size={14} /> PDFs{files.length ? ` (${files.length})` : ''}</Button>
                                 <input ref={csvInput} type="file" accept=".csv,text/csv" className="hidden" onChange={e => { readCsv(e.target.files?.[0]); e.target.value = ''; }} />
                                 <input ref={pdfInput} type="file" accept="application/pdf,.pdf" multiple className="hidden" onChange={e => { addPdfs(e.target.files); e.target.value = ''; }} />
+                                <GoogleSheetsButton getSpec={templateSpec} format="csv" label="Fill the template in Google Sheets" className="col-span-3 h-11 sm:justify-start" />
                             </div>
                             <div
                                 onDragOver={e => e.preventDefault()}

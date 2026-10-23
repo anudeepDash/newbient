@@ -254,12 +254,8 @@ const csvValue = (value, type) => {
     return value;
 };
 
-/**
- * The same export as plain CSV, for tools that want it. Opens cleanly in Excel
- * (BOM for ₹ and Indian names) and can't run formulas.
- */
-export const downloadCsv = ({ filename, columns, rows }) => {
-    if (!rows?.length) return false;
+/** The CSV text for a spec: header row first, formulas defused. */
+export const buildCsv = ({ columns, rows }) => {
     const cellText = (v) => {
         let s = String(v ?? '');
         // Phone numbers and negatives stay as they are; anything else that
@@ -267,11 +263,20 @@ export const downloadCsv = ({ filename, columns, rows }) => {
         if (/^[=+\-@\t\r]/.test(s) && !/^[+-]?[\d\s().-]+$/.test(s)) s = `'${s}`;
         return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
-    const lines = [
+    return [
         columns.map(c => cellText(c.header)).join(','),
         ...rows.map(row => columns.map(col => cellText(csvValue(typeof col.value === 'function' ? col.value(row) : row[col.key], col.type))).join(',')),
-    ];
-    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    ].join('\r\n');
+};
+
+/**
+ * The same export as plain CSV, for tools that want it. Opens cleanly in Excel
+ * (BOM for ₹ and Indian names) and can't run formulas.
+ */
+export const downloadCsv = (options) => {
+    if (!options.rows?.length) return false;
+    const { filename } = options;
+    const blob = new Blob(['﻿' + buildCsv(options)], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
