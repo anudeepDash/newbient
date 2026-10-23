@@ -136,6 +136,8 @@ const Card = ({
     const ctaNode = React.isValidElement(cta) ? cta : null;
 
     const Root = to ? Link : href ? 'a' : onClick ? 'button' : 'div';
+    // Only a card that opens something lifts and presses.
+    const interactive = Boolean(to || href || onClick);
     const rootProps = to ? { to, state: linkState } : href ? { href } : onClick ? { type: 'button', onClick } : {};
 
     return (
@@ -143,12 +145,11 @@ const Card = ({
             {...rootProps}
             style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
             className={cn(
-                'group flex h-full w-full select-none flex-col rounded-[1.75rem] text-left transition-[transform,box-shadow] duration-300 active:scale-[0.985]',
+                'group flex h-full w-full select-none flex-col rounded-[1.75rem] text-left transition-[transform,box-shadow] duration-300',
                 BRAND_GLASS,
                 // Phones: no live blur per card (lists of them are heavy on iPhone Safari); a near-solid tint instead.
                 'max-sm:backdrop-blur-none max-sm:backdrop-saturate-100 max-sm:bg-white/85 dark:max-sm:bg-[#101219]',
-                'hover:-translate-y-0.5 hover:ring-emerald-500/40 dark:hover:ring-neon-green/40',
-                (to || href || onClick) && 'cursor-pointer',
+                interactive && 'cursor-pointer active:scale-[0.985] hover:-translate-y-0.5 hover:ring-emerald-500/40 dark:hover:ring-neon-green/40',
                 className
             )}
         >
@@ -183,7 +184,7 @@ const Card = ({
                                 alt={imageAlt || title || ''}
                                 loading="lazy"
                                 decoding="async"
-                                className="relative z-10 h-full w-full object-cover transition-transform duration-700 sm:group-hover:scale-105"
+                                className={cn('relative z-10 h-full w-full object-cover transition-transform duration-700', interactive && 'sm:group-hover:scale-105')}
                             />
                             <div className="absolute inset-0 z-10 bg-[radial-gradient(ellipse_at_center,_transparent_50%,_rgba(0,0,0,0.4)_100%)]" />
                         </>

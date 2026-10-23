@@ -147,8 +147,30 @@ export const ExpandedSkeleton = () => (
  * loading or not-found state, shown in the same frame.
  */
 export const ExpandedPage = ({ overlay, onClose, back, label, body, ...card }) => {
+    // Over a list, loading and loaded are the same sheet, so it slides up once
+    // instead of being swapped for a new one when the data arrives.
+    if (overlay) {
+        return (
+            <Sheet
+                open
+                onClose={onClose}
+                size="full"
+                width="lg"
+                bleed
+                header={<span className="sr-only">{label}</span>}
+                footer={body ? null : card.bar}
+                bodyClassName={body ? 'px-5 pb-6 pt-16 sm:px-7' : 'px-0 pb-0 pt-0 sm:px-0'}
+            >
+                {body || (
+                    <>
+                        {card.hero}
+                        <div className="relative space-y-6 px-5 pb-6 sm:px-7">{card.children}</div>
+                    </>
+                )}
+            </Sheet>
+        );
+    }
     if (body) {
-        if (overlay) return <Sheet open onClose={onClose} size="full" width="lg" header={<span className="sr-only">{label}</span>}>{body}</Sheet>;
         return (
             <PageBody>
                 <div className="mx-auto max-w-2xl">
@@ -158,7 +180,6 @@ export const ExpandedPage = ({ overlay, onClose, back, label, body, ...card }) =
             </PageBody>
         );
     }
-    if (overlay) return <ExpandedCard overlay onClose={onClose} label={label} {...card} />;
     return (
         <PageBody>
             <div>

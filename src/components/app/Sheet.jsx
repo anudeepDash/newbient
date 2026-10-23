@@ -163,7 +163,8 @@ const Sheet = ({
                             {children}
                         </div>
                         {footer ? (
-                            <div className={cn('relative shrink-0 border-t border-black/[0.06] bg-[#f7f7f3]/85 px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#0b0d12]/85', !phone && 'px-7 pb-5')}>
+                            // Phones: a solid bar, since a live blur on a sliding sheet stutters on iPhone Safari.
+                            <div className={cn('relative shrink-0 border-t border-black/[0.06] px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 dark:border-white/[0.08]', phone ? 'bg-[#f7f7f3] dark:bg-[#0b0d12]' : 'bg-[#f7f7f3]/85 px-7 pb-5 backdrop-blur-xl dark:bg-[#0b0d12]/85')}>
                                 {footer}
                             </div>
                         ) : phone && <div className="h-[env(safe-area-inset-bottom)] shrink-0" />}

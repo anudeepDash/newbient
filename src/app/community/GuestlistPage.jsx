@@ -195,8 +195,10 @@ const GuestlistPage = ({ overlay = false }) => {
     const back = !overlay ? <BackButton to={appPath('/community')}>{t('Community')}</BackButton> : null;
     const KindIcon = CARD_TYPES.guestlist.icon;
 
+    // In a fragment like the loaded page below, so the sheet stays put when the list arrives.
     if (!gl) {
         return (
+            <>
             <ExpandedPage
                 overlay={overlay}
                 onClose={close}
@@ -206,6 +208,7 @@ const GuestlistPage = ({ overlay = false }) => {
                     ? <ExpandedMissing title={t('Guestlist not found')} message={loadError} action={<Button variant="secondary" to={appPath('/community')}>{t('See what’s on')}</Button>} />
                     : <ExpandedSkeleton />}
             />
+            </>
         );
     }
 
