@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import Users from 'lucide-react/dist/esm/icons/users';
 import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
@@ -8,6 +8,7 @@ import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import HeartHandshake from 'lucide-react/dist/esm/icons/heart-handshake';
 import Lock from 'lucide-react/dist/esm/icons/lock';
 import Send from 'lucide-react/dist/esm/icons/send';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
 import { db } from '../../lib/firebase';
 import { useAppStore } from '../../lib/store/appStore';
 import { communityPost } from '../../lib/passesApi';
@@ -26,8 +27,9 @@ import { useT } from '../../i18n';
 const FormRenderer = lazy(() => import('../../components/admin/forms/FormRenderer'));
 
 /*
- * A volunteer gig, opened over Community (?gig=ID). People apply right here:
- * the gig's built-in form, filled once per signed-in account, then their
+ * A volunteer gig, opened over Community (?gig=ID). Apply moves the drawer
+ * to its second step: the gig's built-in form, filled once per signed-in
+ * account (back arrow returns to the gig). After sending, the gig shows their
  * status (applied, shortlisted, confirmed with the crew group link, waitlist,
  * not this time) shows in the same place. Older gigs without a form yet take
  * an "I'm interested" tap instead. No outside forms.
@@ -66,9 +68,8 @@ const todayKey = () => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
-const scrollToApply = () => {
-    window.setTimeout(() => document.getElementById('gig-apply')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
-};
+/* The drawer keeps its scroll between steps; each step starts at the top. */
+const scrollDrawerTop = (el) => el?.closest('.overflow-y-auto')?.scrollTo({ top: 0 });
 
 const GigSheet = ({ gigId, item, onClose }) => {
     const t = useT();
@@ -83,6 +84,9 @@ const GigSheet = ({ gigId, item, onClose }) => {
     const [busy, setBusy] = useState('');
     const [error, setError] = useState('');
     const [askWithdraw, setAskWithdraw] = useState(false);
+    const [step, setStep] = useState('details'); // details | apply
+    const topRef = useRef(null);
+    useEffect(() => { scrollDrawerTop(topRef.current); }, [step]);
 
     useEffect(() => {
         if (item || !gigId || !db) return undefined;
@@ -108,6 +112,7 @@ const GigSheet = ({ gigId, item, onClose }) => {
         setApplication(undefined);
         setError('');
         setAskWithdraw(false);
+        setStep('details');
         if (authReady) refresh();
     }, [refresh, authReady]);
 
@@ -129,10 +134,10 @@ const GigSheet = ({ gigId, item, onClose }) => {
 
     const apply = () => gate.run(
         { type: INTENTS.gigApply, payload: { id: gig.id }, returnTo: `${appPath('/community')}?gig=${encodeURIComponent(gig.id)}` },
-        scrollToApply,
+        () => setStep('apply'),
         { require: requirementsFor('gig') },
     );
-    useResumeIntent(INTENTS.gigApply, (payload) => { if (payload?.id === gig?.id) scrollToApply(); });
+    useResumeIntent(INTENTS.gigApply, (payload) => { if (payload?.id === gig?.id) setStep('apply'); });
 
     // Older gigs without their form yet: the "I'm interested" tap.
     const saveInterest = async () => {
@@ -192,7 +197,39 @@ const GigSheet = ({ gigId, item, onClose }) => {
         action = <Button className="flex-1" size="lg" icon={Send} onClick={apply}>{t('Apply')}</Button>;
     }
 
-    const showForm = !closed && !application && gig.formId && uid && application !== undefined;
+    const canApply = !closed && !application && gig.formId && uid && application !== undefined;
+    const submitted = async () => {
+        await refresh();
+        setStep('details');
+    };
+
+    // Step 2: only the application, in the same drawer.
+    if (step === 'apply' && canApply) {
+        return (
+            <ExpandedCard overlay onClose={onClose} label={`${t('Apply')}: ${gig.title}`}>
+                <div ref={topRef} className="flex items-center gap-3 pt-5">
+                    <button type="button" onClick={() => setStep('details')} aria-label={t('Back to the gig')} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-black/[0.05] text-gray-800 transition-colors hover:bg-black/[0.09] dark:bg-white/[0.08] dark:text-white dark:hover:bg-white/[0.14]">
+                        <ArrowLeft size={18} />
+                    </button>
+                    <div className="min-w-0 pr-12">
+                        <p className="text-[11px] font-black uppercase tracking-widest text-emerald-700 dark:text-neon-green">{t('Apply to volunteer')}</p>
+                        <p className="truncate font-heading text-[19px] font-extrabold tracking-[-0.02em]">{gig.title}</p>
+                    </div>
+                </div>
+                {form === undefined ? (
+                    <div className={`h-80 animate-pulse ${ROW}`} />
+                ) : form ? (
+                    <div className="overflow-hidden rounded-[1.75rem] bg-white ring-1 ring-inset ring-black/[0.06] dark:bg-[#0c0e14] dark:ring-white/[0.08] [&_input]:text-[16px] [&_select]:text-[16px] [&_textarea]:text-[16px]">
+                        <Suspense fallback={<div className="h-80 animate-pulse" />}>
+                            <FormRenderer form={form} prefill={prefill} onSubmitted={submitted} />
+                        </Suspense>
+                    </div>
+                ) : (
+                    <p className={`${ROW} px-5 py-8 text-center text-[15px] text-gray-600 dark:text-zinc-400`}>{t('Applications aren’t open yet. Check back soon.')}</p>
+                )}
+            </ExpandedCard>
+        );
+    }
 
     return (
         <ExpandedCard
@@ -202,6 +239,7 @@ const GigSheet = ({ gigId, item, onClose }) => {
             hero={<ExpandedHero image={isPresent(gig.image) ? gig.image : null} icon={CARD_TYPES.gig.icon} chips={[{ icon: MapPin, label: gig.city }, { label: closed ? t('Closed') : /fill/i.test(gig.gigStatus || '') ? t('Filling fast') : null }]} />}
             bar={<ActionBar onShare={share} shareLabel="Share gig">{action}</ActionBar>}
         >
+            <div ref={topRef} hidden />
             <ExpandedTitle meta={[{ icon: CalendarDays, label: gig.days[0] ? dayText(gig.days[0]) : null }]} eyebrow={<p className="text-[11px] font-black uppercase tracking-widest text-emerald-700 dark:text-neon-green">{t('Volunteer gig')}</p>} title={gig.title}>
                 <StatRow>
                     <Stat label={t('Spots')} value={gig.slots || null} icon={Users} />
@@ -248,22 +286,6 @@ const GigSheet = ({ gigId, item, onClose }) => {
                 {description && <p className="whitespace-pre-line text-[15px] leading-relaxed text-gray-700 dark:text-zinc-300">{description}</p>}
             </Section>
 
-            {showForm && (
-                <section id="gig-apply" className="scroll-mt-24 space-y-3">
-                    <h2 className="px-1 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-400">{t('Apply')}</h2>
-                    {form === undefined ? (
-                        <div className={`h-80 animate-pulse ${ROW}`} />
-                    ) : form ? (
-                        <div className="overflow-hidden rounded-[1.75rem] bg-white ring-1 ring-inset ring-black/[0.06] dark:bg-[#0c0e14] dark:ring-white/[0.08] [&_input]:text-[16px] [&_select]:text-[16px] [&_textarea]:text-[16px]">
-                            <Suspense fallback={<div className="h-80 animate-pulse" />}>
-                                <FormRenderer form={form} prefill={prefill} onSubmitted={refresh} />
-                            </Suspense>
-                        </div>
-                    ) : (
-                        <p className={`${ROW} px-5 py-8 text-center text-[15px] text-gray-600 dark:text-zinc-400`}>{t('Applications aren’t open yet. Check back soon.')}</p>
-                    )}
-                </section>
-            )}
             {!uid && !closed && gig.formId && (
                 <p className="px-1 text-[14px] text-gray-500 dark:text-zinc-400">{t('Tap Apply to sign in. Your application is linked to your account, so you can check its status here.')}</p>
             )}
