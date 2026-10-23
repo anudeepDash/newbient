@@ -81,7 +81,7 @@ const ProfileDetails = () => {
     ];
 
     return (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-10">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-10">
             {/* You, and what you can do */}
             <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
                 <section className="relative overflow-hidden rounded-[1.75rem] bg-[#0b0d12] p-6 text-white ring-1 ring-inset ring-white/10 lg:p-7">
@@ -92,7 +92,7 @@ const ProfileDetails = () => {
                             {photo ? <img src={photo} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" /> : (name || '?').charAt(0).toUpperCase()}
                         </span>
                         <div className="min-w-0">
-                            {name && <p className="truncate font-heading text-[22px] font-extrabold tracking-[-0.02em] lg:text-[26px]">{name}</p>}
+                            {name && <p className="line-clamp-2 break-words font-heading text-[22px] font-extrabold tracking-[-0.02em] lg:text-[26px]">{name}</p>}
                             {(profile?.email || authUser?.email) && <p className="truncate text-[14px] text-zinc-400">{profile?.email || authUser?.email}</p>}
                         </div>
                     </div>
@@ -103,7 +103,7 @@ const ProfileDetails = () => {
                     )}
                 </section>
 
-                <div className="grid gap-2">
+                <div className="grid grid-cols-1 gap-2">
                     <Button className="w-full" icon={UserRound} onClick={() => setEditOpen(true)}>{t('Edit profile')}</Button>
                     <Button className="w-full" variant="secondary" icon={Smartphone} onClick={() => setPhoneOpen(true)}>
                         {profile?.phoneVerified ? t('Change phone number') : t('Verify phone number')}
@@ -140,7 +140,7 @@ const ProfileDetails = () => {
                 </Panel>
 
                 <Panel label={t('Shortcuts')}>
-                    <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                    <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                         {shortcuts.map(({ to, href, icon: Icon, label, hint }) => {
                             const Row = href ? 'a' : Link;
                             return (
@@ -160,7 +160,7 @@ const ProfileDetails = () => {
                 </Panel>
 
                 <Panel label={t('Privacy and your data')}>
-                    <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                    <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                         {privacyLinks.map(({ href, onClick, icon: Icon, label, hint }) => {
                             const Row = href ? 'a' : 'button';
                             return (

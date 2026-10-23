@@ -84,7 +84,7 @@ const DetailsStep = ({ details, setDetails, profileCollege, fieldError }) => {
             )}
 
             <FormBlock label={t('How you like to work')}>
-                <div className="grid gap-2 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                     {COLLAB_OPTIONS.map(o => (
                         <ChoiceChip key={o.id} selected={details.collaboration === o.id} hint={t(o.hint)} onClick={() => set({ collaboration: o.id })}>{t(o.label)}</ChoiceChip>
                     ))}

@@ -229,7 +229,7 @@ const CampaignApplyPage = () => {
 
     return (
         <PageBody>
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-12">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-12">
                 {header}
                 {!state.open ? (
                     <Notice tone="warn" title={t(CLOSED_COPY[state.reason] || CLOSED_COPY.closed)} />
