@@ -485,7 +485,7 @@ const TicketingManagement = ({ mode = 'tickets' }) => {
             {activeTab === 'guestlist' && <GuestlistPanel key={`gl-${listFilter}`} event={event} entries={guestEntries} loading={guestLoading} error={guestError} initialFilter={listFilter} />}
             {activeTab === 'checkin' && <CheckInDesk eventId={event.id} orders={orders} guestEntries={guestEntries} />}
             {activeTab === 'coupons' && <CouponsPanel eventId={event.id} coupons={coupons || []} orders={orders} canSeeMoney={canSeeMoney} />}
-            {activeTab === 'settings' && <SettingsPanel event={event} onEditGuestlist={(gl) => setEditor({ guestlist: gl })} onDeleted={closeEvent} onEditSale={(section) => setSaleEditor({ event, section })} />}
+            {activeTab === 'settings' && <SettingsPanel event={event} orders={orders} onEditGuestlist={(gl) => setEditor({ guestlist: gl })} onDeleted={closeEvent} onEditSale={(section) => setSaleEditor({ event, section })} />}
             <ShareDraftsSheet
                 open={sharing}
                 onClose={() => setSharing(false)}
