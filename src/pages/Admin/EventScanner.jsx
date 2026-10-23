@@ -76,6 +76,15 @@ const refFromCode = (raw) => {
     return m ? m[0] : text.toUpperCase().replace(/\s+/g, '');
 };
 
+// Where to turn the camera back on, for the browser this is.
+const cameraUnblockHint = () => {
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+    const iOS = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+    if (iOS) return 'On iPhone: Settings → Safari → Camera → Allow, then reload.';
+    if (/Android/i.test(ua)) return 'Tap the lock icon by the address, allow Camera, then tap Retry.';
+    return 'Click the camera or lock icon in the address bar, allow the camera, then tap Retry.';
+};
+
 const timeOf = (iso) => {
     const d = iso ? new Date(iso) : null;
     return d && !isNaN(d) ? d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) : '';
@@ -367,7 +376,7 @@ const ScanScreen = ({ eventId, event, onChangeEvent, onBack, canOpenDesk, onOpen
                 const text = `${err?.name || ''} ${err?.message || err}`;
                 setCamState('error');
                 setCamError(/NotAllowed|Permission/i.test(text)
-                    ? 'Camera access is blocked. On iPhone: Settings → Safari → Camera → Allow, then reload. You can type codes below.'
+                    ? `Camera access is blocked. ${cameraUnblockHint()} You can type codes below.`
                     : /NotFound|no camera|Requested device not found/i.test(text)
                         ? 'No camera found on this device. Type codes below instead.'
                         : "The camera couldn't start. Close other apps using it and tap Retry, or type codes below.");

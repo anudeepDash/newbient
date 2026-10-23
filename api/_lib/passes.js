@@ -1370,6 +1370,9 @@ const checkinAction = async (db, body, caller) => {
         if (pass.source === 'guestlist' && pass.entryId && (!linked || String(linked.status) === 'rejected' || linked.passRevoked)) {
             return { success: true, found: true, valid: false, reason: 'rejected', message: linked ? 'This sign-up was declined.' : 'This sign-up was removed from the list.', data };
         }
+        if (pass.source === 'order' && linkedRef && !linked) {
+            return { success: true, found: true, valid: false, reason: 'rejected', message: 'This order was deleted.', data };
+        }
         if (pass.source === 'order' && linked && ['pending', 'rejected'].includes(String(linked.status))) {
             return { success: true, found: true, valid: false, reason: linked.status === 'pending' ? 'unpaid' : 'rejected', message: linked.status === 'pending' ? "Payment hasn't been verified yet." : 'This order was cancelled.', data };
         }

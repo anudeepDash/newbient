@@ -5632,6 +5632,33 @@ export const useStore = create((set, get) => ({
             throw error;
         }
     },
+    // Deletes orders for good (test bookings, a sale taken down). A coupon use an
+    // order still holds is given back, like a rejection, but nobody is messaged.
+    // Returns how many couldn't be deleted.
+    deleteTicketOrders: async (ids) => {
+        let failed = 0;
+        for (const id of ids) {
+            const orderRef = doc(db, 'ticket_orders', id);
+            try {
+                await runTransaction(db, async (tx) => {
+                    const snap = await tx.get(orderRef);
+                    if (!snap.exists()) return;
+                    const order = snap.data();
+                    const couponId = order.appliedCoupon?.id;
+                    const couponRef = couponId && !order.couponReleased ? doc(db, 'coupons', couponId) : null;
+                    const couponSnap = couponRef ? await tx.get(couponRef) : null;
+                    tx.delete(orderRef);
+                    if (couponSnap?.exists() && Number(couponSnap.data().usedCount || 0) > 0) {
+                        tx.update(couponRef, { usedCount: increment(-1) });
+                    }
+                });
+            } catch (error) {
+                console.error('Error deleting ticket order:', id, error);
+                failed += 1;
+            }
+        }
+        return failed;
+    },
 
 
     // `value` (optional): the state to set, so a stale screen can't flip it the wrong way.

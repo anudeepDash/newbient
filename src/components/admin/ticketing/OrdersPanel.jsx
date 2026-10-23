@@ -13,8 +13,10 @@ import Eye from 'lucide-react/dist/esm/icons/eye';
 import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
 import ImageIcon from 'lucide-react/dist/esm/icons/image';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import { callTicketApi } from '../../../lib/ticketApi';
 import StatementMatchSheet from './StatementMatchSheet';
+import { deleteOrders } from './deleteOrders';
 import { useStore } from '../../../lib/store';
 import { cn } from '../../../lib/utils';
 import { orderItems, orderTicketCount, isOrderCheckedIn, SOLD_STATUSES, computeAvailability } from '../../../lib/ticketing';
@@ -29,7 +31,7 @@ import { APP_ORIGIN } from '../../../app/host';
 /*
  * Ticket orders for one event: verify payments (match the UTR with the bank,
  * one by one or a whole statement at once), send tickets, cancel. "Verify &
- * send" does both in one tap. Orders paid through Razorpay confirm themselves;
+ * send" does both in one tap. Delete removes an order for good (and its pass). Orders paid through Razorpay confirm themselves;
  * ones still "paying online" can be checked with Razorpay. Check-in lives on
  * the Check-in tab.
  */
@@ -194,6 +196,22 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
         else addToast(`Ticket sent to ${o.customerEmail || personName(o)}.`, 'success');
     });
 
+    // Gone for good: for test bookings and duplicates. Its pass stops working.
+    const remove = (o) => ask({
+        title: 'Delete this order?',
+        body: `${personName(o)}'s order${o.bookingRef ? ` (${o.bookingRef})` : ''} is removed for good${SOLD_STATUSES.includes(o.status) ? ', their ticket stops working at the gate' : ''} and ${orderTicketCount(o) === 1 ? 'the seat is' : 'the seats are'} freed. They aren't told${isPaid(o) && o.status !== 'rejected' ? ', and any refund is yours to send' : ''}. This can't be undone.`,
+        confirmLabel: 'Delete order',
+        busyLabel: 'Deleting…',
+        danger: true,
+        action: async () => {
+            const failed = await deleteOrders([o]);
+            if (failed) throw new Error("Couldn't delete this order. Try again.");
+            if (openId === o.id) setOpenId(null);
+            setSelected(prev => { const n = new Set(prev); n.delete(o.id); return n; });
+            addToast('Order deleted.', 'info');
+        },
+    });
+
     // ── bulk ──
     const runBulk = async (label, list, fn) => {
         let failed = 0;
@@ -248,6 +266,28 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
                     failed ? `${failed} couldn't be rejected. Try those again.` : `${list.length} ${list.length === 1 ? 'order' : 'orders'} rejected.`,
                     failed ? 'warning' : 'info',
                     failed ? { title: `Rejected ${list.length - failed} of ${list.length}` } : undefined,
+                );
+            },
+        });
+    };
+
+    const bulkDelete = () => {
+        const list = selectedOrders;
+        const sold = list.filter(o => SOLD_STATUSES.includes(o.status)).length;
+        ask({
+            title: `Delete ${list.length} ${list.length === 1 ? 'order' : 'orders'}?`,
+            body: `They're removed for good and their seats freed.${sold ? ` ${sold} ${sold === 1 ? 'ticket stops' : 'tickets stop'} working at the gate.` : ''} Nobody is told. This can't be undone.`,
+            confirmLabel: 'Delete all',
+            busyLabel: 'Deleting…',
+            danger: true,
+            action: async () => {
+                setBulk({ label: 'Deleting', done: 0, total: list.length });
+                const failed = await deleteOrders(list).finally(() => setBulk(null));
+                setSelected(new Set());
+                addToast(
+                    failed ? `${failed} couldn't be deleted. Try those again.` : `${list.length} ${list.length === 1 ? 'order' : 'orders'} deleted.`,
+                    failed ? 'warning' : 'info',
+                    failed ? { title: `Deleted ${list.length - failed} of ${list.length}` } : undefined,
                 );
             },
         });
@@ -331,6 +371,7 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
             {['approved', 'dispatched', 'confirmed'].includes(o.status) && (
                 <MenuItem icon={X} danger onClick={() => reject(o)} hint="Releases the seats">Cancel order</MenuItem>
             )}
+            <MenuItem icon={Trash2} danger onClick={() => remove(o)} hint="Removes it for good">Delete order</MenuItem>
         </Menu>
     );
 
@@ -372,6 +413,7 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
                             {selPending > 0 && <Button variant="success" size="sm" className="h-10" onClick={bulkVerify}><Check size={14} /> Verify & send {selPending}</Button>}
                             {selApproved.length > 0 && <Button variant="accent" size="sm" className="h-10" onClick={() => sendTo(selApproved)}><Send size={14} /> Send {selApproved.length}</Button>}
                             {selRejectable > 0 && <Button variant="secondary" size="sm" className="h-10 text-red-600 dark:text-red-400" onClick={bulkReject}><X size={14} /> Reject {selRejectable}</Button>}
+                            <Button variant="secondary" size="sm" className="h-10 text-red-600 dark:text-red-400" onClick={bulkDelete}><Trash2 size={14} /> Delete {selected.size}</Button>
                             <Button variant="secondary" size="sm" className="h-10" onClick={() => setWaPeople(selectedOrders.map(o => ({ name: personName(o, ''), phone: o.customerPhone || o.phone })))}><MessageCircle size={14} /> WhatsApp</Button>
                             <Button variant="ghost" size="sm" className="ml-auto h-10" onClick={() => setSelected(new Set())}>Clear</Button>
                         </>
@@ -514,6 +556,7 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
                             {canReview && ['dispatched', 'confirmed'].includes(open.status) && <Button variant="secondary" className="h-11" onClick={() => send(open)} disabled={Boolean(busy[open.id])}><Send size={14} /> {busy[open.id] === 'send' ? 'Sending…' : 'Resend email'}</Button>}
                             {canReview && open.status === 'rejected' && <Button variant="secondary" className="h-11" onClick={() => verify(open)}><Undo2 size={14} /> Verify after all</Button>}
                             {canReview && ['approved', 'dispatched', 'confirmed'].includes(open.status) && <Button variant="ghost" className="h-11 text-red-600 dark:text-red-400" onClick={() => reject(open)}><X size={14} /> Cancel order</Button>}
+                            {canReview && <Button variant="ghost" className="h-11 text-red-600 dark:text-red-400" onClick={() => remove(open)}><Trash2 size={14} /> Delete order</Button>}
                         </div>
                     </>
                 )}

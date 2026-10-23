@@ -10,18 +10,22 @@ import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
 import Ban from 'lucide-react/dist/esm/icons/ban';
+import TicketX from 'lucide-react/dist/esm/icons/ticket-x';
 import { useStore } from '../../../lib/store';
 import { notifyEvent } from '../../../lib/mailApi';
 import { Button, Badge } from '../ui';
 import PaymentSettingsPanel from './PaymentSettingsPanel';
 import { Panel, PanelTitle, useConfirm, useBusy } from './kit';
 import { hasGuestlist } from './events';
+import { deleteOrders } from './deleteOrders';
+import { SOLD_STATUSES } from '../../../lib/ticketing';
 
 /*
  * Settings for one event in Ticketing. Each thing is edited in one place:
  * payments here; event details, ticket types and capacity in Events; a
  * standalone guestlist (made here, not in Events) here. "Tell pass holders"
- * messages everyone with a pass about a change, or cancels the event.
+ * messages everyone with a pass about a change, or cancels the event. "Delete"
+ * takes the ticket sale down or deletes the event, with its orders.
  */
 
 const Row = ({ label, children }) => (
@@ -226,7 +230,81 @@ const TellPassHolders = ({ event }) => {
     );
 };
 
-const SettingsPanel = ({ event, onEditGuestlist, onDeleted, onEditSale }) => {
+/*
+ * Taking a sale down (the event stays in Events) or deleting the event. Either
+ * way its orders are deleted too, so no order is left pointing at nothing, and
+ * their passes stop working. Nobody is messaged: "Cancel the event" does that.
+ */
+const DeleteSale = ({ event, orders, onDeleted }) => {
+    const addToast = useStore(s => s.addToast);
+    const [ask, confirmSheet] = useConfirm();
+    const sold = orders.filter(o => SOLD_STATUSES.includes(o.status));
+    const name = event.title || 'this event';
+    const n = orders.length;
+    const ordersLine = n ? ` Its ${n} ${n === 1 ? 'order is' : 'orders are'} deleted too.` : '';
+    const soldWarning = sold.length ? (
+        <p className="rounded-xl bg-amber-500/10 px-3 py-2 text-[13px] font-semibold text-amber-700 dark:text-amber-300">
+            {sold.length} {sold.length === 1 ? 'person holds a ticket' : 'people hold tickets'}. Their tickets stop working and nobody is told. To tell them and offer refunds, use Cancel the event first.
+        </p>
+    ) : null;
+
+    const dropOrders = async () => {
+        const failed = n ? await deleteOrders(orders, { reason: 'Ticket sale removed' }) : 0;
+        if (failed) throw new Error(`${failed} ${failed === 1 ? 'order' : 'orders'} couldn't be deleted. Try again.`);
+    };
+
+    const takeDown = () => ask({
+        title: 'Take down the ticket sale?',
+        body: (
+            <>
+                <p>The tickets page for {name} goes away and nobody can book.{ordersLine} The event itself stays in Events. This can't be undone.</p>
+                {soldWarning}
+            </>
+        ),
+        confirmLabel: 'Take down sale',
+        busyLabel: 'Taking down…',
+        danger: true,
+        action: async () => {
+            await dropOrders();
+            await useStore.getState().updateUpcomingEvent(event.id, { isTicketed: false });
+            addToast(n ? `${n} ${n === 1 ? 'order' : 'orders'} deleted with it.` : 'Nobody can book tickets now.', 'success', { title: 'Ticket sale taken down' });
+            if (!hasGuestlist(event)) onDeleted?.();
+        },
+    });
+
+    const removeEvent = () => ask({
+        title: `Delete ${name}?`,
+        body: (
+            <>
+                <p>The event and its page are removed everywhere.{ordersLine}{hasGuestlist(event) ? ' Guestlist sign-ups stay in Guestlists.' : ''} This can't be undone.</p>
+                {soldWarning}
+            </>
+        ),
+        confirmLabel: 'Delete event',
+        busyLabel: 'Deleting…',
+        danger: true,
+        action: async () => {
+            await dropOrders();
+            await useStore.getState().deleteUpcomingEvent(event.id);
+            addToast(n ? `${n} ${n === 1 ? 'order was' : 'orders were'} deleted with it.` : `${name} is gone.`, 'success', { title: 'Event deleted' });
+            onDeleted?.();
+        },
+    });
+
+    return (
+        <Panel className="p-4 sm:p-5">
+            <PanelTitle icon={Trash2} tone="red" title="Delete"
+                hint={n ? `Deleting also removes its ${n} ${n === 1 ? 'order' : 'orders'}.` : 'No orders yet, so nothing else is removed.'} />
+            <div className="flex flex-wrap gap-2">
+                {event.isTicketed && <Button variant="secondary" className="h-11 text-red-600 dark:text-red-400" onClick={takeDown}><TicketX size={14} /> Take down ticket sale</Button>}
+                <Button variant="ghost" className="h-11 text-red-600 dark:text-red-400" onClick={removeEvent}><Trash2 size={14} /> Delete event</Button>
+            </div>
+            {confirmSheet}
+        </Panel>
+    );
+};
+
+const SettingsPanel = ({ event, orders = [], onEditGuestlist, onDeleted, onEditSale }) => {
     const fromEvents = event.source === 'event';
     return (
         <div className="space-y-5">
@@ -261,6 +339,8 @@ const SettingsPanel = ({ event, onEditGuestlist, onDeleted, onEditSale }) => {
                     )}
                 </Panel>
             )}
+
+            {fromEvents && <DeleteSale event={event} orders={orders} onDeleted={onDeleted} />}
         </div>
     );
 };
