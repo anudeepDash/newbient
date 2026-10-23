@@ -206,7 +206,8 @@ const AppLayout = () => {
                                 aria-label={active ? undefined : t(label)}
                                 className={cn(
                                     'relative flex h-12 items-center justify-center rounded-full transition-[padding,color] duration-300',
-                                    active ? 'gap-2 pl-4 pr-5 text-gray-900 dark:text-white' : 'w-12 text-gray-500 active:scale-95 dark:text-zinc-400'
+                                    // Under 360px the five tabs plus a label don't fit, so the active tab is icon-only there too.
+                                    active ? 'gap-2 pl-4 pr-5 text-gray-900 max-[359px]:w-12 max-[359px]:px-0 dark:text-white' : 'w-12 text-gray-500 active:scale-95 dark:text-zinc-400'
                                 )}
                                 style={{ WebkitTapHighlightColor: 'transparent' }}
                             >
@@ -220,7 +221,7 @@ const AppLayout = () => {
                                 <span className="relative">
                                     <Icon size={21} strokeWidth={active ? 2.3 : 1.9} className={active ? 'text-emerald-600 dark:text-neon-green' : undefined} />
                                 </span>
-                                {active && <span className="relative whitespace-nowrap text-[14px] font-bold">{t(module.tab.label)}</span>}
+                                {active && <span className="relative whitespace-nowrap text-[14px] font-bold max-[359px]:sr-only">{t(module.tab.label)}</span>}
                             </Link>
                         );
                     })}

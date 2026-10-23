@@ -36,7 +36,7 @@ export const Rail = ({ children, className }) => (
 );
 
 export const CardGrid = ({ children, className }) => (
-    <div className={cn('grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6', className)}>{children}</div>
+    <div className={cn('grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6', className)}>{children}</div>
 );
 
 export const CardSkeleton = () => (
