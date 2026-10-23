@@ -54,6 +54,8 @@ export default {
     'young India': 'young India',
     'show up.': 'show up.',
     'Campus activations, live shows and creator campaigns across India.': 'Campus activations, live shows aur creator campaigns, poore India mein.',
+    'Live shows, guestlists and paid creator campaigns across India. One free account gets you in.': 'Live shows, guestlists aur paid creator campaigns, poore India mein. Ek free account se sab mein entry.',
+    'For brands & colleges': 'For brands & colleges',
     'See the work': 'See the work',
     'Choose your way in': 'Choose your way in',
     'Plan a campaign or fest': 'Plan a campaign or fest',
@@ -206,6 +208,8 @@ export default {
     'Creators & community': 'Creators & community',
     'Not just an agency.': 'Not just an agency.',
     'A platform too.': 'A platform too.',
+    'Be part of': 'Be part of',
+    'the night.': 'the night.',
     'Every show and campaign we run lives on newbi.live for the people in it. Creators get a dashboard. The community gets guestlists, passes and giveaways. One account, no forms to fill twice.': 'Hum jo bhi show aur campaign chalate hain, woh newbi.live par un logon ke liye hota hai jo usme shaamil hain. Creators ko dashboard milta hai. Community ko guestlists, passes aur giveaways. Ek account, aur koi form do baar nahi bharna.',
     'For creators': 'For creators',
     'Apply once. Work every campaign from one dashboard.': 'Ek baar apply karo. Har campaign ek hi dashboard se karo.',
@@ -227,6 +231,7 @@ export default {
 
     // FAQ
     'Questions': 'Questions',
+    'Questions from brands': 'Questions from brands',
     'Before you': 'Before you',
     'ask.': 'ask.',
     'Which cities do you work in?': 'Which cities do you work in?',

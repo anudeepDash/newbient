@@ -54,7 +54,8 @@ const PANELS = [
 const COUNT = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'][PANELS.length] || PANELS.length;
 
 /*
- * About Newbi and what we run, in one section. The intro slide says who we
+ * Opens the brands & colleges half of the home page: about Newbi and what we
+ * run, in one section. The intro slide says who we
  * are; the rest are what we run. Where the browser supports scroll-driven
  * animations, the section pins and the slides move sideways with the scroll
  * (phones included); elsewhere they stack.
@@ -66,12 +67,13 @@ export default function Story() {
     return (
         <section ref={ref} id="services" aria-labelledby="story-title" className="nb-story scroll-mt-20 relative" style={{ '--nb-slides': PANELS.length + 1 }}>
             <span id="about" className="absolute top-0" aria-hidden="true" />
+            <span id="brands" className="absolute top-0" aria-hidden="true" />
             <div className="nb-story-pin">
                 <div className="nb-story-track grid gap-14 py-20">
                     {/* Intro slide: who we are */}
                     <div className="nb-story-panel flex items-center px-4 sm:px-6 lg:px-10">
                         <div className="w-full">
-                            <SectionLabel index="01">About &amp; what we run</SectionLabel>
+                            <SectionLabel index="03">For brands &amp; colleges</SectionLabel>
                             <h2 id="story-title" className="mt-5 font-heading font-extrabold tracking-[-0.04em] leading-[0.92] text-[11.5vw] sm:text-[8vw] lg:text-[5.6vw] text-gray-950 dark:text-white">
                                 {t('Plans are easy.')}<br />{t("We're the crew")}<br /><Sticker subtle>{t('that runs them.')}</Sticker>
                             </h2>

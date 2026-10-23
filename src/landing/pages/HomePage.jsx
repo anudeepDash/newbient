@@ -40,13 +40,16 @@ export default function HomePage() {
     return (
         <div>
             <Hero onChooseAudience={setAudience} />
+            {/* For everyone first: creators and the community, then the nights we built. */}
+            {!off('home_creators') && <JoinIn welcomePoints={feed?.settings?.creatorWelcomePoints} />}
+            {!off('home_portfolio') && <CaseStudies items={feed?.caseStudies} />}
+
+            {/* For brands and colleges: what we run, how, and the enquiry form. */}
             <Marquee />
             <Story />
             {!off('home_clients') && <Proof clients={feed?.clients} stats={feed?.settings?.stats} />}
             <Process />
             <Manifesto />
-            {!off('home_portfolio') && <CaseStudies items={feed?.caseStudies} />}
-            {!off('home_creators') && <JoinIn welcomePoints={feed?.settings?.creatorWelcomePoints} />}
             <Faq />
 
             <section id="enquire" aria-labelledby="enquire-title" className="scroll-mt-20 py-24 md:py-36 border-t border-gray-950/10 dark:border-white/10">
@@ -54,7 +57,7 @@ export default function HomePage() {
                     <div className="lg:sticky lg:top-28 self-start">
                         <SectionHeading
                             id="enquire-title"
-                            index="08"
+                            index="07"
                             eyebrow="Work with us"
                             title="Let's make"
                             highlight="noise."

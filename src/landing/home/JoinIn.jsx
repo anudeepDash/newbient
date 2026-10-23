@@ -31,8 +31,8 @@ function Column({ label, title, intro, points, cta, more, dark, welcome }) {
 }
 
 /*
- * The other side of Newbi: the platform creators and the community already
- * use. Creators apply once and work every campaign from one dashboard; the
+ * The first thing on the home page after the hero: the platform creators and
+ * the community use. Creators apply once and work every campaign from one dashboard; the
  * community joins guestlists, gigs and giveaways with one account.
  */
 export default function JoinIn({ welcomePoints }) {
@@ -41,10 +41,10 @@ export default function JoinIn({ welcomePoints }) {
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10">
                 <SectionHeading
                     id="join-title"
-                    index="05"
+                    index="01"
                     eyebrow="Creators & community"
-                    title="Not just an agency."
-                    highlight="A platform too."
+                    title="Be part of"
+                    highlight="the night."
                     text="Every show and campaign we run lives on newbi.live for the people in it. Creators get a dashboard. The community gets guestlists, passes and giveaways. One account, no forms to fill twice."
                 />
                 <div className="mt-12 md:mt-16 grid gap-4 md:gap-6 lg:grid-cols-2">
