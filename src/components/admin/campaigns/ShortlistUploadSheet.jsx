@@ -5,6 +5,7 @@ import UserCheck from 'lucide-react/dist/esm/icons/user-check';
 import X from 'lucide-react/dist/esm/icons/x';
 import { cn } from '../../../lib/utils';
 import { downloadCsv, exportSubtitle, fileDate } from '../../../lib/xlsx';
+import GoogleSheetsButton from '../GoogleSheetsButton';
 import Sheet from '../Sheet';
 import { Avatar, Badge, Button } from '../ui';
 import { Toggle } from '../uploads/UploadKit';
@@ -48,7 +49,8 @@ const ShortlistUploadSheet = ({ open, onClose, campaign, applicants, onShortlist
     const toShortlist = rows.filter(r => r.status === 'ready' && !skipped.has(r.row)).map(r => r.entry);
     const counts = rows.reduce((m, r) => ({ ...m, [r.status]: (m[r.status] || 0) + 1 }), {});
 
-    const downloadSheet = () => downloadCsv(clientSheetSpec(campaign, applicants, { fileDate, exportSubtitle }));
+    const sheetSpec = () => clientSheetSpec(campaign, applicants, { fileDate, exportSubtitle });
+    const downloadSheet = () => downloadCsv(sheetSpec());
 
     const confirm = async () => {
         if (!toShortlist.length || saving) return;
@@ -84,6 +86,7 @@ const ShortlistUploadSheet = ({ open, onClose, campaign, applicants, onShortlist
                     <Button onClick={downloadSheet} className="h-11 sm:justify-start"><Download size={14} /> Client sheet</Button>
                     <Button onClick={() => input.current?.click()} disabled={saving} className="h-11 sm:justify-start"><Upload size={14} /> {name ? 'Choose another' : 'Choose CSV'}</Button>
                     <input ref={input} type="file" accept=".csv,text/csv" className="hidden" onChange={e => { read(e.target.files?.[0]); e.target.value = ''; }} />
+                    <GoogleSheetsButton getSpec={sheetSpec} format="csv" label="Client sheet in Google Sheets" className="col-span-2 h-11 sm:justify-start" />
                 </div>
                 <div
                     onDragOver={e => e.preventDefault()}

@@ -12,6 +12,7 @@ import { getEarnedBadges } from '../../lib/badges';
 import MultiSelectFilter from '../../components/admin/filters/MultiSelectFilter';
 import RangeFilter from '../../components/admin/filters/RangeFilter';
 import { downloadXlsx, exportSubtitle, fileDate } from '../../lib/xlsx';
+import { googleSheetsEnabled, openInGoogleSheets } from '../../lib/googleSheets';
 import Users from 'lucide-react/dist/esm/icons/users';
 import Search from 'lucide-react/dist/esm/icons/search';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
@@ -30,6 +31,7 @@ import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import GraduationCap from 'lucide-react/dist/esm/icons/graduation-cap';
 import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
+import SheetIcon from 'lucide-react/dist/esm/icons/sheet';
 import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
 import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
@@ -792,6 +794,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                                         <MenuItem icon={Clock} onClick={() => requestBulk('pending')}>Move back to pending</MenuItem>
                                         <MenuItem icon={Ban} onClick={() => requestBulk('blocked')}>Block</MenuItem>
                                         <MenuItem icon={FileSpreadsheet} onClick={exportSelected} hint="Excel file of the selection">Export selected</MenuItem>
+                                        {googleSheetsEnabled && <MenuItem icon={SheetIcon} onClick={() => openInGoogleSheets(exportSpecFor(selectedCreators, 'selected'))} hint="Saves a copy in your Drive to edit there">Selected to Google Sheets</MenuItem>}
                                         <div className="my-1 border-t border-black/[0.05] dark:border-white/[0.08]" />
                                         <MenuItem icon={Trash2} danger onClick={() => requestBulk('delete')}>Delete</MenuItem>
                                     </Menu>

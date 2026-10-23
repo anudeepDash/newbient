@@ -10,6 +10,7 @@ import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
 import { useStore } from '../../../lib/store';
 import { cn } from '../../../lib/utils';
 import { downloadCsv } from '../../../lib/xlsx';
+import GoogleSheetsButton from '../GoogleSheetsButton';
 import Sheet from '../Sheet';
 import { Button, Badge, SegmentedTabs, StatTile } from '../ui';
 import { Choice, Toggle, UploadProgress } from '../uploads/UploadKit';
@@ -24,13 +25,12 @@ import { analyseImport, importPayload, IMPORT_TEMPLATE_HEADERS, IMPORT_TEMPLATE_
 const MAX_ROWS = 1000;
 const CONCURRENCY = 3;
 
-const downloadTemplate = () => {
-    downloadCsv({
-        filename: 'newbi-creator-import-template',
-        columns: IMPORT_TEMPLATE_HEADERS.map((header, i) => ({ header, value: r => r[i] })),
-        rows: [IMPORT_TEMPLATE_SAMPLE],
-    });
-};
+const templateSpec = () => ({
+    filename: 'newbi-creator-import-template',
+    columns: IMPORT_TEMPLATE_HEADERS.map((header, i) => ({ header, value: r => r[i] })),
+    rows: [IMPORT_TEMPLATE_SAMPLE],
+});
+const downloadTemplate = () => downloadCsv(templateSpec());
 
 const ImportCreatorsSheet = ({ open, onClose, creators }) => {
     const addToast = useStore(s => s.addToast);
@@ -186,6 +186,7 @@ const ImportCreatorsSheet = ({ open, onClose, creators }) => {
                         </span>
                         <span className="flex shrink-0 gap-2">
                             <Button variant="ghost" onClick={downloadTemplate}><Download size={14} /> Template</Button>
+                            <GoogleSheetsButton getSpec={templateSpec} format="csv" label="Sheets" />
                             <Button variant="accent" onClick={() => inputRef.current?.click()} disabled={running}><Upload size={14} /> {fileName ? 'Choose another' : 'Choose file'}</Button>
                         </span>
                         <input ref={inputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => { readFile(e.target.files?.[0]); e.target.value = ''; }} />

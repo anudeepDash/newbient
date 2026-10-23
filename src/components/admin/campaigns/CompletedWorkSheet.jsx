@@ -5,6 +5,7 @@ import CheckCheck from 'lucide-react/dist/esm/icons/check-check';
 import X from 'lucide-react/dist/esm/icons/x';
 import { cn } from '../../../lib/utils';
 import { downloadCsv } from '../../../lib/xlsx';
+import GoogleSheetsButton from '../GoogleSheetsButton';
 import Sheet from '../Sheet';
 import { Avatar, Badge, Button, SearchInput, SegmentedTabs } from '../ui';
 import { Toggle, fieldCls } from '../uploads/UploadKit';
@@ -86,7 +87,7 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
     const counts = rows.reduce((m, r) => ({ ...m, [r.status]: (m[r.status] || 0) + 1 }), {});
     const chosen = tasks.find(t => String(t.id) === forTask);
 
-    const downloadTemplate = () => downloadCsv({
+    const templateSpec = () => ({
         filename: `${(campaign.title || 'campaign').replace(/[^\w-]+/g, '_').slice(0, 40)}_${chosen ? `${String(chosen.title || 'deliverable').replace(/[^\w-]+/g, '_').slice(0, 20)}_` : ''}template`,
         rows: [{}],
         columns: chosen
@@ -97,6 +98,7 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
                 ...tasks.map((t, idx) => ({ header: `${taskTitle(t, idx)} · link`, value: () => '' })),
             ],
     });
+    const downloadTemplate = () => downloadCsv(templateSpec());
 
     /* ---------- one person ---------- */
 
@@ -218,6 +220,7 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
                             <Button onClick={downloadTemplate} disabled={!forTask} className="h-11 sm:justify-start"><Download size={14} /> Template</Button>
                             <Button onClick={() => input.current?.click()} disabled={saving || !forTask} className="h-11 sm:justify-start"><Upload size={14} /> {name ? 'Choose another' : 'Choose CSV'}</Button>
                             <input ref={input} type="file" accept=".csv,text/csv" className="hidden" onChange={e => { read(e.target.files?.[0]); e.target.value = ''; }} />
+                            <GoogleSheetsButton getSpec={templateSpec} format="csv" disabled={!forTask} label="Fill the template in Google Sheets" className="col-span-2 h-11 sm:justify-start" />
                         </div>
                         <div
                             onDragOver={e => e.preventDefault()}
@@ -261,6 +264,7 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
                                     <Button size="sm" variant="ghost" onClick={() => downloadCsv(checkedSheetSpec(parsed, name))} className="ml-auto h-9">
                                         <Download size={13} /> Checked sheet
                                     </Button>
+                                    <GoogleSheetsButton getSpec={() => checkedSheetSpec(parsed, name)} format="csv" label="Sheets" size="sm" className="h-9" />
                                 </div>
                                 <ul className="space-y-1.5 sm:max-h-[40dvh] sm:overflow-y-auto">
                                     {rows.map(r => {

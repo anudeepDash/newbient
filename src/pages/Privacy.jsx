@@ -158,7 +158,7 @@ const sections = [
                     ['Google Firebase and Google Cloud', 'Sign-in, database, file storage, push notifications and the reCAPTCHA check on SMS codes.'],
                     ['Vercel', 'Hosting for our website, app and servers, and, only if you allow analytics, counting page visits and load times.'],
                     ['Meta', 'WhatsApp messages and codes (WhatsApp Business Platform) and Instagram connection and lookups.'],
-                    ['Google Workspace', 'Sending and receiving our email.'],
+                    ['Google Workspace', 'Sending and receiving our email, and the spreadsheets our team exports to Google Sheets to work on.'],
                     ['Cloudinary', 'Storing images and files you upload, such as profile photos, post screenshots and payment screenshots.'],
                     ['Razorpay', 'Card, netbanking and UPI payments, only for shows that offer them and only if you choose that option. Razorpay handles your payment details; we receive only whether it was paid.'],
                     ['Apify and RapidAPI', 'Backup lookups of public Instagram profiles by handle.'],
