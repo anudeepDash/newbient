@@ -44,7 +44,7 @@ const sections = [
                 ]} />
                 <H3>Tickets, passes and guestlists</H3>
                 <UL items={[
-                    'Your name, email and phone number, what you booked, the amount, any coupon, and the UPI transaction reference (UTR) you enter so we can match your payment.',
+                    'Your name, email and phone number, what you booked, the amount, any coupon, and the UPI transaction reference (UTR) you enter so we can match your payment. If you choose to add a screenshot of the payment, we keep it with the order so the team can check it.',
                     'Your passes and their QR codes, and for some lists the task you submit (a link, a file or a short answer) and how many guests you bring.',
                 ]} />
                 <H3>Creators</H3>
@@ -159,7 +159,8 @@ const sections = [
                     ['Vercel', 'Hosting for our website, app and servers, and, only if you allow analytics, counting page visits and load times.'],
                     ['Meta', 'WhatsApp messages and codes (WhatsApp Business Platform) and Instagram connection and lookups.'],
                     ['Google Workspace', 'Sending and receiving our email.'],
-                    ['Cloudinary', 'Storing images and files you upload, such as profile photos and post screenshots.'],
+                    ['Cloudinary', 'Storing images and files you upload, such as profile photos, post screenshots and payment screenshots.'],
+                    ['Razorpay', 'Card, netbanking and UPI payments, only for shows that offer them and only if you choose that option. Razorpay handles your payment details; we receive only whether it was paid.'],
                     ['Apify and RapidAPI', 'Backup lookups of public Instagram profiles by handle.'],
                     ['Google Gemini and OpenRouter', 'AI tools our team uses to write content, and translating our public listings into Hinglish. Your account data isn’t sent to them.'],
                     ['YouTube, Vimeo and Instagram', 'Videos embedded on some event and ConcertZone pages. They load only if you allow embedded videos, and these services may then set their own cookies.'],
@@ -177,9 +178,10 @@ const sections = [
         body: (
             <P>
                 Ticket payments are made by UPI from your own banking app; we never see your bank or card details. You give us the
-                UPI transaction reference (UTR) and our team checks it against the payment before confirming your booking. If an
-                event uses an outside payment page, that provider’s terms and privacy policy apply to the payment. Creator payouts
-                are sent by UPI to the UPI ID you give us.
+                UPI transaction reference (UTR) and our team checks it against the payment before confirming your booking. To find
+                payments faster, the team may compare UTRs with our own bank statement; that statement stays on the team’s device.
+                If a show offers card or netbanking, that payment is made in Razorpay’s checkout, and Razorpay’s terms and privacy
+                policy apply to it. Creator payouts are sent by UPI to the UPI ID you give us.
             </P>
         ),
     },

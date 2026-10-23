@@ -152,6 +152,7 @@ const APP_PATHS = [
     [/^\/community$/, 'community'],
     [/^\/community\/g\/([^/]+)$/, 'guestlist'],
     [/^\/community\/giveaways\/([^/]+)$/, 'giveaway'],
+    [/^\/tickets\/([^/]+)$/, 'ticket-event'],
     [/^\/c\/([^/]+)$/, 'campaign'],
     [/^\/p\/([^/]+)$/, 'pass'],
     [/^\/creator$/, 'app-creator'],
@@ -289,6 +290,20 @@ const loaders = {
             title: `${title} | Guestlist`,
             description: eventDescription(data) || `Get on the guestlist for ${title}.`,
             image: firstImage(data.image, data.posterUrl),
+            alt: title,
+        };
+    },
+
+    // A show's ticket page (/tickets/:id).
+    async 'ticket-event'(db, { id }) {
+        const snap = await db.collection('upcoming_events').doc(id).get();
+        if (!snap.exists) return null;
+        const data = snap.data();
+        const title = stripHtml(data.title) || 'Newbi event';
+        return {
+            title: `${title}${data.city ? ` | ${stripHtml(data.city)}` : ''} | Tickets`,
+            description: eventDescription(data) || PAGES['ticket-event'].description,
+            image: firstImage(data.hubImage, data.image, data.posterUrl),
             alt: title,
         };
     },

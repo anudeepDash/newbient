@@ -728,7 +728,8 @@ export const ensureOrderPass = async (db, orderId, order, ev = {}) => {
     const passRef = db.collection('passes').doc(ref);
     const snap = await passRef.get();
     if (snap.exists) return ref;
-    const qty = (order.items || []).reduce((n, i) => n + (Number(i.count) || 0), 0) || Number(order.quantity) || 1;
+    // A couple or group pass lets in more than one person per ticket.
+    const qty = (order.items || []).reduce((n, i) => n + (Number(i.count) || 0) * Math.max(1, Number(i.admits) || 1), 0) || Number(order.quantity) || 1;
     await passRef.set(compact({
         ref,
         eventId: order.eventId || null,
@@ -740,7 +741,7 @@ export const ensureOrderPass = async (db, orderId, order, ev = {}) => {
         sourceId: orderId,
         status: (order.isScanned || order.attended) ? 'checked_in' : 'issued',
         qty,
-        tier: (order.items || []).map(i => i.name).filter(Boolean).join(', ') || null,
+        tier: (order.items || []).filter(i => i.name).map(i => ((order.items || []).length > 1 || Number(i.count) > 1 ? `${Number(i.count) || 1}× ${i.name}` : i.name)).join(', ') || null,
         qr: true,
         mode: 'qr',
         event: compact({ title: ev.title || order.eventTitle, date: toIso(ev.date), time: ev.time, venue: ev.location || ev.venue, city: ev.city, mapUrl: mapLink(ev.locationUrl), image: ev.hubImage || ev.image }),
@@ -793,7 +794,7 @@ const legacyPass = async (db, ref) => {
         rec = {
             ref, source: 'order', holderName: o.customerName, holderUid: o.userId || null, qr: true, mode: 'qr',
             status: o.status === 'rejected' ? 'revoked' : (o.isScanned || o.attended) ? 'checked_in' : sold ? 'issued' : 'pending',
-            qty: (o.items || []).reduce((n, i) => n + (Number(i.count) || 0), 0) || Number(o.quantity) || 1,
+            qty: (o.items || []).reduce((n, i) => n + (Number(i.count) || 0) * Math.max(1, Number(i.admits) || 1), 0) || Number(o.quantity) || 1,
             tier: (o.items || []).map(i => i.name).filter(Boolean).join(', ') || null,
         };
         eventId = o.eventId;

@@ -1,117 +1,63 @@
 import React, { useEffect, useState } from 'react';
-import QrCode from 'lucide-react/dist/esm/icons/qr-code';
-import Upload from 'lucide-react/dist/esm/icons/upload';
-import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import Wallet from 'lucide-react/dist/esm/icons/wallet';
+import Pencil from 'lucide-react/dist/esm/icons/pencil';
+import QrCode from 'lucide-react/dist/esm/icons/qr-code';
 import { useStore } from '../../../lib/store';
-import { Button } from '../ui';
-import { Field, fieldCls } from '../uploads/UploadKit';
+import { callTicketApi } from '../../../lib/ticketApi';
+import { upiLink } from '../../../lib/ticketing';
+import { Button, Badge } from '../ui';
 import { Panel, PanelTitle } from './kit';
 
-/** Where buyers of this event pay: UPI ID, QR image and an optional payment page. */
-const PaymentSettingsPanel = ({ event }) => {
-    const addToast = useStore(s => s.addToast);
-    const initial = () => ({ upiId: event?.upiId || '', qrCodeUrl: event?.qrCodeUrl || '', gatewayUrl: event?.gatewayUrl || '' });
-    const [form, setForm] = useState(initial);
-    const [saving, setSaving] = useState(false);
-    const [uploading, setUploading] = useState(false);
-    const [problem, setProblem] = useState('');
+/*
+ * How buyers of this event pay, at a glance. The details are edited in the
+ * sale editor's Payments section (onEdit), so they live in one place.
+ */
 
-    useEffect(() => { setForm(initial()); setProblem(''); }, [event?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+const Row = ({ label, children }) => (
+    <div className="flex items-center justify-between gap-3 py-2.5 text-[13px]">
+        <span className="text-gray-500">{label}</span>
+        <span className="min-w-0 truncate text-right font-semibold">{children}</span>
+    </div>
+);
 
-    const saved = initial();
-    const dirty = ['upiId', 'qrCodeUrl', 'gatewayUrl'].some(k => (form[k] || '').trim() !== (saved[k] || '').trim());
+const PaymentSettingsPanel = ({ event, onEdit }) => {
+    const raw = useStore(s => s.upcomingEvents.find(e => e.id === event?.id)) || event;
+    const site = useStore(s => s.paymentDetails);
+    const [gatewayReady, setGatewayReady] = useState(null);
+    useEffect(() => { callTicketApi('ticket-config', {}).then(res => setGatewayReady(res.ok ? Boolean(res.data.gatewayReady) : null)); }, []);
 
-    const submit = async (e) => {
-        e.preventDefault();
-        if (saving) return;
-        setProblem('');
-        const upiId = form.upiId.trim();
-        const gatewayUrl = form.gatewayUrl.trim();
-        const qrCodeUrl = form.qrCodeUrl.trim();
-        if (upiId && !/^[\w.-]{2,}@[a-zA-Z]{2,}$/.test(upiId)) return setProblem('That UPI ID looks wrong. It should look like name@bank.');
-        if (gatewayUrl && !/^https?:\/\/\S+$/i.test(gatewayUrl)) return setProblem('The payment page link should start with https://');
-        if (qrCodeUrl && !/^https?:\/\/\S+$/i.test(qrCodeUrl)) return setProblem('The QR image link should start with https://');
-        setSaving(true);
-        try {
-            await useStore.getState().updateUpcomingEvent(event.id, { upiId, qrCodeUrl, gatewayUrl });
-            addToast('Payment settings saved.', 'success');
-        } catch (err) {
-            console.error(err);
-            setProblem("Couldn't save payment settings. Please try again.");
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const uploadQr = async (e) => {
-        const file = e.target.files?.[0];
-        e.target.value = '';
-        if (!file) return;
-        if (!file.type.startsWith('image/')) { addToast('Pick an image file, like a JPG or PNG.', 'warning'); return; }
-        setUploading(true);
-        try {
-            const url = await useStore.getState().uploadToCloudinary(file);
-            if (!url) throw new Error('No URL returned');
-            setForm(f => ({ ...f, qrCodeUrl: url }));
-            await useStore.getState().updateUpcomingEvent(event.id, { qrCodeUrl: url });
-            addToast('QR code uploaded and saved.', 'success');
-        } catch (err) {
-            console.error(err);
-            addToast('Check your connection and try again.', 'error', { title: 'QR code not uploaded' });
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    const upi = form.upiId.trim();
-    const preview = form.qrCodeUrl.trim()
-        || (upi ? `/api/qr?size=480&margin=1&text=${encodeURIComponent(`upi://pay?pa=${upi}&pn=NEWBI&cu=INR`)}` : '');
+    const upiOn = raw?.payments?.upi !== false;
+    const gatewayOn = raw?.payments?.gateway === true;
+    const upiId = raw?.upiId || raw?.paymentDetails?.upiId || '';
+    const fallback = !upiId && site?.upiId ? site.upiId : '';
+    const shownId = upiId || fallback;
+    const preview = raw?.qrCodeUrl
+        || (shownId ? `/api/qr?size=480&margin=1&text=${encodeURIComponent(upiLink({ upiId: shownId, payeeName: raw?.upiName || 'Newbi', amount: 1 }))}` : '');
 
     return (
         <Panel className="p-4 sm:p-5">
-            <PanelTitle icon={Wallet} tone="blue" title="How buyers pay" hint="Shown on the payment step of checkout. Leave blank to use the site-wide details." />
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-                <form onSubmit={submit} className="space-y-4 lg:col-span-3" noValidate>
-                    <Field label="UPI ID">
-                        <input className={fieldCls} value={form.upiId} onChange={e => setForm({ ...form, upiId: e.target.value })} placeholder="newbi@okaxis" autoCapitalize="off" autoCorrect="off" spellCheck={false} />
-                    </Field>
-                    <Field label="QR image link" optional hint="Upload one on the right, or paste a link">
-                        <input className={fieldCls} type="url" inputMode="url" autoCapitalize="off" value={form.qrCodeUrl} onChange={e => setForm({ ...form, qrCodeUrl: e.target.value })} placeholder="https://…" />
-                    </Field>
-                    <Field label="Payment page link" optional hint="A Razorpay or similar page, if you use one">
-                        <input className={fieldCls} type="url" inputMode="url" autoCapitalize="off" value={form.gatewayUrl} onChange={e => setForm({ ...form, gatewayUrl: e.target.value })} placeholder="https://…" />
-                    </Field>
-                    {problem && <p role="alert" className="text-[13px] font-semibold text-red-600 dark:text-red-400">{problem}</p>}
-                    <div className="flex items-center gap-3">
-                        <Button type="submit" variant="accent" className="h-12 px-6" disabled={saving || !dirty}>{saving ? 'Saving…' : 'Save'}</Button>
-                        {dirty && !saving && <span className="text-[12px] font-semibold text-amber-600 dark:text-amber-300">Unsaved changes</span>}
-                    </div>
-                </form>
-
-                <div className="flex flex-col items-center justify-center gap-3 rounded-2xl bg-black/[0.03] p-5 text-center dark:bg-white/[0.03] lg:col-span-2">
-                    {preview ? (
-                        <img src={preview} alt="Payment QR code" className="h-48 w-48 rounded-2xl border border-black/10 bg-white object-contain p-2 dark:border-white/10" />
-                    ) : (
-                        <div className="flex h-48 w-48 items-center justify-center rounded-2xl border-2 border-dashed border-black/10 text-gray-400 dark:border-white/10">
-                            <QrCode size={40} />
-                        </div>
-                    )}
-                    <p className="text-[12px] text-gray-500">
-                        {form.qrCodeUrl.trim() ? 'Your QR image' : upi ? 'Made from the UPI ID (used when there is no QR image)' : 'No QR yet'}
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-2">
-                        <Button as="label" variant="secondary" className="h-11 cursor-pointer">
-                            <Upload size={14} /> {uploading ? 'Uploading…' : form.qrCodeUrl ? 'Replace QR' : 'Upload QR'}
-                            <input type="file" accept="image/*" onChange={uploadQr} className="hidden" disabled={uploading} />
-                        </Button>
-                        {form.qrCodeUrl && (
-                            <Button variant="ghost" className="h-11 text-red-600 dark:text-red-400" onClick={() => setForm({ ...form, qrCodeUrl: '' })}>
-                                <Trash2 size={14} /> Remove
-                            </Button>
-                        )}
-                    </div>
+            <PanelTitle icon={Wallet} tone="blue" title="How buyers pay" hint="Paid UPI orders wait in Orders until you check the UTR."
+                action={onEdit && <Button variant="secondary" className="h-11" onClick={() => onEdit('payments')}><Pencil size={14} /> Edit</Button>} />
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <div className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                    <Row label="UPI apps">{upiOn ? <Badge tone="green">On</Badge> : <Badge tone="gray">Off</Badge>}</Row>
+                    {upiOn && <Row label="UPI ID">{shownId ? <span className="font-mono">{shownId}</span> : <span className="text-red-600 dark:text-red-400">Not set</span>}{fallback && <span className="ml-1 text-[11px] font-medium text-gray-500">(site-wide)</span>}</Row>}
+                    {upiOn && raw?.upiName && <Row label="Name shown">{raw.upiName}</Row>}
+                    {upiOn && <Row label="Business UPI">{raw?.upiMerchant ? 'Yes' : 'No'}</Row>}
+                    <Row label="Razorpay">
+                        {gatewayOn && gatewayReady ? <Badge tone="green">On</Badge>
+                            : gatewayOn ? <Badge tone="amber">On, but not set up</Badge>
+                                : <Badge tone="gray">{gatewayReady === false ? 'Not set up' : 'Off'}</Badge>}
+                    </Row>
                 </div>
+                {upiOn && (
+                    <div className="flex flex-col items-center gap-2">
+                        {preview
+                            ? <img src={preview} alt="Payment QR code" className="h-36 w-36 rounded-2xl border border-black/10 bg-white object-contain p-2 dark:border-white/10" />
+                            : <div className="flex h-36 w-36 items-center justify-center rounded-2xl border-2 border-dashed border-black/10 text-gray-400 dark:border-white/10"><QrCode size={32} /></div>}
+                        <p className="text-[11px] text-gray-500">{raw?.qrCodeUrl ? 'Your QR image' : 'Checkout makes one per order, for the exact amount'}</p>
+                    </div>
+                )}
             </div>
         </Panel>
     );

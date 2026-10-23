@@ -13,9 +13,22 @@ export const rupees = (n) => {
     return `₹${v.toLocaleString('en-IN', { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 })}`;
 };
 
-/* − 2 + with 44px targets. */
-export const Stepper = ({ value, onMinus, onPlus, minusDisabled, plusDisabled, label, size = 'md' }) => {
+/* − 2 + with 44px targets. With addLabel and nothing picked yet, a single "Add" button (BMS/District style). */
+export const Stepper = ({ value, onMinus, onPlus, minusDisabled, plusDisabled, label, size = 'md', addLabel }) => {
     const btn = size === 'lg' ? 'h-12 w-12' : 'h-11 w-11';
+    if (addLabel && !value) {
+        return (
+            <button
+                type="button"
+                onClick={onPlus}
+                disabled={plusDisabled}
+                aria-label={label ? `${addLabel} ${label}` : addLabel}
+                className="flex h-11 shrink-0 items-center gap-1.5 rounded-2xl border-2 border-gray-900 px-4 text-[14px] font-extrabold text-gray-900 transition-colors hover:bg-gray-900 hover:text-white disabled:opacity-30 dark:border-neon-green dark:text-neon-green dark:hover:bg-neon-green dark:hover:text-black"
+            >
+                <Plus size={16} /> {addLabel}
+            </button>
+        );
+    }
     return (
         <div className="flex shrink-0 items-center gap-1 rounded-2xl border border-black/[0.08] bg-black/[0.02] p-1 dark:border-white/[0.1] dark:bg-white/[0.04]">
             <button
@@ -70,3 +83,24 @@ export const PriceLine = ({ label, value, tone, className }) => {
 export const ErrorText = ({ children, className }) => (isPresent(children)
     ? <p role="alert" className={cn('text-[14px] font-medium text-red-600 dark:text-red-400', className)}>{children}</p>
     : null);
+
+/* "1 Tickets — 2 Review — 3 Pay": where the buyer is in the booking. */
+export const StepDots = ({ steps, current }) => {
+    const at = steps.findIndex(([key]) => key === current);
+    return (
+        <ol className="flex items-center gap-1.5" aria-label="Booking steps">
+            {steps.map(([key, label], i) => (
+                <li key={key} className="flex items-center gap-1.5" aria-current={i === at ? 'step' : undefined}>
+                    <span className={cn(
+                        'flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-black tabular-nums',
+                        i < at ? 'bg-emerald-500 text-white dark:bg-neon-green dark:text-black'
+                            : i === at ? 'bg-gray-900 text-white dark:bg-white dark:text-black'
+                                : 'bg-black/[0.06] text-gray-500 dark:bg-white/[0.08] dark:text-zinc-500'
+                    )}>{i + 1}</span>
+                    <span className={cn('text-[12px] font-bold', i === at ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-zinc-500')}>{label}</span>
+                    {i < steps.length - 1 && <span className="mx-0.5 h-px w-4 bg-black/10 dark:bg-white/15" aria-hidden="true" />}
+                </li>
+            ))}
+        </ol>
+    );
+};

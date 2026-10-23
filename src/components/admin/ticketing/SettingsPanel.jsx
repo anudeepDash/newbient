@@ -226,11 +226,11 @@ const TellPassHolders = ({ event }) => {
     );
 };
 
-const SettingsPanel = ({ event, onEditGuestlist, onDeleted }) => {
+const SettingsPanel = ({ event, onEditGuestlist, onDeleted, onEditSale }) => {
     const fromEvents = event.source === 'event';
     return (
         <div className="space-y-5">
-            {event.isTicketed && fromEvents && <PaymentSettingsPanel event={event} />}
+            {event.isTicketed && fromEvents && <PaymentSettingsPanel event={event} onEdit={onEditSale} />}
             {event.isTicketed && !fromEvents && (
                 <Panel className="p-4 text-[13px] text-gray-600 dark:text-zinc-400 sm:p-5">
                     This event is archived, so ticket sales and payment details can't change any more.
@@ -246,8 +246,12 @@ const SettingsPanel = ({ event, onEditGuestlist, onDeleted }) => {
             {fromEvents && (
                 <Panel className="p-4 sm:p-5">
                     <PanelTitle icon={Calendar} tone="green" title="Event details"
-                        hint={`Name, date, ticket types, capacity${hasGuestlist(event) && !event.guestlistDoc ? ', guestlist rules' : ''} and the page people see are edited in Events.`}
-                        action={<Button as={Link} to={`/admin/upcoming-events?edit=${encodeURIComponent(event.id)}`} variant="secondary" className="h-11"><Pencil size={14} /> Edit in Events</Button>} />
+                        hint={event.isTicketed
+                            ? 'The event page, ticket types, venue map and payments are edited in the sale editor.'
+                            : `Name, date${hasGuestlist(event) && !event.guestlistDoc ? ', guestlist rules' : ''} and the page people see are edited in Events.`}
+                        action={event.isTicketed && onEditSale
+                            ? <Button variant="secondary" className="h-11" onClick={() => onEditSale()}><Pencil size={14} /> Edit sale</Button>
+                            : <Button as={Link} to={`/admin/upcoming-events?edit=${encodeURIComponent(event.id)}`} variant="secondary" className="h-11"><Pencil size={14} /> Edit in Events</Button>} />
                     {hasGuestlist(event) && !event.guestlistDoc && (
                         <div className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
                             <Row label="Spots per person">{event.perUserLimit || 5}</Row>
