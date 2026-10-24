@@ -26,7 +26,8 @@ import { useT } from '../../i18n';
  *
  * Shows the partner's ticket ("Open ticket" / "View / Download PDF"), tier,
  * qty and note when present, and the Newbi QR pass only when one was issued.
- * A confirmation (a pass without a QR code) reads "You're confirmed".
+ * A confirmation (a pass without a QR code) reads "You're confirmed"; a guestlist
+ * place (also no QR) reads "You're on the guestlist", with the name the door checks.
  * Reads the signed-in creator's own passes from the app store (passes slice).
  */
 
@@ -41,7 +42,8 @@ export const TicketReadyBadge = ({ campaignId }) => {
     const ticket = useCampaignTicket(campaignId);
     if (!ticket) return null;
     const confirmation = ticket.qr === false && !ticket.externalTicket;
-    return <GlassChip icon={confirmation ? CircleCheck : Ticket} label={ticket.status === 'checked_in' ? t('Checked in') : confirmation ? t('Confirmed') : t('Ticket ready')} tone="accent" />;
+    const label = ticket.status === 'checked_in' ? t('Checked in') : !confirmation ? t('Ticket ready') : ticket.mode === 'guestlist' ? t('On the guestlist') : t('Confirmed');
+    return <GlassChip icon={confirmation ? CircleCheck : Ticket} label={label} tone="accent" />;
 };
 
 const seen = new Set();
@@ -63,6 +65,7 @@ const YourTicket = ({ campaignId, className }) => {
     const event = ticket.event || {};
     const hasQr = ticket.qr !== false;
     const confirmation = !hasQr && !ext;
+    const guestlist = confirmation && ticket.mode === 'guestlist';
     const qty = Number(ext?.qty || ticket.qty) > 1 ? Number(ext?.qty || ticket.qty) : null;
     const note = ext?.note || ticket.note;
 
@@ -74,7 +77,7 @@ const YourTicket = ({ campaignId, className }) => {
                         {confirmation ? <CircleCheck size={20} /> : <Ticket size={20} />}
                     </span>
                     <div className="min-w-0 flex-1">
-                        <p className="text-[12px] font-black uppercase tracking-[0.18em] text-emerald-700 dark:text-neon-green">{ticket.status === 'checked_in' ? t('Checked in') : confirmation ? t('You’re confirmed') : t('Your ticket')}</p>
+                        <p className="text-[12px] font-black uppercase tracking-[0.18em] text-emerald-700 dark:text-neon-green">{ticket.status === 'checked_in' ? t('Checked in') : guestlist ? t('You’re on the guestlist') : confirmation ? t('You’re confirmed') : t('Your ticket')}</p>
                         <p className="truncate text-[17px] font-black">{event.title || ticket.campaignTitle}</p>
                     </div>
                 </div>
@@ -95,7 +98,11 @@ const YourTicket = ({ campaignId, className }) => {
 
                 {isPresent(note) && <p className="rounded-2xl bg-white/70 px-4 py-3 text-[15px] text-gray-700 dark:bg-white/[0.04] dark:text-zinc-300">{note}</p>}
 
-                {confirmation && (
+                {guestlist ? (
+                    <p className="text-[15px] text-gray-700 dark:text-zinc-300">
+                        {t('Thanks for completing the campaign. Your name is on the guestlist as {name}. Give it at the guestlist counter; there’s no ticket to show.', { name: `${ticket.holderName || t('your name')}${Number(ticket.qty) > 1 ? ` + ${Number(ticket.qty) - 1}` : ''}` })}
+                    </p>
+                ) : confirmation && (
                     <p className="text-[15px] text-gray-700 dark:text-zinc-300">{t('Your place is confirmed. There’s no QR code for this one; show this if anyone asks at entry.')}</p>
                 )}
 

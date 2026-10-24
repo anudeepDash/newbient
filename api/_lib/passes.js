@@ -7,7 +7,8 @@
  *                   qr (a Newbi QR pass that the gate scanner accepts),
  *                   externalTicket? { kind: 'link' | 'pdf', url | storagePath, filename, provider, qty, tier, note },
  *                   plusOneNames? (the names of the people coming with them, guestlists only),
- *                   event { title, date, time, venue, city, mapUrl, image }, campaignTitle?, mode: 'qr' | 'rsvp',
+ *                   event { title, date, time, venue, city, mapUrl, image }, campaignTitle?,
+ *                   mode: 'qr' | 'rsvp' | 'confirmation' | 'guestlist' (the last two: campaign passes without a QR),
  *                   delivery { email, whatsapp, push, inApp }, issuedAt, issuedBy }
  *
  * Only this module writes passes (Admin SDK, in transactions). Holders read
@@ -25,7 +26,8 @@
  *   POST file                     {ref} or {token}             short-lived link to the ticket PDF / link
  *   GET  open-token               {token}                      the ticket behind a signed /t/<token> link
  *   POST issue-campaign           {campaignId, creatorIds, kind?, qty?, tier?, note?}   staff
- *                                 kind 'qr' (default: the campaign's passKind) or 'confirmation' (no QR)
+ *                                 kind 'qr' (default: the campaign's passKind), 'confirmation' (no QR)
+ *                                 or 'guestlist' (no QR: their name is on the door list, and they're told so)
  *   POST issue-campaign-external  {campaignId, uploadId, rows: [...]}                   staff
  *   GET  mine                     {}                     the caller's own passes             user
  *   POST staff-list               {campaignId} | {ids}   a campaign's or event's passes      staff
@@ -922,9 +924,12 @@ const loadCreator = async (db, creatorId) => {
     return byUid.empty ? null : { id: byUid.docs[0].id, ...byUid.docs[0].data() };
 };
 
+// Only creators actually shortlisted (told, in shortlistedCampaigns) or already paid. "Considering"
+// (campaignStages 'shortlisted') is the team's private pick list, so it doesn't count.
 export const isTicketEligible = (campaign, creator) => (creator?.shortlistedCampaigns || []).includes(campaign.id)
+    || creator?.campaignPayouts?.[campaign.id]?.status === 'paid';
+const hasApplied = (campaign, creator) => isTicketEligible(campaign, creator) || (creator?.joinedCampaigns || []).includes(campaign.id)
     || creator?.campaignStages?.[campaign.id] === 'shortlisted';
-const hasApplied = (campaign, creator) => isTicketEligible(campaign, creator) || (creator?.joinedCampaigns || []).includes(campaign.id);
 
 const holderOf = (creator) => ({
     holderUid: creator.uid || creator.id,
@@ -935,13 +940,17 @@ const holderOf = (creator) => ({
     holderPhone: creator.isPhoneVerified ? (toE164(creator.whatsapp || creator.phone) || '') : '',
 });
 
+// Campaign passes without a QR code: a confirmation of their place, or their name on the guestlist.
+const NO_QR_MODES = new Set(['confirmation', 'guestlist']);
+
 // Same link (or same PDF name and size), qty, tier and note = nothing to resend.
 const ticketSignature = (t) => (t ? [t.kind, t.kind === 'pdf' ? `${t.filename || ''}:${t.size || ''}` : t.url || '', t.qty || '', t.tier || '', t.note || ''].join('|') : '');
 
 /**
  * Creates or updates one creator's campaign pass in a transaction.
  * mode 'qr': a Newbi QR pass. mode 'confirmation': a pass without a QR code,
- * confirming their place. mode 'external': the partner's ticket (link or PDF).
+ * confirming their place. mode 'guestlist': no QR either; their name is on the
+ * venue's guestlist. mode 'external': the partner's ticket (link or PDF).
  * A QR pass sent later upgrades a confirmation or a partner ticket in place.
  * Returns { ref, outcome: 'issued' | 'updated' | 'unchanged' | 'exists' }.
  */
@@ -958,7 +967,7 @@ const upsertCampaignPass = async (db, { campaign, event, creator, holder: holder
         }
         const now = nowIso();
         if (existing) {
-            if (mode === 'confirmation') return { ref: existing.ref, outcome: 'exists' };
+            if (NO_QR_MODES.has(mode)) return { ref: existing.ref, outcome: 'exists' };
             if (mode === 'qr') {
                 if (existing.qr !== false) return { ref: existing.ref, outcome: 'exists' };
                 tx.update(db.collection('passes').doc(existing.ref), { qr: true, mode: 'qr', qrIssuedAt: now, updatedAt: now });
@@ -987,7 +996,7 @@ const upsertCampaignPass = async (db, { campaign, event, creator, holder: holder
             tier: ticket?.tier || tier || null,
             note: ticket?.note || note || null,
             qr: mode === 'qr',
-            mode: mode === 'confirmation' ? 'confirmation' : 'qr',
+            mode: NO_QR_MODES.has(mode) ? mode : 'qr',
             externalTicket: mode === 'external' ? { ...ticket, uploadId: uploadId || null, updatedAt: now } : null,
             event,
             campaignTitle: str(campaign.title, 200),
@@ -1029,6 +1038,7 @@ const deliverCampaignPass = async (db, ref, { skip = [], extra = {} } = {}) => {
         note: pass.note,
         ref: pass.qr !== false ? ref : '',
         confirmation: pass.mode === 'confirmation' && pass.qr === false && !ext,
+        guestlist: pass.mode === 'guestlist' && pass.qr === false && !ext,
         ticketUrl: ticketToken ? ticketLinkUrl(ticketToken) : passUrl(ref),
         campaignUrl: campaignUrl(pass.sourceId),
         ticketToken,
@@ -1093,10 +1103,10 @@ const runLimited = async (items, limit, fn) => {
     return out;
 };
 
-/* 'qr' or 'confirmation': what the send asked for, else the campaign's setting (editor → Event passes). */
+/* 'qr', 'confirmation' or 'guestlist': what the send asked for, else the campaign's setting (editor → Event passes). */
 export const passModeFor = (campaign, kind) => {
     const k = kind || campaign?.passKind;
-    return k === 'confirmation' ? 'confirmation' : 'qr';
+    return NO_QR_MODES.has(k) ? k : 'qr';
 };
 
 const issueCampaignAction = async (db, body, caller) => {
@@ -1115,7 +1125,7 @@ const issueCampaignAction = async (db, body, caller) => {
             if (!creator) return { creatorId, outcome: 'failed', error: 'Creator not found' };
             if (!isTicketEligible(campaign, creator)) return { creatorId, outcome: 'skipped', error: 'Not selected for this campaign' };
             const { ref, outcome } = await upsertCampaignPass(db, { campaign, event, creator, mode, qty, tier, note, staffEmail: caller.email, uploadId: body.uploadId });
-            if (outcome === 'exists') return { creatorId, ref, outcome: 'skipped', error: mode === 'confirmation' ? 'Already has a pass' : 'Already has a QR pass' };
+            if (outcome === 'exists') return { creatorId, ref, outcome: 'skipped', error: mode === 'qr' ? 'Already has a QR pass' : 'Already has a pass' };
             const delivery = await deliverCampaignPass(db, ref);
             return { creatorId, ref, outcome, channels: channelSummary(delivery) };
         } catch (err) {
@@ -1355,7 +1365,9 @@ const checkinAction = async (db, body, caller) => {
         if (!forThisEvent) return { success: true, found: true, valid: false, reason: 'wrong_event', message: `This pass is for ${pass.event?.title || 'another event'}.`, data };
         if (pass.status === 'revoked') return { success: true, found: true, valid: false, reason: 'rejected', message: 'This pass was cancelled.', data };
         if (pass.qr === false) {
-            const message = pass.externalTicket ? 'This is a partner ticket. Check it with the ticketing partner.' : 'This is a confirmation without a QR code. Check the name on your list.';
+            const message = pass.externalTicket ? 'This is a partner ticket. Check it with the ticketing partner.'
+                : pass.mode === 'guestlist' ? 'This creator is on the guestlist, no QR code. Check the name on your list.'
+                    : 'This is a confirmation without a QR code. Check the name on your list.';
             return { success: true, found: true, valid: false, reason: 'rejected', message, data };
         }
         // The linked guestlist entry or order: the check-in desk may have marked it already.

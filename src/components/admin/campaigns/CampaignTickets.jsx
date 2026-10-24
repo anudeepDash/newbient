@@ -13,13 +13,16 @@ import Link2 from 'lucide-react/dist/esm/icons/link-2';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
 import ArrowUpCircle from 'lucide-react/dist/esm/icons/circle-arrow-up';
+import ListChecks from 'lucide-react/dist/esm/icons/list-checks';
+import Download from 'lucide-react/dist/esm/icons/download';
 import { db } from '../../../lib/firebase';
 import { cn } from '../../../lib/utils';
 import { useStore } from '../../../lib/store';
 import { passesPost, pollPasses, staffPassList } from '../../../lib/passesApi';
+import { downloadCsv, fileDate } from '../../../lib/xlsx';
 import { Avatar, Badge, Button, Card, EmptyState, Menu, MenuItem } from '../ui';
 import { ConfirmSheet } from './parts';
-import { creatorPhotoOf, formatDay } from './campaignModel';
+import { creatorHandle, creatorPhotoOf, formatDay } from './campaignModel';
 import { channelState, hasFailure, cleanPassTiers } from './ticketModel';
 import Sheet from '../Sheet';
 import { Field, fieldCls } from '../uploads/UploadKit';
@@ -88,6 +91,7 @@ const useUploads = (campaignId) => {
 
 const kindOf = (p) => (p.externalTicket?.kind === 'pdf' ? { icon: FileText, label: 'PDF' }
     : p.externalTicket?.kind === 'link' ? { icon: Link2, label: 'Link' }
+    : p.qr === false && p.mode === 'guestlist' ? { icon: ListChecks, label: 'Guestlist' }
     : p.qr === false ? { icon: CircleCheck, label: 'Confirmation' }
     : { icon: QrCode, label: 'QR pass' });
 
@@ -106,6 +110,29 @@ const CampaignTickets = ({ campaign, applicants, passes, loaded, error, onSend }
     }, [applicants]);
     const live = passes.filter(p => p.status !== 'revoked').sort((a, b) => String(b.issuedAt || '').localeCompare(String(a.issuedAt || '')));
     const failures = live.filter(hasFailure).length;
+    const onList = live.filter(p => p.mode === 'guestlist' && p.qr === false && !p.externalTicket);
+
+    // The names for the venue's door list: "Riya Sharma + 1", with their handle and category.
+    const exportGuestlist = () => downloadCsv({
+        filename: `guestlist_${(campaign.title || 'campaign').replace(/[^\w]+/g, '-').toLowerCase()}_${fileDate()}`,
+        columns: [
+            { header: 'Name on the list', key: 'listName' }, { header: 'People', key: 'qty' }, { header: 'Category', key: 'tier' },
+            { header: 'Instagram', key: 'instagram' }, { header: 'Reference', key: 'ref' }, { header: 'Checked in', key: 'checkedIn' },
+        ],
+        rows: [...onList].sort((a, b) => String(a.holderName || '').localeCompare(String(b.holderName || ''))).map(p => {
+            const qty = Math.max(1, Number(p.qty) || 1);
+            const entry = byKey.get(p.creatorId) || byKey.get(p.holderUid);
+            const handle = entry ? creatorHandle(entry.creator) : '';
+            return {
+                listName: `${p.holderName || entry?.creator?.name || 'Creator'}${qty > 1 ? ` + ${qty - 1}` : ''}`,
+                qty,
+                tier: p.tier || '',
+                instagram: handle ? `@${handle}` : '',
+                ref: p.ref,
+                checkedIn: p.status === 'checked_in' ? 'Yes' : '',
+            };
+        }),
+    });
 
     const resend = async (body, key) => {
         setBusy(key);
@@ -163,14 +190,16 @@ const CampaignTickets = ({ campaign, applicants, passes, loaded, error, onSend }
                     <p className="text-[15px] font-bold">Event passes</p>
                     <p className="text-[13px] text-gray-500">
                         {[
-                            campaign.passKind === 'confirmation' ? 'Confirmation, no QR' : 'QR pass',
+                            campaign.passKind === 'confirmation' ? 'Confirmation, no QR' : campaign.passKind === 'guestlist' ? 'Guestlist, no QR' : 'QR pass',
                             `${campaign.ticketsPerCreator || 1} per creator`,
-                        ].join(' · ')}.
+                            onList.length > 0 && `${onList.length} on the guestlist`,
+                        ].filter(Boolean).join(' · ')}.
                     </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                    {onList.length > 0 && <Button onClick={exportGuestlist} className="h-11"><Download size={14} /> Guestlist</Button>}
                     {failures > 0 && <Button onClick={() => resend({ failedOnly: true }, 'failed')} disabled={Boolean(busy)} className="h-11"><RotateCw size={14} /> Resend {failures} failed</Button>}
-                    <Button variant="accent" onClick={() => onSend()} className="h-11 flex-1 sm:flex-none"><Send size={14} /> Send tickets</Button>
+                    <Button variant="accent" onClick={() => onSend()} className="h-11 flex-1 sm:flex-none"><Send size={14} /> Send tickets or guestlist</Button>
                 </div>
             </Card>
 
