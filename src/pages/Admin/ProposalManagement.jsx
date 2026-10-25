@@ -70,7 +70,7 @@ const Kpi = ({ icon: Icon, label, value, hint, tone, active, onClick }) => {
                 <span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', tones[tone])}><Icon size={17} /></span>
                 <p className="mt-3 truncate text-[20px] font-extrabold leading-none tracking-tight tabular-nums sm:text-[24px]">{value}</p>
                 <p className="mt-1.5 truncate text-[12px] font-bold text-gray-700 dark:text-zinc-300">{label}</p>
-                <p className="truncate text-[11px] text-gray-500">{hint}</p>
+                <p className="line-clamp-2 text-[11px] text-gray-500 sm:line-clamp-1">{hint}</p>
             </Card>
         </Comp>
     );

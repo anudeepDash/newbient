@@ -106,20 +106,21 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
 
     return (
         <div className="mx-auto w-full max-w-[1600px] px-4 pb-10 pt-5 font-heading sm:px-6 lg:px-10 lg:pt-8">
-            <header className="mb-5 flex items-center gap-3.5 lg:mb-6">
+            <header className="mb-5 flex items-center gap-3 sm:gap-3.5 lg:mb-6">
                 {header.logo ? (
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-black/[0.06] bg-black p-0.5 dark:border-white/[0.08] dark:bg-white/5">
                         <img src={header.logo} alt="" className="h-full w-full object-contain" />
                     </div>
                 ) : HeaderIcon ? (
                     // The module colour, so every page header matches its sidebar entry.
-                    <div className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl', header.tone ? accent(header.tone).chip : moduleAccent.chip)}>
-                        <HeaderIcon size={22} />
+                    <div className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl sm:h-12 sm:w-12', header.tone ? accent(header.tone).chip : moduleAccent.chip)}>
+                        <HeaderIcon size={21} />
                     </div>
                 ) : null}
                 <div className="min-w-0">
                     <h1 className="truncate text-xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-2xl lg:text-[28px] lg:leading-tight">{heading}</h1>
-                    {header.description && <p className="mt-0.5 truncate text-sm font-medium text-gray-500 dark:text-zinc-400">{header.description}</p>}
+                    {/* Phones wrap the line rather than cut it off mid-word. */}
+                    {header.description && <p className="mt-0.5 line-clamp-2 text-[13px] font-medium leading-snug text-gray-500 dark:text-zinc-400 sm:line-clamp-1 sm:text-sm">{header.description}</p>}
                 </div>
             </header>
 

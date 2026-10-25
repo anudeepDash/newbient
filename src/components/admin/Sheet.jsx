@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useDragControls } from 'framer-motion';
 import X from 'lucide-react/dist/esm/icons/x';
 import { cn } from '../../lib/utils';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
@@ -15,6 +15,7 @@ const openSheets = [];
 const Sheet = ({ open, onClose, title, subtitle, header, children, footer, variant = 'drawer', size = 'md', className, bodyClassName, zIndex }) => {
     // Checked synchronously on render so phones never flash the desktop drawer.
     const isMobile = typeof window !== 'undefined' && window.matchMedia?.('(max-width: 767px)').matches;
+    const dragControls = useDragControls();
     useBodyScrollLock(open);
 
     // Escape closes only the sheet on top (a confirm over a drawer, say).
@@ -43,6 +44,19 @@ const Sheet = ({ open, onClose, title, subtitle, header, children, footer, varia
             ? { initial: { opacity: 0, scale: 0.97, y: 8 }, animate: { opacity: 1, scale: 1, y: 0 }, exit: { opacity: 0, scale: 0.97, y: 8 } }
             : { initial: { x: '100%' }, animate: { x: 0 }, exit: { x: '100%' } };
 
+    // Phones: pull the sheet down by its handle (or a plain title header) to close it,
+    // like the admin's More sheet. Custom headers may hold tabs that scroll sideways,
+    // so only the handle drags there.
+    const swipe = asBottomSheet ? {
+        drag: 'y',
+        dragControls,
+        dragListener: false,
+        dragConstraints: { top: 0, bottom: 0 },
+        dragElastic: { top: 0, bottom: 0.4 },
+        onDragEnd: (_, info) => { if (info.offset.y > 120 || info.velocity.y > 600) onClose?.(); },
+    } : {};
+    const startSwipe = asBottomSheet ? (e) => dragControls.start(e) : undefined;
+
     return createPortal(
         <AnimatePresence>
             {open && (
@@ -61,6 +75,7 @@ const Sheet = ({ open, onClose, title, subtitle, header, children, footer, varia
                         aria-modal="true"
                         aria-label={typeof title === 'string' ? title : undefined}
                         {...panelMotion}
+                        {...swipe}
                         transition={{ type: 'spring', stiffness: 380, damping: 38 }}
                         className={cn(
                             'relative flex w-full flex-col overflow-hidden border-black/[0.08] bg-white shadow-2xl dark:border-white/[0.08] dark:bg-[#0d0f15]',
@@ -72,8 +87,15 @@ const Sheet = ({ open, onClose, title, subtitle, header, children, footer, varia
                             className
                         )}
                     >
-                        {asBottomSheet && <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-black/15 dark:bg-white/15" />}
-                        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-black/[0.06] px-5 pb-4 pt-4 dark:border-white/[0.06]">
+                        {asBottomSheet && (
+                            <div onPointerDown={startSwipe} className="flex h-5 shrink-0 touch-none items-end justify-center">
+                                <div className="h-1 w-10 rounded-full bg-black/15 dark:bg-white/15" />
+                            </div>
+                        )}
+                        <div
+                            onPointerDown={header ? undefined : startSwipe}
+                            className={cn('flex shrink-0 items-start justify-between gap-4 border-b border-black/[0.06] px-5 pb-4 pt-4 dark:border-white/[0.06]', asBottomSheet && !header && 'touch-none', asBottomSheet && 'pt-2')}
+                        >
                             {header ? <div className="min-w-0 flex-1">{header}</div> : (
                                 <div className="min-w-0">
                                     {title && <h2 className="truncate text-lg font-extrabold tracking-tight">{title}</h2>}
