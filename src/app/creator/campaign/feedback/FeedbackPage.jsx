@@ -4,11 +4,12 @@ import Star from 'lucide-react/dist/esm/icons/star';
 import Send from 'lucide-react/dist/esm/icons/send';
 import Pencil from 'lucide-react/dist/esm/icons/pencil';
 import Quote from 'lucide-react/dist/esm/icons/quote';
+import MessageSquareQuote from 'lucide-react/dist/esm/icons/message-square-quote';
 import { Button, INPUT, ERROR_RING } from '../../../../components/app';
 import { cn } from '../../../../lib/utils';
+import { isPresent } from '../../../../lib/present';
 import useDynamicMeta from '../../../../hooks/useDynamicMeta';
-import { PageBody } from '../../../pages/PageHeader';
-import { PanelLabel } from '../../../pages/DetailLayout';
+import { ActionBar, BarStatus, ExpandedHero, ExpandedPage, ExpandedSkeleton, ExpandedTitle } from '../../../pages/ExpandedCard';
 import { Notice } from '../../ui';
 import { callCreatorApi } from '../../api';
 import { AGAIN, CONSENT, QUOTE_MAX, TEXT_MAX, validateFeedback } from '../../../../lib/campaignFeedback';
@@ -19,13 +20,18 @@ import { useT } from '../../../../i18n';
  * WhatsApp or email link (no sign-in). A rating, what to keep and fix, and an
  * optional testimonial with a clear choice about publishing it. They can come
  * back to the same link to change their answers or take their words down.
+ *
+ * Laid out like the campaign popup (ExpandedCard): the poster with its colour
+ * glow, the title block, then the questions; the send button is in the action
+ * bar, pinned to the card on desktop and docked to the screen on phones.
  */
 
+const FORM_ID = 'campaign-feedback-form';
 const RATING_WORDS = ['', 'Poor', 'Okay', 'Good', 'Great', 'Loved it'];
 const EMPTY = { rating: 0, again: '', liked: '', improve: '', testimonial: '', consent: '' };
 
 const Card = ({ children, className }) => (
-    <section className={cn('space-y-3 rounded-[1.5rem] bg-white p-4 ring-1 ring-inset ring-black/[0.06] dark:bg-[#0c0e14] dark:ring-white/[0.08]', className)}>{children}</section>
+    <section className={cn('space-y-3 rounded-[1.75rem] bg-white p-4 ring-1 ring-inset ring-black/[0.06] dark:bg-[#0c0e14] dark:ring-white/[0.08] sm:p-5', className)}>{children}</section>
 );
 
 const Question = ({ children, hint }) => (
@@ -67,6 +73,12 @@ const Choice = ({ selected, onClick, children }) => (
         <span className={cn('h-5 w-5 shrink-0 rounded-full ring-2 ring-inset', selected ? 'bg-emerald-500 ring-emerald-500 dark:bg-neon-green dark:ring-neon-green' : 'ring-gray-300 dark:ring-zinc-600')} />
         {children}
     </button>
+);
+
+const Stars = ({ value, size = 22 }) => (
+    <span className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map(n => <Star key={n} size={size} className={n <= value ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-zinc-600'} />)}
+    </span>
 );
 
 const FeedbackPage = () => {
@@ -113,65 +125,82 @@ const FeedbackPage = () => {
         window.scrollTo?.({ top: 0, behavior: 'smooth' });
     };
 
-    if (state.loading) {
-        return <PageBody><div className="mx-auto max-w-xl space-y-3"><div className="h-10 w-2/3 animate-pulse rounded-full bg-black/[0.06] dark:bg-white/[0.06]" /><div className="h-64 animate-pulse rounded-[2rem] bg-black/[0.04] dark:bg-white/[0.04]" /></div></PageBody>;
-    }
+    if (state.loading) return <ExpandedPage label={t('Campaign feedback')} body={<ExpandedSkeleton />} />;
     if (!d) {
         return (
-            <PageBody>
-                <div className="mx-auto max-w-md space-y-3 rounded-3xl border border-dashed border-black/[0.1] px-6 py-10 text-center dark:border-white/[0.1]">
-                    <p className="text-[17px] font-bold">{t('This link isn’t active')}</p>
-                    <p className="text-[15px] text-gray-600 dark:text-zinc-400">{state.error || t('Ask the Newbi team on WhatsApp for a new one.')}</p>
-                </div>
-            </PageBody>
+            <ExpandedPage
+                label={t('Campaign feedback')}
+                body={(
+                    <div className="mx-auto max-w-md space-y-3 rounded-3xl border border-dashed border-black/[0.1] px-6 py-10 text-center dark:border-white/[0.1]">
+                        <p className="text-[17px] font-bold">{t('This link isn’t active')}</p>
+                        <p className="text-[15px] text-gray-600 dark:text-zinc-400">{state.error || t('Ask the Newbi team on WhatsApp for a new one.')}</p>
+                    </div>
+                )}
+            />
         );
     }
 
     const title = d.campaign.title || d.campaign.eventName || t('the campaign');
-    const header = (
-        <header className="flex items-start gap-4">
-            {d.campaign.image && <img src={d.campaign.image} alt="" className="h-20 w-16 shrink-0 rounded-2xl object-cover ring-1 ring-black/10 dark:ring-white/10" />}
-            <div className="min-w-0 space-y-1.5">
-                <PanelLabel>{t('Campaign feedback')}</PanelLabel>
-                <h1 className="font-heading text-[26px] font-extrabold leading-[1.08] tracking-[-0.03em]">
-                    {d.firstName ? t('Hey {name}! How was {title}?', { name: d.firstName, title }) : t('How was {title}?', { title })}
-                </h1>
-            </div>
-        </header>
+    const answered = !editing && d.response;
+    const hero = (
+        <ExpandedHero
+            image={isPresent(d.campaign.image) ? d.campaign.image : null}
+            icon={MessageSquareQuote}
+            chips={[{ label: answered ? t('Answered') : t('Feedback'), tone: answered ? 'accent' : undefined }]}
+        />
+    );
+    const titleBlock = (
+        <ExpandedTitle
+            eyebrow={isPresent(d.campaign.brand) && <p className="text-[11px] font-black uppercase tracking-widest text-emerald-700 dark:text-neon-green">{d.campaign.brand}</p>}
+            title={d.firstName ? t('Hey {name}! How was {title}?', { name: d.firstName, title }) : t('How was {title}?', { title })}
+        >
+            {!answered && <p className="text-[15px] text-gray-600 dark:text-zinc-400">{t('Thanks for creating with Newbi. Tell us how it went, it takes about a minute.')}</p>}
+        </ExpandedTitle>
     );
 
-    if (!editing && d.response) {
+    if (answered) {
         const consent = CONSENT.find(c => c.value === d.response.consent);
+        const bar = (
+            <ActionBar>
+                <Button variant="secondary" size="lg" icon={Pencil} onClick={() => setEditing(true)} className="flex-1">{t('Change my answers')}</Button>
+            </ActionBar>
+        );
         return (
-            <PageBody>
-                <div className="mx-auto max-w-xl space-y-4">
-                    {header}
-                    <Notice tone="success" title={t('Thank you! We got your feedback.')}>{t('It goes straight to the Newbi team. You can change it from this link any time.')}</Notice>
-                    <Card>
-                        <div className="flex items-center gap-1" aria-label={t('{n} out of 5', { n: d.response.rating })}>
-                            {[1, 2, 3, 4, 5].map(n => <Star key={n} size={22} className={n <= d.response.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-zinc-600'} />)}
-                            <span className="ml-2 text-[14px] font-semibold text-gray-600 dark:text-zinc-400">{t(RATING_WORDS[d.response.rating])}</span>
+            <ExpandedPage label={t('Campaign feedback')} hero={hero} bar={bar}>
+                {titleBlock}
+                <Notice tone="success" title={t('Thank you! We got your feedback.')}>{t('It goes straight to the Newbi team. You can change it from this link any time.')}</Notice>
+                <Card>
+                    <div className="flex items-center gap-2" aria-label={t('{n} out of 5', { n: d.response.rating })}>
+                        <Stars value={d.response.rating} />
+                        <span className="text-[14px] font-semibold text-gray-600 dark:text-zinc-400">{t(RATING_WORDS[d.response.rating])}</span>
+                    </div>
+                    {d.response.testimonial && (
+                        <div className="space-y-2 rounded-2xl bg-black/[0.03] p-4 dark:bg-white/[0.04]">
+                            <Quote size={18} className="text-gray-400" />
+                            <p className="text-[15px] leading-relaxed">{d.response.testimonial}</p>
+                            {consent && <p className="text-[13px] text-gray-500 dark:text-zinc-400">{consent.value === 'no' ? t('Private: only the Newbi team sees it.') : d.published ? t('On newbi.live, as you allowed.') : t('You said we can share it on newbi.live: {how}.', { how: t(consent.label).replace(/^Yes, /, '') })}</p>}
                         </div>
-                        {d.response.testimonial && (
-                            <div className="space-y-2 rounded-2xl bg-black/[0.03] p-4 dark:bg-white/[0.04]">
-                                <Quote size={18} className="text-gray-400" />
-                                <p className="text-[15px] leading-relaxed">{d.response.testimonial}</p>
-                                {consent && <p className="text-[13px] text-gray-500 dark:text-zinc-400">{consent.value === 'no' ? t('Private: only the Newbi team sees it.') : d.published ? t('On newbi.live, as you allowed.') : t('You said we can share it on newbi.live: {how}.', { how: t(consent.label).replace(/^Yes, /, '') })}</p>}
-                            </div>
-                        )}
-                    </Card>
-                    <Button variant="secondary" icon={Pencil} onClick={() => setEditing(true)} className="w-full">{t('Change my answers')}</Button>
-                </div>
-            </PageBody>
+                    )}
+                </Card>
+            </ExpandedPage>
         );
     }
 
-    return (
-        <PageBody>
-            <form onSubmit={submit} noValidate className="mx-auto max-w-xl space-y-4">
-                {header}
-                <p className="text-[15px] text-gray-600 dark:text-zinc-400">{t('Thanks for creating with Newbi. Tell us how it went, it takes about a minute.')}</p>
+    const bar = (
+        <ActionBar>
+            {d.response && <Button variant="secondary" size="lg" onClick={() => { setForm({ ...EMPTY, ...d.response }); setErrors({}); setEditing(false); }} className="shrink-0">{t('Cancel')}</Button>}
+            {form.rating ? (
+                <Button type="submit" form={FORM_ID} size="lg" icon={Send} loading={sending} className="flex-1">{d.response ? t('Save my answers') : t('Send feedback')}</Button>
+            ) : (
+                <BarStatus icon={Star}>{t('Pick a rating to send it.')}</BarStatus>
+            )}
+        </ActionBar>
+    );
 
+    return (
+        <ExpandedPage label={t('Campaign feedback')} hero={hero} bar={bar}>
+            {titleBlock}
+            <form id={FORM_ID} onSubmit={submit} noValidate className="space-y-4">
                 <Card>
                     <Question>{t('How would you rate the campaign?')}</Question>
                     <div role="radiogroup" aria-label={t('Rating')} className="flex items-center gap-1">
@@ -234,10 +263,8 @@ const FeedbackPage = () => {
                 </Card>
 
                 {error && <Notice tone="error" title={error} />}
-                <Button type="submit" icon={Send} loading={sending} className="w-full">{d.response ? t('Save my answers') : t('Send feedback')}</Button>
-                {d.response && <Button variant="secondary" onClick={() => { setForm({ ...EMPTY, ...d.response }); setErrors({}); setEditing(false); }} className="w-full">{t('Cancel')}</Button>}
             </form>
-        </PageBody>
+        </ExpandedPage>
     );
 };
 
