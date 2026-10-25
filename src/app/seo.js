@@ -40,7 +40,7 @@ export const OG_IMAGES = {
 // Image headers for the WhatsApp templates (api/_lib/whatsapp.js), one per message, drawn in the
 // same sheet. Not link previews: they're only ever sent inside a WhatsApp message.
 export const WA_CARDS = Object.fromEntries(
-    ['pass', 'ticket', 'approved', 'invite', 'shortlisted', 'shortlist', 'reminder', 'deliverables', 'changes', 'payout', 'city',
+    ['pass', 'ticket', 'approved', 'invite', 'shortlisted', 'shortlist', 'reminder', 'deliverables', 'changes', 'payout', 'feedback', 'city',
         'signedup', 'onlist', 'request-change', 'declined', 'waitlist', 'tonight', 'changed', 'cancelled', 'scanned']
         .map((name) => [`wa-${name}`, ogCard(`wa-${name}`, `Newbi on WhatsApp: ${name}`)]),
 );
