@@ -78,7 +78,7 @@ const toForm = (c, { copy = false } = {}) => ({
     thumbnail: c.thumbnail || '',
     eventId: c.eventId || '',
     ticketsPerCreator: toStr(c.ticketsPerCreator),
-    passKind: c.passKind === 'confirmation' ? 'confirmation' : 'qr',
+    passKind: ['confirmation', 'guestlist'].includes(c.passKind) ? c.passKind : 'qr',
     passTiers: cleanPassTiers(c.passTiers).map(t => ({ name: t.name, minFollowers: toStr(t.minFollowers), qty: toStr(t.qty) })),
     eventName: c.eventName || '',
     eventDate: toDayInput(c.eventDate) || '',
@@ -129,12 +129,12 @@ const toPayload = (f) => ({
     spotsLeft: num(f.spotsLeft),
     thumbnail: f.thumbnail.trim(),
     // Event passes for selected creators: a linked event (optional; without one the pass uses the
-    // name, date and venue below), QR pass or confirmation without a QR, and how many each.
+    // name, date and venue below), QR pass, confirmation or guestlist place (no QR for those two), and how many each.
     eventId: f.eventId || null,
     ticketsPerCreator: num(f.ticketsPerCreator) || 1,
     // Passes go out only when an admin sends them (Send tickets); this clears the old auto-send setting.
     ticketAutoIssue: null,
-    passKind: f.passKind === 'confirmation' ? 'confirmation' : 'qr',
+    passKind: ['confirmation', 'guestlist'].includes(f.passKind) ? f.passKind : 'qr',
     // Ticket categories by Instagram followers (VIP 50K+, …); applied when passes are sent.
     passTiers: cleanPassTiers(f.passTiers),
     // On the pass, email and WhatsApp. With a linked event, anything filled in here overrides it.
@@ -593,13 +593,14 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
 
                     <BuilderCard id="cm-tickets" title="Event passes" hint="Optional: passes for selected creators. You send them from the campaign (Send tickets); they go out in the app, by email and on WhatsApp.">
                         <div className="space-y-4">
-                            <Field label="Pass" hint="A QR pass is scanned at the gate. A confirmation tells them they're in, with no QR code.">
+                            <Field label="Pass" hint="A QR pass is scanned at the gate. A confirmation tells them they're in, with no QR code. Guestlist tells them their name is on the list. This is the default; you can pick another when you send.">
                                 <Choice
                                     value={form.passKind}
                                     onChange={(v) => set({ passKind: v })}
                                     options={[
                                         { value: 'qr', label: 'QR pass', hint: 'Scanned at the gate' },
                                         { value: 'confirmation', label: 'Confirmation', hint: 'No QR code' },
+                                        { value: 'guestlist', label: 'Guestlist', hint: 'Name on the list' },
                                     ]}
                                 />
                             </Field>

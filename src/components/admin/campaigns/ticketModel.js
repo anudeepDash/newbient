@@ -3,6 +3,7 @@ import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { pollPasses, staffPassList } from '../../../lib/passesApi';
 import { parseCSV } from '../creators/creatorData';
+import { isRequiredTask } from '../../../lib/creator/tasks';
 import { creatorHandle, creatorRef } from './campaignModel';
 
 /*
@@ -14,8 +15,24 @@ import { creatorHandle, creatorRef } from './campaignModel';
  *                ticket_url | ticket_file · qty · tier · note
  */
 
-export const TICKET_STAGES = ['shortlisted', 'selected', 'review', 'approved', 'paid'];
-export const canGetTicket = (entry) => TICKET_STAGES.includes(entry?.stage);
+// Only creators on the real shortlist (told, working on the deliverables) or already paid.
+// Not "Considering" (the team's private list) or someone who sent work without being shortlisted.
+export const canGetTicket = (entry) => Boolean(entry && !entry.orphan && (entry.selected || entry.stage === 'paid'));
+
+/*
+ * "Who gets them" in Send tickets: everyone shortlisted, those who finished every
+ * required deliverable, or those who finished one. Finished = approved, plus work
+ * still waiting for review when `inReview` is on.
+ */
+export const isTaskDone = (status, inReview = false) => status === 'approved' || (inReview && status === 'submitted');
+export const ticketAudience = (entries, campaign, { who = 'all', inReview = false } = {}) => {
+    if (who === 'all') return entries;
+    const tasks = campaign?.tasks || [];
+    const required = tasks.filter(isRequiredTask);
+    const ids = who === 'done-all' ? (required.length ? required : tasks).map(t => t.id) : [who.replace(/^task:/, '')];
+    if (!ids.length) return [];
+    return entries.filter(e => ids.every(id => isTaskDone(e.progress?.items?.find(i => i.task.id === id)?.status, inReview)));
+};
 
 /**
  * Live passes for one campaign. Straight from Firestore when the rules let

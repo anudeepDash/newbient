@@ -266,7 +266,7 @@ export const applicantsFor = (campaign, creators) => {
         .filter(c => hasApplied(campaign, c) || creatorKeys(c).some(k => submitted.has(k)))
         .map(creator => {
             const progress = progressFor(campaign, creator);
-            return { creator, key: creatorRef(creator), progress, stage: stageOf(campaign, creator, progress), criteria: criteriaFor(campaign, creator), payout: payoutOf(campaign, creator) };
+            return { creator, key: creatorRef(creator), progress, stage: stageOf(campaign, creator, progress), selected: isSelected(campaign, creator), criteria: criteriaFor(campaign, creator), payout: payoutOf(campaign, creator) };
         });
 };
 

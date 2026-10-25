@@ -7,6 +7,7 @@ import FileText from 'lucide-react/dist/esm/icons/file-text';
 import Link2 from 'lucide-react/dist/esm/icons/link-2';
 import Send from 'lucide-react/dist/esm/icons/send';
 import X from 'lucide-react/dist/esm/icons/x';
+import Users from 'lucide-react/dist/esm/icons/users';
 import { cn } from '../../../lib/utils';
 import { useStore } from '../../../lib/store';
 import { downloadCsv, fileDate } from '../../../lib/xlsx';
@@ -19,16 +20,19 @@ import { Spinner } from './parts';
 import { creatorPhotoOf, formatDay } from './campaignModel';
 import {
     TEMPLATE_COLUMNS, ROW_STATUS, canGetTicket, evaluateRows, passFor, passesByCreator, readTicketCsv, templateRows,
-    cleanPassTiers, followerTier, followersLabel,
+    cleanPassTiers, followerTier, followersLabel, ticketAudience, isTaskDone,
 } from './ticketModel';
 import { DeliveryDots } from './CampaignTickets';
 
 /*
- * "Send tickets" for a campaign's selected creators. Two ways:
+ * "Send tickets" for a campaign's shortlisted creators (all of them, or only those
+ * who finished every deliverable or one of them). Two ways:
  *
- *   Newbi pass          one pass per creator: a QR pass (the gate scanner checks it) or a
- *                       confirmation without a QR. For the linked event, or without one the
- *                       campaign's own event name, date and venue.
+ *   Newbi pass          one per creator: a QR pass (the gate scanner checks it), a
+ *                       confirmation without a QR, or "on the guestlist" (their name is
+ *                       added to the venue's list; no ticket, they're told it's there).
+ *                       For the linked event, or without one the campaign's own event
+ *                       name, date and venue.
  *   Official tickets    a CSV from the ticketing partner (links or PDFs dropped in alongside):
  *                       preview → fix or skip rows → "Send N tickets"
  *
@@ -39,10 +43,11 @@ import { DeliveryDots } from './CampaignTickets';
 
 const QR_BATCH = 10;
 
-/* Whether this creator's existing pass rules out sending them another of `kind`:
-   a QR pass can still upgrade a confirmation or a partner ticket; a confirmation needs no pass at all. */
+/* Whether this creator's existing pass rules out sending them another of `kind`: a QR pass can
+   still upgrade a confirmation, a guestlist place or a partner ticket; the other two need no pass at all. */
 const blocks = (kind, pass) => (pass ? (kind === 'qr' ? pass.qr !== false : true) : false);
-const passLabel = (pass) => (!pass ? null : pass.qr !== false ? 'Has a QR pass' : pass.externalTicket ? 'Has partner ticket' : 'Confirmed');
+const passLabel = (pass) => (!pass ? null : pass.qr !== false ? 'Has a QR pass' : pass.externalTicket ? 'Has partner ticket' : pass.mode === 'guestlist' ? 'On guestlist' : 'Confirmed');
+const KINDS = ['qr', 'confirmation', 'guestlist'];
 const CSV_BATCH = 5;
 
 const chunks = (list, size) => Array.from({ length: Math.ceil(list.length / size) }, (_, i) => list.slice(i * size, i * size + size));
@@ -87,13 +92,19 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
         return m;
     }, [applicants]);
     const eligible = useMemo(() => applicants.filter(canGetTicket), [applicants]);
+    const tasks = (campaign?.tasks || []).filter(t => t?.id);
 
     const [mode, setMode] = useState('qr');
     const [phase, setPhase] = useState('edit'); // edit | sending | done
     const [progress, setProgress] = useState({ done: 0, total: 0, step: '' });
     const [results, setResults] = useState([]);
 
-    // Newbi pass mode: 'qr' or 'confirmation' (no QR)
+    // Who gets them: 'all' shortlisted, 'done-all' (every required deliverable) or 'task:<id>'.
+    const [who, setWho] = useState('all');
+    const [inReview, setInReview] = useState(false); // count work still waiting for review as done
+    const audience = useMemo(() => ticketAudience(eligible, campaign, { who, inReview }), [eligible, campaign, who, inReview]);
+
+    // Newbi pass mode: 'qr', 'confirmation' (no QR) or 'guestlist' (no QR, name on the list)
     const [passKind, setPassKind] = useState('qr');
     const [qrPicked, setQrPicked] = useState(() => new Set());
     const [tierPick, setTierPick] = useState({}); // creator key → category name ('' = default), to upgrade someone
@@ -114,8 +125,10 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
     useEffect(() => {
         if (!open) return;
         const start = (preselected || []).filter(canGetTicket);
-        const kind = campaign?.passKind === 'confirmation' ? 'confirmation' : 'qr';
+        const kind = KINDS.includes(campaign?.passKind) ? campaign.passKind : 'qr';
         setPassKind(kind);
+        setWho('all');
+        setInReview(false);
         setTierPick({});
         // Everyone ticked by default, minus those who already have this kind of pass.
         setQrPicked(new Set((start.length ? start : eligible).filter(e => !blocks(kind, passFor(existing, e.creator))).map(e => e.key)));
@@ -137,7 +150,16 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
         return c;
     }, [evaluated]);
     const toSend = evaluated.filter(r => r.status === 'ready' && !r.skip);
-    const qrList = eligible.filter(e => qrPicked.has(e.key));
+    const qrList = audience.filter(e => qrPicked.has(e.key));
+    const pickable = audience.filter(e => !blocks(passKind, passFor(existing, e.creator)));
+    // Changing who gets them ticks everyone in the new list who can get this kind.
+    const tickAll = (list, kind = passKind) => setQrPicked(new Set(list.filter(e => !blocks(kind, passFor(existing, e.creator))).map(e => e.key)));
+    const chooseWho = (next, review = inReview) => {
+        setWho(next);
+        setInReview(review);
+        tickAll(ticketAudience(eligible, campaign, { who: next, inReview: review }));
+    };
+    const doneCount = (taskId) => eligible.filter(e => isTaskDone(e.progress?.items?.find(i => i.task.id === taskId)?.status, inReview)).length;
     const passTiers = useMemo(() => cleanPassTiers(campaign?.passTiers), [campaign?.passTiers]);
 
     const setOverride = (row, patch) => setOverrides(o => ({ ...o, [row]: { ...(o[row] || {}), ...patch } }));
@@ -163,7 +185,7 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
     };
 
     const templateSpec = () => {
-        const rows = templateRows(eligible.length ? eligible : applicants, campaign);
+        const rows = templateRows(audience.length ? audience : eligible, campaign);
         return {
             filename: `tickets_${(campaign?.title || 'campaign').replace(/[^\w]+/g, '-').toLowerCase()}_${fileDate()}`,
             columns: TEMPLATE_COLUMNS.map(key => ({ header: key, key })),
@@ -212,7 +234,7 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
         setPhase('done');
         const failed = all.filter(r => r.outcome === 'failed').length;
         if (failed) addToast(`${failed} couldn't be sent. Check the list below and try those again.`, 'warning', { title: `Sent ${all.length - failed} of ${all.length}` });
-        else addToast(passKind === 'confirmation' ? 'Confirmations sent.' : 'Passes sent.', 'success');
+        else addToast(passKind === 'guestlist' ? "Added to the guestlist. They've been told." : passKind === 'confirmation' ? 'Confirmations sent.' : 'Passes sent.', 'success');
     };
 
     // Switching QR ↔ confirmation drops anyone who can't get that kind.
@@ -221,6 +243,7 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
         setQrPicked(s => new Set([...s].filter(key => { const e = eligible.find(x => x.key === key); return e && !blocks(kind, passFor(existing, e.creator)); })));
     };
     const passWord = (n) => (passKind === 'confirmation' ? (n === 1 ? 'confirmation' : 'confirmations') : (n === 1 ? 'pass' : 'passes'));
+    const sendLabel = (n) => (passKind === 'guestlist' ? `Add ${n} to the guestlist` : `Send ${n} ${passWord(n)}`);
 
     const sendCsv = async () => {
         if (!toSend.length) return;
@@ -271,7 +294,7 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
         <Button variant="accent" onClick={onClose} className="h-11 w-full">Done</Button>
     ) : mode === 'qr' ? (
         <Button variant="accent" onClick={sendQr} disabled={sending || !qrList.length} className="h-11 w-full">
-            {sending ? <><Spinner /> Sending {progress.done}/{progress.total}</> : <><Send size={14} /> Send {qrList.length} {passWord(qrList.length)}</>}
+            {sending ? <><Spinner /> Sending {progress.done}/{progress.total}</> : <><Send size={14} /> {sendLabel(qrList.length)}</>}
         </Button>
     ) : (
         <Button variant="accent" onClick={sendCsv} disabled={sending || !toSend.length} className="h-11 w-full">
@@ -299,9 +322,29 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
                         className="w-full [&>button]:flex-1 [&>button]:justify-center"
                     />
 
+                    {eligible.length > 0 && tasks.length > 0 && (
+                        <div className="space-y-2">
+                            <Field label="Who gets them">
+                                <select className={cn(fieldCls, 'h-11 text-[14px]')} value={who} disabled={sending} onChange={e => chooseWho(e.target.value)}>
+                                    <option value="all">Everyone shortlisted ({eligible.length})</option>
+                                    <option value="done-all">Finished all {tasks.some(t => t.priority === 'optional' || t.required === false) ? 'required ' : ''}deliverables ({ticketAudience(eligible, campaign, { who: 'done-all', inReview }).length})</option>
+                                    {tasks.length > 1 && tasks.map(t => <option key={t.id} value={`task:${t.id}`}>Finished: {t.title || 'Deliverable'} ({doneCount(t.id)})</option>)}
+                                </select>
+                            </Field>
+                            {who !== 'all' && (
+                                <label className="flex min-h-[40px] cursor-pointer items-center gap-2.5 text-[13px] text-gray-600 dark:text-zinc-400">
+                                    <input type="checkbox" className="h-5 w-5 accent-emerald-600" checked={inReview} disabled={sending} onChange={e => chooseWho(who, e.target.checked)} />
+                                    Also count work still waiting for review
+                                </label>
+                            )}
+                        </div>
+                    )}
+
                     {mode === 'qr' ? (
                         eligible.length === 0 ? (
-                            <p className="rounded-xl bg-black/[0.03] px-3.5 py-3 text-[13px] text-gray-500 dark:bg-white/[0.04]">Select creators first. Shortlisted, selected and finished creators can get passes.</p>
+                            <p className="rounded-xl bg-black/[0.03] px-3.5 py-3 text-[13px] text-gray-500 dark:bg-white/[0.04]">Shortlist creators first. Only shortlisted creators can get tickets or go on the guestlist.</p>
+                        ) : audience.length === 0 ? (
+                            <p className="rounded-xl bg-black/[0.03] px-3.5 py-3 text-[13px] text-gray-500 dark:bg-white/[0.04]">Nobody shortlisted has finished that yet{inReview ? '' : '. Tick “Also count work still waiting for review” to include work you haven’t checked'}.</p>
                         ) : (
                             <>
                                 <Choice
@@ -310,15 +353,26 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
                                     options={[
                                         { value: 'qr', label: 'QR pass', hint: 'Scanned at the gate' },
                                         { value: 'confirmation', label: 'Confirmation', hint: 'Confirms their place, no QR' },
+                                        { value: 'guestlist', label: 'Guestlist', hint: 'Name added to the list, no ticket' },
                                     ]}
                                 />
+                                {passKind === 'guestlist' && (
+                                    <p className="text-[13px] text-gray-500">They get a message that their name is on the guestlist (as “Name + guests” when they get more than one), by email, on WhatsApp and in the app. Nothing to scan: the door checks the name. Export the list from the Tickets tab for the venue.</p>
+                                )}
                                 {!campaign?.eventId && (
                                     <p className="text-[13px] text-gray-500">
                                         No linked event: the pass shows <span className="font-semibold text-gray-700 dark:text-zinc-300">{campaign?.eventName || campaign?.title || 'the campaign'}</span>{[formatDay(campaign?.eventDate), campaign?.venue].filter(Boolean).length ? ` · ${[formatDay(campaign?.eventDate), campaign?.venue].filter(Boolean).join(' · ')}` : ''}. Change it in the editor (Event passes).
                                     </p>
                                 )}
+                                <div className="flex items-center gap-2 text-[13px]">
+                                    <span className="flex items-center gap-1.5 font-semibold text-gray-600 dark:text-zinc-400"><Users size={13} /> {qrList.length} of {audience.length} ticked</span>
+                                    <span className="ml-auto flex gap-1">
+                                        <button type="button" disabled={sending || qrList.length === pickable.length} onClick={() => tickAll(audience)} className="h-9 rounded-lg px-2.5 font-semibold text-gray-600 hover:bg-black/5 disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-white/5">Select all</button>
+                                        <button type="button" disabled={sending || !qrList.length} onClick={() => setQrPicked(new Set())} className="h-9 rounded-lg px-2.5 font-semibold text-gray-600 hover:bg-black/5 disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-white/5">Clear</button>
+                                    </span>
+                                </div>
                                 <ul className="divide-y divide-black/[0.05] rounded-xl border border-black/[0.06] dark:divide-white/[0.06] dark:border-white/[0.08] sm:max-h-[38dvh] sm:overflow-y-auto">
-                                    {eligible.map(e => {
+                                    {audience.map(e => {
                                         const has = passFor(existing, e.creator);
                                         const blocked = blocks(passKind, has);
                                         const checked = qrPicked.has(e.key);
@@ -358,7 +412,7 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
                                     })}
                                 </ul>
                                 <div className="grid gap-3 sm:grid-cols-3">
-                                    <Field label={passTiers.length ? 'Tickets each (default)' : 'Tickets each'}><input className={fieldCls} type="number" min="1" max="20" inputMode="numeric" value={qty} onChange={e => setQty(e.target.value)} /></Field>
+                                    <Field label={`${passKind === 'guestlist' ? 'Admit each' : 'Tickets each'}${passTiers.length ? ' (default)' : ''}`}><input className={fieldCls} type="number" min="1" max="20" inputMode="numeric" value={qty} onChange={e => setQty(e.target.value)} /></Field>
                                     <Field label={passTiers.length ? 'Tier (default)' : 'Tier'} optional><input className={fieldCls} value={tier} onChange={e => setTier(e.target.value)} placeholder="e.g. VIP" /></Field>
                                     <Field label="Note" optional><input className={fieldCls} value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. Entry from Gate 2" /></Field>
                                 </div>
@@ -379,7 +433,7 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
                                 onDrop={e => { e.preventDefault(); const list = Array.from(e.dataTransfer.files || []); const csv = list.find(f => /\.csv$/i.test(f.name)); if (csv) readCsv(csv); addPdfs(list); }}
                                 className="rounded-xl border-black/10 text-[13px] text-gray-500 dark:border-white/10 sm:border-2 sm:border-dashed sm:px-4 sm:py-4 sm:text-center"
                             >
-                                <span className="hidden sm:inline">Drop the CSV and the ticket PDFs here. </span>PDFs are matched to rows by <code className="font-mono">ticket_file</code> and must be under 3 MB. The template lists everyone who can get a ticket.
+                                <span className="hidden sm:inline">Drop the CSV and the ticket PDFs here. </span>PDFs are matched to rows by <code className="font-mono">ticket_file</code> and must be under 3 MB. The template lists everyone in “Who gets them”.
                             </div>
                             {csvError && <p role="alert" className="text-[13px] font-semibold text-rose-600 dark:text-rose-300">{csvError}</p>}
 
