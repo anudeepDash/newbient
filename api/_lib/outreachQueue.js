@@ -373,7 +373,8 @@ export const sendJob = async (db, job, { now = Date.now() } = {}) => {
         result = await sendTemplate({
             to: phone,
             template: WA_TEMPLATES.feedback.name,
-            image: campaignImageOf(campaign),
+            // Always the "How was it?" card (wa-feedback), never the campaign's own picture.
+            image: null,
             bodyParams: templateParamsFor('feedback', tplCtx),
             buttons: [{ index: 0, param: feedbackToken(job.campaignId, feedback.key) }],
             event: 'outreach-feedback',

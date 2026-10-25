@@ -39,6 +39,7 @@ import { createHash } from 'node:crypto';
 import { FieldValue, getDb, nowIso, istDate } from './db.js';
 import { readSignedToken } from './linkSign.js';
 import { toE164, campaignImageOf } from './whatsapp.js';
+import { APP_ORIGIN, WA_CARDS } from '../../src/app/seo.js';
 import { normalizeEmail, isValidEmail } from './mailing.js';
 import { sendTransactional } from './mail/send.js';
 import { enqueueJob, kindLive, switchFor, feedbackUrlFor, runQueue, kickWorker } from './outreachQueue.js';
@@ -67,6 +68,8 @@ const str = (v, max = 200) => String(v ?? '').trim().slice(0, max);
 const sha = (v) => createHash('sha256').update(String(v)).digest('hex');
 const handleOf = (v) => str(v, 60).replace(/^@+/, '');
 const docIdFor = (campaignId, key) => `${campaignId}_${key}`.slice(0, 300);
+// The picture on every feedback message (WhatsApp header and email), never the campaign's own.
+export const FEEDBACK_CARD_URL = `${APP_ORIGIN}${WA_CARDS['wa-feedback'].path}`;
 
 /* ── Who took part ────────────────────────────────────────────────────── */
 
@@ -295,7 +298,7 @@ export const runPendingEmails = async (db = getDb(), { campaignId = null, deadli
             continue;
         }
         const r = await sendTransactional('campaign-feedback', f.email, {
-            name: f.name, campaignTitle: campaign.title, eventName: campaign.eventName, image: campaignImageOf(campaign), formUrl,
+            name: f.name, campaignTitle: campaign.title, eventName: campaign.eventName, image: FEEDBACK_CARD_URL, formUrl,
         }, { idempotencyKey: `feedback_${d.id}_${f.sendCount || 1}`, uid: f.uid || null, ref: { collection: COLLECTION, id: d.id } });
         // 'deferred' (Gmail's daily cap) is retried by the mail worker on its own.
         const status = r.ok ? 'sent' : r.status === 'deferred' ? 'deferred' : r.status === 'suppressed' ? 'unsubscribed' : 'failed';
