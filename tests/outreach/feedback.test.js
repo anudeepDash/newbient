@@ -9,7 +9,7 @@ import { FakeFirestore, fakeReq, fakeRes } from '../helpers/fakeFirestore.js';
 import { setDbForTests } from '../../api/_lib/db.js';
 import { setWhatsAppFetchForTests } from '../../api/_lib/whatsapp.js';
 import { sendTransactional } from '../../api/_lib/mail/send.js';
-import { handleFeedbackAction, collectRecipients, runCampaignFeedback } from '../../api/_lib/campaignFeedback.js';
+import { handleFeedbackAction, collectRecipients, runCampaignFeedback, FEEDBACK_CARD_URL } from '../../api/_lib/campaignFeedback.js';
 import { feedbackToken, runQueue, contactIdFor } from '../../api/_lib/outreachQueue.js';
 import { validateFeedback, sendDayFor, addDays } from '../../src/lib/campaignFeedback.js';
 import { render } from '../../api/_lib/mail/templates/index.js';
@@ -40,7 +40,7 @@ beforeEach(() => {
     vi.stubEnv('OUTREACH_WA_PER_MINUTE', '50');
     vi.stubEnv('CRON_SECRET', '');
     db = new FakeFirestore({
-        'campaigns/c1': { title: 'Arijit Singh Live', status: 'Live', eventDate: '2026-11-15', tasks: TASKS },
+        'campaigns/c1': { title: 'Arijit Singh Live', status: 'Live', eventDate: '2026-11-15', tasks: TASKS, image: 'https://res.cloudinary.com/demo/image/upload/v1/arijit.jpg' },
         // Outreach form: in the group, posted, removed, only shortlisted (not told), and one with a ticket.
         'campaigns/c1/applications/a1': { fullName: 'Riya Sharma', phone: '+919876500001', email: 'riya@example.com', status: 'joined', instagramHandle: 'riya.s' },
         'campaigns/c1/applications/a2': { fullName: 'Arjun Kapoor', phone: '+919876500002', status: 'removed', deliverables: { t1: { status: 'approved' } } },
@@ -97,10 +97,14 @@ describe('asking', () => {
         expect(requests()).toHaveLength(6);
         expect(vi.mocked(sendTransactional).mock.calls.map(c => c[1]).sort()).toEqual(['ishaan@example.com', 'meera@example.com', 'riya@example.com']);
         expect(vi.mocked(sendTransactional).mock.calls[0][2].formUrl).toMatch(/\/f\//);
+        // The feedback card, not the campaign's own picture.
+        expect(FEEDBACK_CARD_URL).toBe('https://app.newbi.live/og/wa-feedback-v1.jpg');
+        expect(vi.mocked(sendTransactional).mock.calls.every(c => c[2].image === FEEDBACK_CARD_URL)).toBe(true);
 
         await runQueue({ db, deadline: Date.now() + 5000, sleep: async () => {} });
         expect(sent).toHaveLength(4); // the four with phones
         expect(sent[0].template.name).toBe('campaign_feedback');
+        expect(sent.every(m => m.template.components.find(c => c.type === 'header').parameters[0].image.link === FEEDBACK_CARD_URL)).toBe(true);
         expect(sent[0].template.components.find(c => c.type === 'button').parameters[0].text).toMatch(/\./);
 
         const again = await call('feedback-send', { campaignId: 'c1' });
