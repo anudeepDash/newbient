@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { cn } from '../../lib/utils';
 import { isIOS } from '../../lib/platform';
+import { AMBIENT_OFF, cleanAmbient, hexToHsl } from '../../lib/ambientColor';
 
 /*
  * The ambient glow behind a hero: the image's own colours, blurred and faded
@@ -113,8 +114,12 @@ const toHsl = (r, g, b) => {
     return [h * 60, s, l];
 };
 
-/* The poster's most vivid colour, as [h, s, l], or null while loading / if the image can't be read. */
-const readPosterColor = (url) => new Promise((resolve) => {
+/*
+ * The poster's colours, or null while loading / if the image can't be read:
+ * { main: [h, s, l] the strongest colour (what Auto glows), palette: up to
+ * five distinct [h, s, l] (the admin's glow colour suggestions) }.
+ */
+const readPoster = (url) => new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.decoding = 'async';
@@ -126,20 +131,30 @@ const readPosterColor = (url) => new Promise((resolve) => {
             const ctx = canvas.getContext('2d', { willReadFrequently: true });
             ctx.drawImage(img, 0, 0, size, size);
             const data = ctx.getImageData(0, 0, size, size).data;
-            // Weight each pixel by how colourful it is (and not near black or white), then average the hue.
+            // Weight each pixel by how colourful it is (and not near black or white), and bin it by hue.
+            const bins = Array.from({ length: 12 }, () => ({ x: 0, y: 0, w: 0, sat: 0 }));
             let x = 0; let y = 0; let wSum = 0; let satSum = 0;
             for (let i = 0; i < data.length; i += 4) {
                 const [h, sat, l] = toHsl(data[i], data[i + 1], data[i + 2]);
                 const w = sat * sat * (1 - Math.abs(l - 0.5) * 2);
                 if (w <= 0.02) continue;
-                x += Math.cos((h * Math.PI) / 180) * w;
-                y += Math.sin((h * Math.PI) / 180) * w;
-                satSum += sat * w;
-                wSum += w;
+                const cx = Math.cos((h * Math.PI) / 180) * w;
+                const cy = Math.sin((h * Math.PI) / 180) * w;
+                x += cx; y += cy; satSum += sat * w; wSum += w;
+                const bin = bins[Math.floor(h / 30) % 12];
+                bin.x += cx; bin.y += cy; bin.w += w; bin.sat += sat * w;
             }
             if (!wSum) return resolve(null);
-            const hue = ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
-            resolve([Math.round(hue), Math.min(1, Math.max(0.65, satSum / wSum)), 0.55]);
+            const hueOf = (bx, by) => Math.round(((Math.atan2(by, bx) * 180) / Math.PI + 360) % 360);
+            const vivid = (sat) => Math.min(1, Math.max(0.65, sat));
+            const palette = bins
+                .filter(b => b.w >= wSum * 0.06)
+                .sort((a, b) => b.w - a.w)
+                .slice(0, 5)
+                .map(b => [hueOf(b.x, b.y), vivid(b.sat / b.w), 0.55]);
+            // Auto is the strongest colour actually in the picture. Averaging every hue made
+            // colours that aren't there (pink and green flowers glowed orange).
+            resolve({ main: palette[0] || [hueOf(x, y), vivid(satSum / wSum), 0.55], palette });
         } catch {
             resolve(null); // a host without CORS: no glow
         }
@@ -148,31 +163,41 @@ const readPosterColor = (url) => new Promise((resolve) => {
     img.src = sampleUrl(url);
 });
 
-export const usePosterColor = (url) => {
-    const [color, setColor] = React.useState(() => (url ? colorCache.get(url) ?? null : null));
+const usePoster = (url) => {
+    const [found, setFound] = React.useState(() => (url ? colorCache.get(url) ?? null : null));
     useEffect(() => {
-        if (!url) { setColor(null); return undefined; }
-        if (colorCache.has(url)) { setColor(colorCache.get(url)); return undefined; }
+        if (!url) { setFound(null); return undefined; }
+        if (colorCache.has(url)) { setFound(colorCache.get(url)); return undefined; }
         let cancelled = false;
-        readPosterColor(url).then((c) => {
+        readPoster(url).then((c) => {
             colorCache.set(url, c);
-            if (!cancelled) setColor(c);
+            if (!cancelled) setFound(c);
         });
         return () => { cancelled = true; };
     }, [url]);
-    return color;
+    return found;
 };
+
+/* The poster's most vivid colour as [h, s, l], or null. */
+export const usePosterColor = (url) => usePoster(url)?.main ?? null;
+
+/* Up to five of the poster's colours as [h, s, l] (empty while loading). */
+export const usePosterPalette = (url) => usePoster(url)?.palette ?? [];
 
 /*
  * A soft light in the poster's own colour, glowing out from behind a top image
  * and fading into the surface (campaign cards and the campaign popup). Only
  * gradients: no blurred copy of the picture. Put it inside a `relative isolate` box.
+ * `color` overrides the sampled colour, or turns the glow off ('none').
  */
-export const PosterGlow = ({ image, className, height = '150%', strength = 1 }) => {
-    const hsl = usePosterColor(image);
+export const PosterGlow = ({ image, color, className, height = '150%', strength = 1 }) => {
+    // `color`: the admin's glow colour (lib/ambientColor.js); Auto samples the poster.
+    const chosen = cleanAmbient(color);
+    const sampled = usePosterColor(chosen ? null : image);
+    const hsl = chosen === AMBIENT_OFF ? null : chosen ? hexToHsl(chosen) : sampled;
     if (!hsl) return null;
-    const [h, sat] = hsl;
-    const c = (a) => `hsla(${h}, ${Math.round(sat * 100)}%, 55%, ${(a * strength).toFixed(3)})`;
+    const [h, sat, l] = hsl;
+    const c = (a) => `hsla(${+h.toFixed(1)}, ${+(sat * 100).toFixed(1)}%, ${+(l * 100).toFixed(1)}%, ${(a * strength).toFixed(3)})`;
     return (
         <div
             aria-hidden="true"

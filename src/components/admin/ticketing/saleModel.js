@@ -1,5 +1,6 @@
 import { isValidUpiId, MAX_PER_ORDER_CAP } from '../../../lib/ticketing';
 import { normalizeVenueMap } from '../../../lib/venueMap';
+import { cleanAmbient } from '../../../lib/ambientColor';
 
 /*
  * The ticket-sale editor's form ↔ the upcoming_events document. Pure, so it
@@ -80,6 +81,7 @@ export const fromEvent = (e = {}) => {
         genres: (Array.isArray(e.genres) ? e.genres : []).join(', '),
         // One 16:9 banner. Older events may have a wide hubImage next to a poster: the wide one wins.
         image: str(e.hubImage || e.image || e.poster),
+        ambientColor: cleanAmbient(e.ambientColor),
         organizer: str(e.organizer),
         description: str(e.description),
         lineup: (Array.isArray(e.lineup) && e.lineup.length
@@ -225,6 +227,7 @@ export const toPayload = (form) => {
         genres: form.genres.split(',').map(s => s.trim()).filter(Boolean).slice(0, 8),
         image: form.image.trim(),
         hubImage: form.image.trim(),
+        ambientColor: cleanAmbient(form.ambientColor),
         organizer: form.organizer.trim(),
         description: form.description.trim(),
         lineup: form.lineup.filter(a => a.name.trim()).map(a => ({

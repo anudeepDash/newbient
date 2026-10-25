@@ -80,7 +80,7 @@ const PassTicket = ({ pass, from = null, className }) => {
             )}
         >
             <article style={ticketMask} className={cn('relative flex h-full flex-col overflow-hidden rounded-[1.75rem] bg-white dark:bg-[#101219]', faded && 'opacity-60 grayscale')}>
-                <PosterGlow image={event.image} height="70%" strength={0.8} />
+                <PosterGlow image={event.image} color={event.ambientColor} height="70%" strength={0.8} />
 
                 {/* The poster, fading into the ticket. */}
                 <div className="relative aspect-[2/1] w-full shrink-0 overflow-hidden">

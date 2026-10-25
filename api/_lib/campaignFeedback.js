@@ -45,6 +45,7 @@ import { sendTransactional } from './mail/send.js';
 import { enqueueJob, kindLive, switchFor, feedbackUrlFor, runQueue, kickWorker } from './outreachQueue.js';
 import { isOutreachAdmin, checkRateLimit } from './outreach.js';
 import { firstNameOf, maskPhone } from '../../src/lib/outreach/normalize.js';
+import { cleanAmbient } from '../../src/lib/ambientColor.js';
 import { validateFeedback, canPublish, sendDayFor, addDays, REASONS } from '../../src/lib/campaignFeedback.js';
 
 export const FEEDBACK_ACTIONS = new Set([
@@ -405,6 +406,7 @@ const publicCampaign = (c = {}) => ({
     eventName: c.eventName || '',
     eventDate: c.eventDate || '',
     image: campaignImageOf(c) || '',
+    ambientColor: cleanAmbient(c.ambientColor),
 });
 
 const handleForm = async (req, res, { db }) => {

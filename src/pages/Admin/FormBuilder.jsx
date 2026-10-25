@@ -21,7 +21,7 @@ import CityInput, { cleanCity } from '../../components/admin/CityInput';
 import FormRenderer from '../../components/admin/forms/FormRenderer';
 import { FieldPalette, QuestionCard } from '../../components/admin/forms/BuilderParts';
 import { builderProblems, copyField, newField, starterFields } from '../../components/admin/forms/formSchema';
-import { ColorDots, EditorBar, PhoneBar, useConfirm, useImageField, useUnsavedWarning } from '../../components/admin/forms/kit';
+import { AmbientColorField, ColorDots, EditorBar, PhoneBar, useConfirm, useImageField, useUnsavedWarning } from '../../components/admin/forms/kit';
 
 const EMPTY = {
     title: '',
@@ -34,6 +34,7 @@ const EMPTY = {
     requiresExternal: false,
     image: '',
     highlightColor: '#FF4F8B',
+    ambientColor: '',
     isPinned: false,
     imageTransform: { scale: 1.05, x: 0, y: 0 },
     fields: [],
@@ -416,9 +417,12 @@ const FormBuilder = () => {
                                     transform={form.imageTransform}
                                     onTransform={(t) => set({ imageTransform: t })}
                                 />
-                                <div>
-                                    <p className="mb-2 text-[12px] font-bold text-gray-500">Highlight colour</p>
-                                    <ColorDots value={form.highlightColor} onChange={(v) => set({ highlightColor: v })} />
+                                <div className="space-y-4">
+                                    <div>
+                                        <p className="mb-2 text-[12px] font-bold text-gray-500">Highlight colour</p>
+                                        <ColorDots value={form.highlightColor} onChange={(v) => set({ highlightColor: v })} />
+                                    </div>
+                                    <AmbientColorField image={form.image} value={form.ambientColor} onChange={(v) => set({ ambientColor: v })} />
                                 </div>
                             </div>
                         </BuilderCard>

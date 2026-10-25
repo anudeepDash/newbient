@@ -42,6 +42,7 @@ export const ticketCard = (e, from) => {
     return {
         type: 'event',
         image: e.image || e.poster || null,
+        ambientColor: e.ambientColor,
         title: e.title,
         eyebrow: e.category || e.performanceType || null,
         description: e.description,

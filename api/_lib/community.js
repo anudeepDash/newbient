@@ -22,6 +22,7 @@ import { verifyToken } from './auth.js';
 import { notify } from './notify.js';
 import { normalizeEmail, staffRoleOf } from './mailing.js';
 import { toE164 } from './whatsapp.js';
+import { cleanAmbient } from '../../src/lib/ambientColor.js';
 import { gigFormDoc, interestToAnswers, applicantStatus, canWithdraw } from '../../src/lib/gigApplications.js';
 
 class CommunityError extends Error {
@@ -97,6 +98,7 @@ const publicGiveaway = (g) => ({
     name: str(g.name, 200),
     description: str(g.description, 4000),
     posterUrl: g.posterUrl || null,
+    ambientColor: cleanAmbient(g.ambientColor),
     prize: pick(g.prize, g.prizes) || null,
     city: str(g.city, 80) || null,
     endsAt: giveawayEndsAt(g)?.toISOString() || null,

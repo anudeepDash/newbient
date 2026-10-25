@@ -48,6 +48,7 @@ import { notify } from './notify.js';
 import { isStaffCaller, normalizeEmail } from './mailing.js';
 import { makeSignedToken, readSignedToken } from './linkSign.js';
 import { toE164 } from './whatsapp.js';
+import { cleanAmbient, firstAmbient } from '../../src/lib/ambientColor.js';
 
 export const APP_ORIGIN = (process.env.PUBLIC_APP_URL || 'https://app.newbi.live').replace(/\/+$/, '');
 export const passUrl = (ref) => `${APP_ORIGIN}/p/${encodeURIComponent(ref)}`;
@@ -212,6 +213,8 @@ export const resolveGuestlist = async (db, id, depth = 0) => {
         title: str(pick(gl?.title, ev?.title, gig?.title), 200),
         description: str(pick(ev?.description, gl?.description, gig?.description), 4000),
         image: pick(ev?.hubImage, ev?.image, gl?.image, gl?.poster, gl?.thumbnail, gig?.image, gig?.poster),
+        // The admin's glow colour for the picture (lib/ambientColor.js); blank samples it.
+        ambientColor: firstAmbient(ev?.ambientColor, gl?.ambientColor, gig?.ambientColor),
         date: toIso(date),
         time: pick(ev?.time, gl?.time, gig?.time),
         venue: pick(ev?.location, ev?.venue, gl?.location, gl?.venue, gig?.location),
@@ -245,7 +248,8 @@ export const resolveGuestlist = async (db, id, depth = 0) => {
     };
 };
 
-const eventSnapshot = (g) => compact({ title: g.title, date: g.date, time: g.time, venue: g.venue, city: g.city, mapUrl: g.mapUrl, image: g.image });
+// ambientColor is kept even when blank (Auto), so switching a list back to Auto clears the pass's copy.
+const eventSnapshot = (g) => ({ ...compact({ title: g.title, date: g.date, time: g.time, venue: g.venue, city: g.city, mapUrl: g.mapUrl, image: g.image }), ambientColor: cleanAmbient(g.ambientColor) });
 
 // Names of the people coming with the holder: one per extra spot, blanks dropped.
 const cleanGuestNames = (names, guests) => (Array.isArray(names) ? names : [])
@@ -746,7 +750,7 @@ export const ensureOrderPass = async (db, orderId, order, ev = {}) => {
         tier: (order.items || []).filter(i => i.name).map(i => ((order.items || []).length > 1 || Number(i.count) > 1 ? `${Number(i.count) || 1}× ${i.name}` : i.name)).join(', ') || null,
         qr: true,
         mode: 'qr',
-        event: compact({ title: ev.title || order.eventTitle, date: toIso(ev.date), time: ev.time, venue: ev.location || ev.venue, city: ev.city, mapUrl: mapLink(ev.locationUrl), image: ev.hubImage || ev.image }),
+        event: compact({ title: ev.title || order.eventTitle, date: toIso(ev.date), time: ev.time, venue: ev.location || ev.venue, city: ev.city, mapUrl: mapLink(ev.locationUrl), image: ev.hubImage || ev.image, ambientColor: cleanAmbient(ev.ambientColor) }),
         issuedAt: nowIso(),
         issuedBy: 'order',
     }));
@@ -819,7 +823,7 @@ const legacyPass = async (db, ref) => {
         if (g) rec.event = eventSnapshot(g);
         else {
             const ev = await db.collection('upcoming_events').doc(eventId).get();
-            if (ev.exists) rec.event = compact({ title: ev.data().title, date: toIso(ev.data().date), time: ev.data().time, venue: ev.data().location, mapUrl: mapLink(ev.data().locationUrl), image: ev.data().hubImage || ev.data().image });
+            if (ev.exists) rec.event = compact({ title: ev.data().title, date: toIso(ev.data().date), time: ev.data().time, venue: ev.data().location, mapUrl: mapLink(ev.data().locationUrl), image: ev.data().hubImage || ev.data().image, ambientColor: cleanAmbient(ev.data().ambientColor) });
         }
     }
     return rec;
@@ -897,7 +901,7 @@ const loadCampaignContext = async (db, campaignId) => {
         const ev = await db.collection('upcoming_events').doc(campaign.eventId).get();
         if (ev.exists) {
             const e = ev.data();
-            event = compact({ title: e.title, date: toIso(e.date), time: e.time, venue: e.location || e.venue, city: e.city, mapUrl: mapLink(e.locationUrl), image: e.hubImage || e.image });
+            event = compact({ title: e.title, date: toIso(e.date), time: e.time, venue: e.location || e.venue, city: e.city, mapUrl: mapLink(e.locationUrl), image: e.hubImage || e.image, ambientColor: cleanAmbient(e.ambientColor) });
         }
     }
     // The campaign's own details (editor → Event passes) fill in, or override, the linked event's:
@@ -912,7 +916,11 @@ const loadCampaignContext = async (db, campaignId) => {
         boxOffice: str(campaign.boxOfficeTime, 80) || undefined,
         entry: ENTRY_VIA.includes(campaign.entryVia) ? campaign.entryVia : undefined,
     });
-    if (!event.image && campaign.thumbnail) event.image = campaign.thumbnail;
+    if (!event.image && campaign.thumbnail) {
+        event.image = campaign.thumbnail;
+        const glow = cleanAmbient(campaign.ambientColor);
+        if (glow) event.ambientColor = glow;
+    }
     return { campaign, event };
 };
 

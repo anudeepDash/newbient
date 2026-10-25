@@ -192,6 +192,7 @@ const EventPage = ({ overlay = false }) => {
     const hero = (
         <ExpandedHero
             image={banner}
+            ambientColor={event.ambientColor}
             icon={KindIcon}
             chips={[
                 { icon: MapPin, label: event.city },

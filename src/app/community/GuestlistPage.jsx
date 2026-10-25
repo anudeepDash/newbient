@@ -257,6 +257,7 @@ const GuestlistPage = ({ overlay = false }) => {
     const hero = (
         <ExpandedHero
             image={gl.image}
+            ambientColor={gl.ambientColor}
             icon={KindIcon}
             chips={[
                 { icon: MapPin, label: gl.city },

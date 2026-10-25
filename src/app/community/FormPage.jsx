@@ -90,7 +90,7 @@ const FormPage = ({ overlay = false }) => {
             onClose={close}
             back={back}
             label={form.title}
-            hero={<ExpandedHero image={isPresent(form.image) ? form.image : null} icon={FormIcon} chips={[{ icon: MapPin, label: form.city }, { label: closed ? t('Closed') : null }]} />}
+            hero={<ExpandedHero image={isPresent(form.image) ? form.image : null} ambientColor={form.ambientColor} icon={FormIcon} chips={[{ icon: MapPin, label: form.city }, { label: closed ? t('Closed') : null }]} />}
             bar={bar}
         >
             <ExpandedTitle title={form.title} />

@@ -187,6 +187,7 @@ const GiveawayPage = ({ overlay = false }) => {
     const hero = (
         <ExpandedHero
             image={g.posterUrl}
+            ambientColor={g.ambientColor}
             icon={Gift}
             chips={[{ icon: MapPin, label: g.city }, { label: g.ended ? t('Ended') : null }]}
         />

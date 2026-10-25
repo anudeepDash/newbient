@@ -1,5 +1,6 @@
 import { cleanCity } from '../CityInput';
 import { splitDateTime } from './EditorParts';
+import { cleanAmbient } from '../../../lib/ambientColor';
 
 /*
  * Event rules shared by the Events list and the editor. No React, no Firebase.
@@ -147,6 +148,7 @@ export const EMPTY_EVENT = {
     artists: [],
     image: '',
     hubImage: '',
+    ambientColor: '',
     venueLayout: '',
     isPinned: false,
     draft: false,
@@ -189,6 +191,7 @@ export const fromEvent = (e) => {
         artists: (Array.isArray(e.artists) ? e.artists : []).map(a => (typeof a === 'string' ? a : a?.name)).filter(Boolean),
         image: e.image || e.poster || '',
         hubImage: e.hubImage || '',
+        ambientColor: cleanAmbient(e.ambientColor),
         venueLayout: e.venueLayout || '',
         isPinned: Boolean(e.isPinned),
         draft: isDraft(e),
@@ -240,6 +243,7 @@ export const toPayload = (form, original = null) => {
         artists: (form.artists || []).map(a => String(a).trim()).filter(Boolean),
         image: String(form.image || '').trim(),
         hubImage: String(form.hubImage || '').trim(),
+        ambientColor: cleanAmbient(form.ambientColor),
         venueLayout: String(form.venueLayout || '').trim(),
         isPinned: Boolean(form.isPinned),
         showOnSite: Boolean(form.showOnSite),

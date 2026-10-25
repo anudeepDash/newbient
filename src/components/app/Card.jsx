@@ -108,6 +108,8 @@ const Card = ({
     type = 'event',
     image,
     imageAlt,
+    /* The glow colour behind the poster (lib/ambientColor.js); blank samples the poster. */
+    ambientColor,
     title,
     eyebrow,
     eyebrowLogo,
@@ -156,7 +158,7 @@ const Card = ({
             {/* The Newbi surface, behind everything; the glow rises from the bottom corner, under the body. */}
             <BrandLayers mark={false} from="bottom" />
             {/* The poster's colours glow out behind it and spill into the body. */}
-            <PosterGlow image={image} height="92%" strength={0.85} />
+            <PosterGlow image={image} color={ambientColor} height="92%" strength={0.85} />
 
             {/* Progress strip */}
             {hasProgress && (
