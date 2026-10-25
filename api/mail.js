@@ -11,7 +11,6 @@ import { handleEvent, isEvent } from './_lib/mail/events.js';
 import { runEventReminders } from './_lib/eventReminders.js';
 import { runPostReminders } from './_lib/postReminders.js';
 import { runPostsOpen } from './_lib/postsOpen.js';
-import { runTeamDigest } from './_lib/teamDigest.js';
 import { runWaitlists } from './_lib/waitlistSweep.js';
 import { runCampaignFeedback, runPendingEmails as runFeedbackEmails } from './_lib/campaignFeedback.js';
 import { STAFF_TEMPLATES, hasTemplate } from './_lib/mail/templates/index.js';
@@ -111,14 +110,10 @@ const runWorker = async (req, { budgetMs = 48000, depth = 0 } = {}) => {
         : null;
     // Waitlists: expired offers pass on, free places are offered.
     if (depth === 0) await runWaitlists().catch(e => console.error('[MAIL] waitlists failed:', e.message));
-    // The morning team digest (once a day, only when something is waiting).
-    const digest = depth === 0
-        ? await runTeamDigest().catch(e => { console.error('[MAIL] team digest failed:', e.message); return null; })
-        : null;
     const campaigns = await runCampaignWorker({ deadline: started + budgetMs }).catch(e => { console.error('[MAIL] campaign worker failed:', e); return { campaigns: 0, sent: 0, more: false }; });
     let chained = false;
     if (campaigns.more || feedback?.waiting) chained = await chainWorker(req, depth);
-    return { retried, waRetried, outreachSent: outreach?.sent || 0, feedback, remindersSent: reminders?.sent || 0, postReminders: posts, postsOpen: opening, teamDigest: digest?.sent || 0, ...campaigns, chained, ms: Date.now() - started };
+    return { retried, waRetried, outreachSent: outreach?.sent || 0, feedback, remindersSent: reminders?.sent || 0, postReminders: posts, postsOpen: opening, ...campaigns, chained, ms: Date.now() - started };
 };
 
 /* ---------- Free-form staff mail (the composer screens) ---------- */

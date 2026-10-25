@@ -92,7 +92,6 @@ const OURS = {
     new_sign_in: { body: ['first_name', 'device', 'when'] },
     phone_number_changed: { body: ['first_name', 'phone_last4', 'when'] },
     accounts_merged: { body: ['first_name', 'merged_in', 'moved_summary'] },
-    team_daily_brief: { body: ['orders_count', 'signups_count', 'posts_count', 'payouts_count'] },
     ...Object.fromEntries(Object.values(WA_TEMPLATES).map(t => [t.name, {
         body: t.placeholders,
         ...(['campaign_deliverables', 'campaign_deliverable_changes', 'campaign_post_due', 'campaign_post_overdue', 'campaign_posts_open'].includes(t.name) ? { button: 'submit_token' } : {}),
