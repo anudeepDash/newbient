@@ -5,7 +5,8 @@
  *
  *   POST ?action=inbox-list      { campaignId?, state?: 'open'|'done'|'all' }   threads, newest first
  *   POST ?action=inbox-thread    { threadId }                    messages + who it is; marks it read
- *   POST ?action=inbox-reply     { threadId, text }              free text, only inside the 24-hour window
+ *   POST ?action=inbox-reply     { threadId, text, replyToId? }  free text, only inside the 24-hour window (replyToId quotes a message)
+ *   POST ?action=inbox-react     { threadId, messageId, emoji }  a reaction on a message ('' takes ours off), same window
  *   POST ?action=inbox-template  { threadId, kind: 'deliverables'|'reminder' }   outside the window
  *   POST ?action=inbox-state     { threadId, state: 'open'|'done' }
  *   POST ?action=inbox-media     { threadId, messageId }         a photo or voice note they sent (≤ 5 MB)
@@ -14,9 +15,9 @@
  * once when there's room. The access token never leaves the server.
  */
 import { nowIso } from './db.js';
-import { fetchWhatsAppMedia, isWhatsAppConfigured } from './whatsapp.js';
+import { fetchWhatsAppMedia, isWhatsAppConfigured, sendReaction } from './whatsapp.js';
 import { enqueueJob, sendSoon, submitUrlFor, kindLive, switchFor } from './outreachQueue.js';
-import { windowOpen, WINDOW_MS } from './outreachThreads.js';
+import { windowOpen, WINDOW_MS, appendThreadMessage } from './outreachThreads.js';
 import { maskPhone } from '../../src/lib/outreach/normalize.js';
 
 const send = (res, status, body) => res.status(status).json(body);
@@ -24,6 +25,10 @@ const str = (v, max = 200) => String(v ?? '').trim().slice(0, max);
 const ID = /^[\w-]{1,128}$/;
 const MAX_THREADS = 200;
 const MAX_MESSAGES = 300;
+const MAX_EMOJI = 16;
+
+/* WhatsApp's id for a stored message: incoming and template copies keep it as wamid, replies get it on delivery. */
+const wamidOf = (m) => m.wamid || m.delivery?.whatsapp?.messageId || null;
 
 const threadOut = (d) => {
     const t = d.data();
@@ -71,6 +76,7 @@ export const handleInboxThread = async (req, res, { db }) => {
             id: d.id, direction: m.direction, type: m.type, text: m.text || '', caption: m.caption || '', hasMedia: Boolean(m.mediaId),
             mimeType: m.mimeType || null, status: m.delivery?.whatsapp?.status || m.status || null, error: m.delivery?.whatsapp?.error || m.error || null,
             sentBy: m.sentBy || null, campaignId: m.campaignId || null, at: m.at,
+            wamid: wamidOf(m), replyTo: m.replyTo || null, reactTo: m.reactTo || null,
         };
     }).reverse();
 
@@ -113,16 +119,51 @@ export const handleInboxReply = async (req, res, { db, actor, now = nowIso() }) 
     if (!windowOpen(thread)) {
         return send(res, 409, { success: false, code: 'window_closed', error: 'It’s been more than 24 hours since their last message, so WhatsApp only allows a template. Send one below.' });
     }
+    // Quoting a message: WhatsApp needs its wamid, which we look up rather than trust from the browser.
+    const replyToId = str(req.body?.replyToId, 128);
+    let replyTo = null;
+    if (replyToId && ID.test(replyToId)) {
+        const q = await tRef.collection('inbox_messages').doc(replyToId).get();
+        replyTo = q.exists ? wamidOf(q.data()) : null;
+    }
     const mRef = tRef.collection('inbox_messages').doc();
     await mRef.set({
         direction: 'out', type: 'text', text, status: 'queued', sentBy: actor.actorEmail || null,
         campaignId: thread.lastCampaignId || null, appId: thread.lastAppId || null, at: now,
+        ...(replyTo ? { replyTo } : {}),
         expiresAt: new Date(Date.parse(now) + 365 * 86_400_000),
     });
     await tRef.set({ lastMessageAt: now, lastText: text.slice(0, 140), lastDirection: 'out', unread: 0, updatedAt: now }, { merge: true });
-    const id = await enqueueJob(db, { kind: 'inbox_text', data: { threadId, messageId: mRef.id, text }, createdBy: actor.actorEmail });
+    const id = await enqueueJob(db, { kind: 'inbox_text', data: { threadId, messageId: mRef.id, text, ...(replyTo ? { replyTo } : {}) }, createdBy: actor.actorEmail });
     const outcome = await sendSoon(db, id);
     return send(res, 200, { success: true, messageId: mRef.id, outcome });
+};
+
+/*
+ * Our reaction on a message: sent straight away (no queue, it's tiny), and one
+ * per message, so picking another emoji replaces it and '' takes it off.
+ */
+export const handleInboxReact = async (req, res, { db, actor, now = nowIso() }) => {
+    if (!isWhatsAppConfigured()) return send(res, 409, { success: false, error: 'The WhatsApp API isn’t set up yet.' });
+    const threadId = str(req.body?.threadId, 128);
+    const messageId = str(req.body?.messageId, 128);
+    const emoji = String(req.body?.emoji ?? '').trim();
+    if (!ID.test(threadId) || !ID.test(messageId)) return send(res, 400, { success: false, error: 'Missing message.' });
+    if (emoji.length > MAX_EMOJI || /[\w\s]/.test(emoji)) return send(res, 400, { success: false, error: 'Pick an emoji.' });
+    const tRef = db.collection('outreach_inbox').doc(threadId);
+    const [tSnap, mSnap] = await Promise.all([tRef.get(), tRef.collection('inbox_messages').doc(messageId).get()]);
+    if (!tSnap.exists || !mSnap.exists) return send(res, 404, { success: false, error: 'Message not found.' });
+    const thread = tSnap.data();
+    if (!windowOpen(thread)) return send(res, 409, { success: false, code: 'window_closed', error: 'It’s been more than 24 hours since their last message, so WhatsApp won’t take a reaction.' });
+    const target = wamidOf(mSnap.data());
+    if (!target || mSnap.data().type === 'reaction') return send(res, 409, { success: false, error: 'This message can’t be reacted to (it hasn’t reached WhatsApp).' });
+    const r = await sendReaction({ to: thread.phone, messageId: target, emoji });
+    if (!r.ok) return send(res, 502, { success: false, error: r.error || 'WhatsApp didn’t take the reaction.' });
+    await appendThreadMessage(db, {
+        id: `r_${messageId}`, phone: thread.phone, direction: 'out', type: 'reaction', text: emoji, reactTo: target,
+        status: 'sent', sentBy: actor.actorEmail || null, at: now,
+    });
+    return send(res, 200, { success: true, emoji });
 };
 
 export const handleInboxTemplate = async (req, res, { db, actor }) => {

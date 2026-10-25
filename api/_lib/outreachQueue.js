@@ -363,6 +363,7 @@ export const sendJob = async (db, job, { now = Date.now() } = {}) => {
         result = await sendText({
             to: phone,
             text: job.data.text,
+            replyTo: job.data.replyTo || null,
             ref: { collection: `outreach_inbox/${job.data.threadId}/inbox_messages`, id: job.data.messageId },
         });
     } else if (spec.feedback) {
@@ -669,10 +670,13 @@ const phoneOf = (waId) => (waId ? `+${String(waId).replace(/\D/g, '')}` : '');
 const inboundParts = (msg) => {
     const type = String(msg?.type || 'unknown');
     const media = msg?.[type] && typeof msg[type] === 'object' ? msg[type] : {};
-    if (type === 'text') return { type, text: msg.text?.body || '' };
-    if (type === 'button') return { type, text: msg.button?.text || '' };
-    if (type === 'interactive') return { type, text: msg.interactive?.button_reply?.title || msg.interactive?.list_reply?.title || '' };
-    return { type, caption: media.caption || '', mediaId: media.id || null, mimeType: media.mime_type || null, text: type === 'location' ? `${media.name || ''} ${media.address || ''}`.trim() : '' };
+    // A swipe-reply quotes one of our messages (or theirs).
+    const replyTo = msg?.context?.id ? String(msg.context.id).slice(0, 200) : null;
+    if (type === 'reaction') return { type, text: String(msg.reaction?.emoji || '').slice(0, 16), reactTo: String(msg.reaction?.message_id || '').slice(0, 200) || null };
+    if (type === 'text') return { type, text: msg.text?.body || '', replyTo };
+    if (type === 'button') return { type, text: msg.button?.text || '', replyTo };
+    if (type === 'interactive') return { type, text: msg.interactive?.button_reply?.title || msg.interactive?.list_reply?.title || '', replyTo };
+    return { type, caption: media.caption || media.filename || '', mediaId: media.id || null, mimeType: media.mime_type || null, text: type === 'location' ? `${media.name || ''} ${media.address || ''}`.trim() : '', replyTo };
 };
 
 /* ── STOP / START ─────────────────────────────────────────────────────── */
