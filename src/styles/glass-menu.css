@@ -1,0 +1,121 @@
+/* ─── Liquid glass dropdowns ───────────────────────────────────────────
+   One material for every dropdown, menu and picker on the site (public app,
+   landing pages and admin). Imported by src/index.css and src/landing/landing.css.
+   Plain CSS (no ::before/::after) so it works on panels that scroll: the
+   gradients use the default background-attachment, which stays put while the
+   options scroll underneath. */
+
+.nb-glass-menu {
+  --nb-glass-fill: linear-gradient(165deg, rgba(255, 255, 255, 0.82) 0%, rgba(255, 255, 255, 0.64) 55%, rgba(255, 255, 255, 0.74) 100%);
+  --nb-glass-sheen: radial-gradient(120% 60% at 15% -10%, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0) 60%);
+  --nb-glass-tint: radial-gradient(90% 60% at 100% 110%, rgba(57, 255, 20, 0.07), rgba(57, 255, 20, 0) 65%);
+  color: #111827;
+  background: var(--nb-glass-sheen), var(--nb-glass-tint), var(--nb-glass-fill);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.35),
+    0 0 0 0.5px rgba(15, 23, 42, 0.08),
+    0 2px 6px rgba(15, 23, 42, 0.06),
+    0 22px 48px -14px rgba(15, 23, 42, 0.3);
+  transform-origin: top center;
+  animation: nb-menu-in 170ms cubic-bezier(0.2, 0.9, 0.3, 1.15);
+}
+.nb-glass-menu[data-side="top"] { transform-origin: bottom center; animation-name: nb-menu-in-up; }
+/* For panels that animate themselves (framer-motion). */
+.nb-glass-menu.nb-glass-static { animation: none; }
+
+.dark .nb-glass-menu {
+  --nb-glass-fill: linear-gradient(165deg, rgba(44, 46, 56, 0.72) 0%, rgba(18, 19, 25, 0.66) 55%, rgba(28, 30, 38, 0.72) 100%);
+  --nb-glass-sheen: radial-gradient(120% 60% at 15% -10%, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0) 60%);
+  --nb-glass-tint: radial-gradient(90% 60% at 100% 110%, rgba(57, 255, 20, 0.08), rgba(57, 255, 20, 0) 65%);
+  color: #f4f4f5;
+  border-color: rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(160%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 0.5px rgba(0, 0, 0, 0.6),
+    0 2px 8px rgba(0, 0, 0, 0.35),
+    0 26px 60px -16px rgba(0, 0, 0, 0.85);
+}
+
+/* Phone version: a glass sheet from the bottom (use with .nb-glass-menu). */
+.nb-glass-sheet,
+.dark .nb-glass-sheet { border-bottom: 0; border-left: 0; border-right: 0; }
+.nb-glass-menu.nb-glass-sheet { animation: nb-sheet-in 260ms cubic-bezier(0.2, 0.9, 0.25, 1); }
+
+.nb-glass-backdrop {
+  background: rgba(10, 12, 18, 0.32);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  animation: nb-fade-in 200ms ease-out;
+}
+.dark .nb-glass-backdrop { background: rgba(0, 0, 0, 0.55); }
+
+/* Options: a soft glass highlight on hover / keyboard focus. */
+.nb-glass-option { transition: background-color 120ms ease, color 120ms ease; }
+.nb-glass-option:hover:not(:disabled):not([aria-disabled="true"]):not([aria-selected="true"]),
+.nb-glass-option[data-active="true"]:not([aria-selected="true"]) { background: rgba(15, 23, 42, 0.055); }
+.dark .nb-glass-option:hover:not(:disabled):not([aria-disabled="true"]):not([aria-selected="true"]),
+.dark .nb-glass-option[data-active="true"]:not([aria-selected="true"]) { background: rgba(255, 255, 255, 0.08); }
+
+/* Default "selected" look outside the admin (the admin uses its section accent):
+   Newbi green, readable on light glass, neon on dark. */
+.nb-glass-picked {
+  background: rgba(57, 255, 20, 0.16);
+  color: #166534;
+  box-shadow: inset 0 0 0 1px rgba(22, 163, 74, 0.22);
+}
+.dark .nb-glass-picked {
+  background: rgba(57, 255, 20, 0.12);
+  color: #39ff14;
+  box-shadow: inset 0 0 0 1px rgba(57, 255, 20, 0.22);
+}
+
+/* Inputs inside a glass panel (search boxes) sit on frosted wells. */
+.nb-glass-well {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+.dark .nb-glass-well {
+  background: rgba(0, 0, 0, 0.25);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.nb-glass-divider { border-color: rgba(15, 23, 42, 0.07); }
+.dark .nb-glass-divider { border-color: rgba(255, 255, 255, 0.07); }
+
+@keyframes nb-menu-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes nb-menu-in-up {
+  from { opacity: 0; transform: translateY(4px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes nb-sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+@keyframes nb-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nb-glass-menu, .nb-glass-menu.nb-glass-sheet, .nb-glass-backdrop { animation: none; }
+}
+
+/* No backdrop blur (or "Reduce transparency"): a near-solid surface so text stays readable. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .nb-glass-menu { --nb-glass-fill: linear-gradient(#fafafc, #fafafc); }
+  .dark .nb-glass-menu { --nb-glass-fill: linear-gradient(#1a1b22, #1a1b22); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .nb-glass-menu { --nb-glass-fill: linear-gradient(#fafafc, #fafafc); }
+  .dark .nb-glass-menu { --nb-glass-fill: linear-gradient(#1a1b22, #1a1b22); }
+}

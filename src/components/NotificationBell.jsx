@@ -72,11 +72,11 @@ const NotificationBell = () => {
                         className={cn(
                             "flex flex-col overflow-hidden max-h-[80vh]",
                             "absolute right-[-10px] md:right-0 top-full mt-4 w-[90vw] md:w-[420px] rounded-3xl",
-                            "bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-3xl shadow-[0_30px_60px_rgba(0,0,0,0.8)] border border-black/10 dark:border-white/10"
+                            "nb-glass-menu nb-glass-static"
                         )}
                     >
                         {/* Header */}
-                        <div className="px-6 py-5 border-b border-black/10 dark:border-white/5 flex justify-between items-center bg-white/[0.02] shrink-0">
+                        <div className="nb-glass-divider px-6 py-5 border-b flex justify-between items-center shrink-0">
                             <div className="flex flex-col">
                                 <h3 className="font-black text-[15px] text-gray-900 dark:text-white flex items-center gap-2">
                                     Notifications

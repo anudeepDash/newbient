@@ -23,6 +23,7 @@ import {
     cleanPassTiers, followerTier, followersLabel, ticketAudience, isTaskDone,
 } from './ticketModel';
 import { DeliveryDots } from './CampaignTickets';
+import ThemedSelect from '../ThemedSelect';
 
 /*
  * "Send tickets" for a campaign's shortlisted creators (all of them, or only those
@@ -325,11 +326,11 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
                     {eligible.length > 0 && tasks.length > 0 && (
                         <div className="space-y-2">
                             <Field label="Who gets them">
-                                <select className={cn(fieldCls, 'h-11 text-[14px]')} value={who} disabled={sending} onChange={e => chooseWho(e.target.value)}>
+                                <ThemedSelect className={cn(fieldCls, 'h-11 text-[14px]')} value={who} disabled={sending} onChange={e => chooseWho(e.target.value)}>
                                     <option value="all">Everyone shortlisted ({eligible.length})</option>
                                     <option value="done-all">Finished all {tasks.some(t => t.priority === 'optional' || t.required === false) ? 'required ' : ''}deliverables ({ticketAudience(eligible, campaign, { who: 'done-all', inReview }).length})</option>
                                     {tasks.length > 1 && tasks.map(t => <option key={t.id} value={`task:${t.id}`}>Finished: {t.title || 'Deliverable'} ({doneCount(t.id)})</option>)}
-                                </select>
+                                </ThemedSelect>
                             </Field>
                             {who !== 'all' && (
                                 <label className="flex min-h-[40px] cursor-pointer items-center gap-2.5 text-[13px] text-gray-600 dark:text-zinc-400">
@@ -392,7 +393,7 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
                                                     </span>
                                                     {passTiers.length > 0 && !blocked && (
                                                         // The category this creator gets; pick a higher one to upgrade them.
-                                                        <select
+                                                        <ThemedSelect
                                                             aria-label={`Category for ${e.creator.name || 'creator'}`}
                                                             className={cn(fieldCls, 'h-9 w-auto max-w-[9.5rem] shrink-0 py-0 pr-7 text-[13px]', isUpgrade(e) && 'border-emerald-500 text-emerald-700 dark:border-neon-green dark:text-neon-green')}
                                                             value={tierOf(e)?.name || ''}
@@ -402,7 +403,7 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
                                                         >
                                                             <option value="">{tier || 'Default'}</option>
                                                             {passTiers.map(t => <option key={t.name} value={t.name}>{t.name}{t.qty ? ` · ${t.qty}` : ''}</option>)}
-                                                        </select>
+                                                        </ThemedSelect>
                                                     )}
                                                     {isUpgrade(e) && <Badge tone="green">Upgraded</Badge>}
                                                     {has && <Badge tone={has.qr !== false ? 'green' : has.externalTicket ? 'blue' : 'gray'}>{passLabel(has)}</Badge>}
@@ -466,19 +467,19 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
 
                                                 {r.status === 'unmatched' && (
                                                     <div className="mt-2 pl-12">
-                                                        <select className={cn(fieldCls, 'h-10 text-[14px]')} value={overrides[r.row]?.creatorKey || ''} onChange={e => setOverride(r.row, { creatorKey: e.target.value || undefined })} aria-label={`Pick the creator for row ${r.row}`}>
+                                                        <ThemedSelect className={cn(fieldCls, 'h-10 text-[14px]')} value={overrides[r.row]?.creatorKey || ''} onChange={e => setOverride(r.row, { creatorKey: e.target.value || undefined })} aria-label={`Pick the creator for row ${r.row}`}>
                                                             <option value="">Pick the creator…</option>
                                                             {applicants.map(a => <option key={a.key} value={a.key}>{a.creator.name || a.creator.email || a.key}</option>)}
-                                                        </select>
+                                                        </ThemedSelect>
                                                     </div>
                                                 )}
                                                 {r.status === 'problem' && (
                                                     <div className="mt-2 grid gap-2 pl-12 sm:grid-cols-2">
                                                         {files.length > 0 && (
-                                                            <select className={cn(fieldCls, 'h-10 text-[14px]')} value={overrides[r.row]?.file ?? ''} onChange={e => setOverride(r.row, { file: e.target.value || undefined })} aria-label={`PDF for row ${r.row}`}>
+                                                            <ThemedSelect className={cn(fieldCls, 'h-10 text-[14px]')} value={overrides[r.row]?.file ?? ''} onChange={e => setOverride(r.row, { file: e.target.value || undefined })} aria-label={`PDF for row ${r.row}`}>
                                                                 <option value="">Use a dropped PDF…</option>
                                                                 {files.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
-                                                            </select>
+                                                            </ThemedSelect>
                                                         )}
                                                         <input className={cn(fieldCls, 'h-10 text-[14px]')} placeholder="…or paste a ticket link" value={overrides[r.row]?.url ?? ''} onChange={e => setOverride(r.row, { url: e.target.value, file: '' })} inputMode="url" autoCapitalize="off" />
                                                     </div>

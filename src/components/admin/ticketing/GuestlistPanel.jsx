@@ -19,6 +19,7 @@ import { Button, Badge, SearchInput, SegmentedTabs, EmptyState, Menu, MenuItem, 
 import { accent } from '../theme';
 import { Panel, Meter, ContactLinks, CopyChip, SelectBox, useConfirm, useBusy } from './kit';
 import { formatDateTime, guestStatus, GUEST_STATUS, guestCount, personName } from './format';
+import ThemedSelect from '../ThemedSelect';
 
 /*
  * Guestlist requests for one event: approve or decline (one by one or in
@@ -57,10 +58,10 @@ const DeclineNotice = ({ choice, many }) => {
                 <span>Tell {many ? 'each of them' : 'them'} on WhatsApp<span className="block text-[12px] font-normal text-gray-500">Untick to decline quietly.</span></span>
             </label>
             {tell && (
-                <select value={reason} onChange={(e) => setReason(e.target.value)} aria-label="Reason they're told"
+                <ThemedSelect value={reason} onChange={(e) => setReason(e.target.value)} aria-label="Reason they're told"
                     className="h-11 w-full rounded-xl border border-black/10 bg-white px-3 text-[13px] dark:border-white/10 dark:bg-white/5">
                     {DECLINE_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
+                </ThemedSelect>
             )}
         </div>
     );

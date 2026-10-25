@@ -3,6 +3,7 @@ import { ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
 import { AUDIENCES, BUDGETS, TIMELINES, validateEnquiry } from '../../../api/_lib/enquiryRules.js';
 import { ENQUIRY_URL } from '../links';
 import { useT } from '../../i18n';
+import GlassSelect from '../../components/ui/GlassSelect';
 
 const EMPTY = { name: '', email: '', phone: '', company: '', budget: '', timeline: '', message: '' };
 
@@ -131,16 +132,16 @@ export default function EnquiryForm({ audience, onAudienceChange, page = 'home' 
                     <input id={id('company')} className={fieldCls} autoComplete="organization" value={values.company} onChange={set('company')} />
                 </Field>
                 <Field id={id('budget')} label="Budget" optional error={errors.budget}>
-                    <select id={id('budget')} data-field="budget" className={fieldCls} value={values.budget} onChange={set('budget')}>
+                    <GlassSelect id={id('budget')} data-field="budget" aria-label={t('Budget')} className={fieldCls} value={values.budget} onChange={set('budget')}>
                         <option value="">{t('Choose a range')}</option>
                         {Object.entries(BUDGETS).map(([k, v]) => <option key={k} value={k}>{t(v)}</option>)}
-                    </select>
+                    </GlassSelect>
                 </Field>
                 <Field id={id('timeline')} label="When" optional error={errors.timeline}>
-                    <select id={id('timeline')} data-field="timeline" className={fieldCls} value={values.timeline} onChange={set('timeline')}>
+                    <GlassSelect id={id('timeline')} data-field="timeline" aria-label={t('When')} className={fieldCls} value={values.timeline} onChange={set('timeline')}>
                         <option value="">{t('Choose a timeline')}</option>
                         {Object.entries(TIMELINES).map(([k, v]) => <option key={k} value={k}>{t(v)}</option>)}
-                    </select>
+                    </GlassSelect>
                 </Field>
             </div>
 

@@ -8,6 +8,7 @@ import { useAppStore } from '../../../../lib/store/appStore';
 import { useAuthGate } from '../../../auth/AuthGate';
 import { Button, TextInput, INPUT, ERROR_RING, WhatsAppLogo } from '../../../../components/app';
 import { cn } from '../../../../lib/utils';
+import GlassSelect from '../../../../components/ui/GlassSelect';
 import { isPresent } from '../../../../lib/present';
 import useDynamicMeta from '../../../../hooks/useDynamicMeta';
 import { PageBody } from '../../../pages/PageHeader';
@@ -50,9 +51,9 @@ const perkText = (p) => [p?.cash ? `₹${Number(p.cash).toLocaleString('en-IN')}
 const Select = ({ id, value, onChange, error, children, label }) => (
     <label htmlFor={id} className="block space-y-1.5">
         <span className="block px-1 text-[13px] font-bold text-gray-700 dark:text-zinc-300">{label}</span>
-        <select id={id} value={value} onChange={onChange} className={cn(INPUT, 'h-[52px] appearance-none px-4', error && ERROR_RING)}>
+        <GlassSelect id={id} value={value} onChange={onChange} aria-label={label} className={cn(INPUT, 'h-[52px] px-4', error && ERROR_RING)}>
             {children}
-        </select>
+        </GlassSelect>
         {error && <span className="block px-1 text-[13px] font-medium text-red-600 dark:text-red-400">{error}</span>}
     </label>
 );

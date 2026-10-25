@@ -14,6 +14,8 @@ export default {
         './src/pages/legal/**/*.{js,jsx}',
         './src/components/ui/HorizontalCarousel.jsx',
         './src/components/brand/**/*.{js,jsx}',
+        './src/components/ui/GlassSelect.jsx',
+        './src/components/ui/GlassSheet.jsx',
         './src/components/consent/**/*.{js,jsx}',
         './src/components/app/BrandLayers.jsx',
     ],

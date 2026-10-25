@@ -191,7 +191,7 @@ const RangeFilter = ({ label = 'Followers', value, onChange, countFor, noun = 'c
                 onChange={(e) => setText(e.target.value)}
                 onBlur={(e) => commitText(which, e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commitText(which, e.currentTarget.value); } }}
-                className="h-11 w-full rounded-xl border border-black/10 bg-white px-3 text-[15px] font-semibold tabular-nums outline-none focus:border-emerald-500/60 dark:border-white/10 dark:bg-white/[0.04]"
+                className="nb-glass-well h-11 w-full rounded-xl px-3 text-[15px] font-semibold tabular-nums outline-none focus:border-emerald-500/60 dark:border-white/10 dark:bg-white/[0.04]"
             />
         </label>
     );

@@ -352,7 +352,8 @@ export const Menu = ({ trigger, children, align = 'right', className, title }) =
                     <div
                         ref={menuRef}
                         style={style}
-                        className="z-[10001] max-h-[70dvh] min-w-[240px] overflow-y-auto rounded-2xl border border-black/10 bg-white p-1.5 font-heading shadow-2xl shadow-black/10 dark:border-white/10 dark:bg-[#14161d] dark:shadow-black/50"
+                        data-side={style.bottom !== undefined ? 'top' : 'bottom'}
+                        className="nb-glass-menu z-[10001] max-h-[70dvh] min-w-[240px] overflow-y-auto rounded-[1.1rem] p-1.5 font-heading"
                         onClick={closeOnPick}
                         role="menu"
                     >
@@ -370,7 +371,7 @@ export const MenuItem = ({ icon: Icon, children, hint, danger, as: Comp = 'butto
         type={Comp === 'button' ? 'button' : undefined}
         className={cn(
             'flex w-full cursor-pointer items-start gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] font-semibold transition-colors disabled:opacity-50',
-            danger ? 'text-red-500 hover:bg-red-500/10' : 'text-gray-900 hover:bg-black/5 dark:text-white dark:hover:bg-white/5',
+            danger ? 'text-red-500 hover:bg-red-500/10' : 'nb-glass-option text-gray-900 dark:text-white',
             className
         )}
         {...rest}
