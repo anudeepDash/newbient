@@ -5,6 +5,7 @@ import Sheet from '../Sheet';
 import { Button } from '../ui';
 import { Field, Section, Toggle, Choice, fieldCls, areaCls } from '../uploads/UploadKit';
 import { ImageSlot } from './EditorParts';
+import { AmbientColorField } from '../forms/kit';
 import GuestlistTaskConfig from '../GuestlistTaskConfig';
 import LivePreview from '../LivePreview';
 import { useStore } from '../../../lib/store';
@@ -29,7 +30,7 @@ const COLORS = [
 const EMPTY = {
     title: '', date: '', time: '', location: '', city: '', locationUrl: '', description: '', status: 'Open',
     maxSpots: 100, currentSpots: 0, perUserLimit: 2,
-    image: '', highlightColor: '#2ebfff', isPinned: false, imageTransform: { scale: 1.05, x: 0, y: 0 },
+    image: '', ambientColor: '', highlightColor: '#2ebfff', isPinned: false, imageTransform: { scale: 1.05, x: 0, y: 0 },
     guestlistEnabled: true, guestlistMode: 'qr', entryUntil: '', hasGuestlistTask: false, guestlistTask: null, externalLink: '',
     showOnSite: true, showInApp: true,
 };
@@ -47,6 +48,7 @@ const fromDoc = (gl) => ({
     currentSpots: gl.currentSpots || 0,
     perUserLimit: gl.perUserLimit || 2,
     image: gl.image || '',
+    ambientColor: gl.ambientColor || '',
     highlightColor: gl.highlightColor || '#2ebfff',
     isPinned: !!gl.isPinned,
     imageTransform: gl.imageTransform || { scale: 1.05, x: 0, y: 0 },
@@ -308,6 +310,7 @@ const GuestlistEditor = ({ open, onClose, guestlist, onSaved }) => {
                             <Toggle label="Feature at the top" hint="Shows in the spotlight row on the guestlists page" checked={form.isPinned} onChange={(v) => set({ isPinned: v })} />
                         </div>
                     </div>
+                    <AmbientColorField className="mt-4" image={form.image} value={form.ambientColor} onChange={(v) => set({ ambientColor: v })} />
                 </Section>
 
                 <WhereItShows value={form} onChange={set} kind="guestlist" />

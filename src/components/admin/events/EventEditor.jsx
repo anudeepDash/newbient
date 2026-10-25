@@ -22,7 +22,7 @@ import ThemedSelect from '../ThemedSelect';
 import CityInput from '../CityInput';
 import GuestlistTaskConfig from '../GuestlistTaskConfig';
 import { Field, Toggle, Choice, fieldCls, areaCls } from '../uploads/UploadKit';
-import { EditorBar, PhoneBar, useConfirm, useImageField, useUnsavedWarning } from '../forms/kit';
+import { AmbientColorField, EditorBar, PhoneBar, useConfirm, useImageField, useUnsavedWarning } from '../forms/kit';
 import { BuilderCard, ImageSlot } from './EditorParts';
 import TicketTiers from './TicketTiers';
 import {
@@ -439,6 +439,7 @@ const EventEditor = ({ event, orders = [], categories = [], onDone }) => {
                                 <ImageSlot label={layout.uploading ? 'Venue map · uploading…' : 'Venue map'} hint="Optional. Shown at checkout; ticket types can be marked on it" aspect="aspect-[16/10]" contain {...layout.slotProps} />
                             </div>
                         </div>
+                        <AmbientColorField className="mt-5" image={form.hubImage || form.image} value={form.ambientColor} onChange={(v) => set({ ambientColor: v })} />
                     </BuilderCard>
 
                     <BuilderCard id="ev-shows" title="Where it shows" hint="Its own page always works from a link">

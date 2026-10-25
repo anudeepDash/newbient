@@ -4,6 +4,8 @@ import Sheet from '../Sheet';
 import { Button } from '../ui';
 import { cn } from '../../../lib/utils';
 import { useStore } from '../../../lib/store';
+import { PosterGlow, usePosterColor, usePosterPalette } from '../../app/AmbientBackdrop';
+import { AMBIENT_OFF, cleanAmbient, hslToHex } from '../../../lib/ambientColor';
 
 /*
  * Small pieces shared by the community modules (forms, volunteer gigs,
@@ -209,6 +211,77 @@ export const ColorDots = ({ value, onChange }) => (
         </label>
     </div>
 );
+
+/*
+ * The glow colour behind the picture on the app's cards and popups
+ * (`ambientColor`, lib/ambientColor.js). Auto samples the picture, which can
+ * pick the wrong colour; here it can be set to one of the picture's own
+ * colours, any colour, or turned off. A small card shows the result.
+ */
+export const AmbientColorField = ({ image, value, onChange, label = 'Glow colour', className }) => {
+    const chosen = cleanAmbient(value);
+    const auto = usePosterColor(image);
+    const autoHex = auto ? hslToHex(auto) : null;
+    const fromPoster = [...new Set(usePosterPalette(image).map(hslToHex))];
+    const pill = (active) => cn('flex h-10 items-center gap-2 rounded-full border px-3 text-[12px] font-semibold transition-colors active:scale-95',
+        active ? 'border-gray-900 text-gray-900 dark:border-white dark:text-white' : 'border-black/10 text-gray-500 dark:border-white/10 dark:text-zinc-400');
+    const dot = (hex, active) => (
+        <button
+            key={hex}
+            type="button"
+            onClick={() => onChange(hex)}
+            aria-label={`Glow ${hex}`}
+            aria-pressed={active}
+            title={hex}
+            className={cn('h-10 w-10 rounded-full border-2 transition-transform active:scale-95', active ? 'border-gray-900 dark:border-white' : 'border-transparent')}
+        >
+            <span className="block h-full w-full rounded-full border-2 border-white dark:border-[#0d0f15]" style={{ backgroundColor: hex }} />
+        </button>
+    );
+    return (
+        <div className={cn('space-y-2', className)}>
+            <p className="text-[12px] font-bold text-gray-500">{label}</p>
+            <div className="flex flex-wrap items-start gap-4">
+                {/* What the card will look like: the picture with its glow spilling under it. */}
+                <div aria-hidden="true" className="relative isolate w-36 shrink-0 overflow-hidden rounded-2xl border border-black/[0.08] bg-white pb-8 dark:border-white/[0.08] dark:bg-[#101219]">
+                    <PosterGlow image={image} color={chosen} height="140%" strength={0.85} />
+                    <div className="aspect-video w-full" style={{ WebkitMaskImage: 'linear-gradient(to bottom, #000 62%, transparent 100%)', maskImage: 'linear-gradient(to bottom, #000 62%, transparent 100%)' }}>
+                        {image && <img src={image} alt="" className="h-full w-full object-cover" />}
+                    </div>
+                </div>
+                <div className="min-w-0 flex-1 space-y-2.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button type="button" onClick={() => onChange('')} aria-pressed={!chosen} className={pill(!chosen)}>
+                            <span className="h-4 w-4 rounded-full border border-black/10 dark:border-white/15" style={{ background: autoHex || 'conic-gradient(#f43f5e, #f59e0b, #22c55e, #3b82f6, #a855f7, #f43f5e)' }} />
+                            Auto
+                        </button>
+                        <button type="button" onClick={() => onChange(AMBIENT_OFF)} aria-pressed={chosen === AMBIENT_OFF} className={pill(chosen === AMBIENT_OFF)}>
+                            Off
+                        </button>
+                        <label className={cn(pill(Boolean(chosen) && chosen !== AMBIENT_OFF && !fromPoster.includes(chosen)), 'cursor-pointer pl-1')}>
+                            <input
+                                type="color"
+                                value={chosen && chosen !== AMBIENT_OFF ? chosen : autoHex || '#39ff14'}
+                                onChange={(e) => onChange(e.target.value.toLowerCase())}
+                                className="h-8 w-8 cursor-pointer rounded-full border-0 bg-transparent p-0"
+                            />
+                            Custom
+                        </label>
+                    </div>
+                    {fromPoster.length > 0 && (
+                        <div>
+                            <p className="mb-1.5 text-[11px] font-semibold text-gray-400 dark:text-zinc-500">From the picture</p>
+                            <div className="flex flex-wrap items-center gap-2">{fromPoster.map(hex => dot(hex, chosen === hex))}</div>
+                        </div>
+                    )}
+                    <p className="text-[12px] text-gray-400 dark:text-zinc-500">
+                        The soft light behind the picture on app cards and popups. Auto takes it from the picture; pick one if it looks wrong.
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 /** A labelled row for detail sheets. */
 export const InfoRow = ({ label, children, className }) => (

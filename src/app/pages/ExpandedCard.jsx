@@ -24,12 +24,13 @@ import { useT } from '../../i18n';
  * sections. Anything empty isn't shown.
  */
 
-/* The poster, edge to edge, fading into the card; the kind icon stands in when there's none. */
-export const ExpandedHero = ({ image, icon: Icon, chips = [] }) => {
+/* The poster, edge to edge, fading into the card; the kind icon stands in when there's none.
+   ambientColor: the admin's glow colour (lib/ambientColor.js). */
+export const ExpandedHero = ({ image, ambientColor, icon: Icon, chips = [] }) => {
     const shown = chips.filter(c => c && (c.node || isPresent(c.label)));
     return (
         <div className="relative aspect-video w-full shrink-0">
-            <PosterGlow image={image} height="200%" />
+            <PosterGlow image={image} color={ambientColor} height="200%" />
             <div className="absolute inset-0" style={{ WebkitMaskImage: 'linear-gradient(to bottom, #000 65%, transparent 100%)', maskImage: 'linear-gradient(to bottom, #000 65%, transparent 100%)' }}>
                 {image ? (
                     <>

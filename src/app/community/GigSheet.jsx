@@ -43,6 +43,7 @@ const toItem = (id, g) => ({
     title: g.title || '',
     description: g.description || '',
     image: g.image || null,
+    ambientColor: g.ambientColor || '',
     city: g.city || null,
     venue: g.location || g.venue || null,
     time: g.time || null,
@@ -236,7 +237,7 @@ const GigSheet = ({ gigId, item, onClose }) => {
             overlay
             onClose={onClose}
             label={gig.title}
-            hero={<ExpandedHero image={isPresent(gig.image) ? gig.image : null} icon={CARD_TYPES.gig.icon} chips={[{ icon: MapPin, label: gig.city }, { label: closed ? t('Closed') : /fill/i.test(gig.gigStatus || '') ? t('Filling fast') : null }]} />}
+            hero={<ExpandedHero image={isPresent(gig.image) ? gig.image : null} ambientColor={gig.ambientColor} icon={CARD_TYPES.gig.icon} chips={[{ icon: MapPin, label: gig.city }, { label: closed ? t('Closed') : /fill/i.test(gig.gigStatus || '') ? t('Filling fast') : null }]} />}
             bar={<ActionBar onShare={share} shareLabel="Share gig">{action}</ActionBar>}
         >
             <div ref={topRef} hidden />

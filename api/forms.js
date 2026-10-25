@@ -310,6 +310,7 @@ export default async function handler(req, res) {
                         formUrl: extractedUrl,
                         activeLabel: data.status || 'Live',
                         image: data.image,
+                        ambientColor: data.ambientColor || '',
                         highlightColor: data.highlightColor || '#2ebfff',
                         bottomText: data.location || 'Event Form'
                     }
@@ -340,6 +341,7 @@ export default async function handler(req, res) {
                         formUrl: extractedUrl,
                         activeLabel: data.status || 'Live',
                         image: data.image,
+                        ambientColor: data.ambientColor || '',
                         highlightColor: data.highlightColor || '#39FF14',
                         bottomText: data.location || 'Gig Form'
                     }
@@ -363,6 +365,7 @@ export default async function handler(req, res) {
                         formUrl: extractedUrl,
                         activeLabel: data.status || 'Live',
                         image: data.image,
+                        ambientColor: data.ambientColor || '',
                         highlightColor: data.highlightColor || '#39FF14',
                         bottomText: data.location || 'Guestlist Form'
                     }
@@ -386,6 +389,7 @@ export default async function handler(req, res) {
                         formUrl: extractedUrl,
                         activeLabel: data.status || 'Live',
                         image: data.image,
+                        ambientColor: data.ambientColor || '',
                         highlightColor: data.highlightColor || '#BF00FF',
                         bottomText: data.brandName || 'Campaign Form'
                     }

@@ -15,7 +15,8 @@ import CityInput, { cleanCity } from '../CityInput';
 import { isNativeForm, formState } from '../forms/formSchema';
 import { syncGigFormDays } from '../../../lib/gigApplications';
 import { ensureGigForm } from './gigForm';
-import { ColorDots, EditorBar, PhoneBar, dayKeyOf, formatDay, todayKey, useConfirm, useImageField, useUnsavedWarning } from '../forms/kit';
+import { cleanAmbient } from '../../../lib/ambientColor';
+import { AmbientColorField, ColorDots, EditorBar, PhoneBar, dayKeyOf, formatDay, todayKey, useConfirm, useImageField, useUnsavedWarning } from '../forms/kit';
 import ThemedSelect from '../ThemedSelect';
 
 export const GIG_STATUS = [
@@ -37,6 +38,7 @@ const EMPTY = {
     slots: '',
     image: '',
     highlightColor: '#39FF14',
+    ambientColor: '',
     isPinned: false,
     imageTransform: { scale: 1.05, x: 0, y: 0 },
 };
@@ -141,6 +143,7 @@ const GigEditor = ({ gig, forms, onDone }) => {
             slots: data.slots === '' ? null : Number(data.slots),
             image: data.image || '',
             highlightColor: data.highlightColor || '#39FF14',
+            ambientColor: cleanAmbient(data.ambientColor),
             isPinned: Boolean(data.isPinned),
             imageTransform: data.imageTransform,
             updatedAt: new Date().toISOString(),
@@ -173,6 +176,7 @@ const GigEditor = ({ gig, forms, onDone }) => {
                         title: payload.title,
                         description: payload.description,
                         image: payload.image,
+                        ambientColor: payload.ambientColor,
                         location: payload.location || 'GLOBAL',
                         date: payload.dates[0] || new Date().toISOString(),
                         buttonText: 'JOIN SQUAD',
@@ -327,6 +331,7 @@ const GigEditor = ({ gig, forms, onDone }) => {
                                     <p className="mb-2 text-[12px] font-bold text-gray-500">Highlight colour</p>
                                     <ColorDots value={data.highlightColor} onChange={(v) => set({ highlightColor: v })} />
                                 </div>
+                                <AmbientColorField image={data.image} value={data.ambientColor} onChange={(v) => set({ ambientColor: v })} />
                                 <Toggle label="Spotlight" hint="Pinned to the featured row on the community page" checked={Boolean(data.isPinned)} onChange={(v) => set({ isPinned: v })} />
                             </div>
                         </div>

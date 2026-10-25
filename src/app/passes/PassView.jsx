@@ -71,7 +71,7 @@ const PassView = ({ pass, token, offline = false, bare = false }) => {
         >
             {/* ── The ticket ── */}
             <div className={cn(PIECE, 'rounded-t-[1.75rem] rounded-b-xl')} style={notched('bottom')}>
-                <PosterGlow image={event.image} height="80%" strength={0.8} />
+                <PosterGlow image={event.image} color={event.ambientColor} height="80%" strength={0.8} />
                 {isPresent(event.image) ? (
                     <div className="relative aspect-video w-full overflow-hidden" style={{ WebkitMaskImage: 'linear-gradient(to bottom, #000 60%, transparent)', maskImage: 'linear-gradient(to bottom, #000 60%, transparent)' }}>
                         <img src={event.image} alt="" className="h-full w-full object-cover" decoding="async" />

@@ -41,6 +41,7 @@ export function campaignCard(c, { applied = false, from = null, progress = null 
     return {
         type: 'campaign',
         image: c.thumbnail || null,
+        ambientColor: c.ambientColor,
         title: c.title,
         eyebrow: c.brand,
         eyebrowLogo: c.brandLogo || null,
@@ -81,6 +82,7 @@ export function feedCard(item, { from = null } = {}) {
     return {
         type: item.type,
         image: item.image,
+        ambientColor: item.ambientColor,
         title: item.title,
         description: item.description,
         chips: [{ icon: MapPin, label: item.city }],
@@ -95,7 +97,7 @@ export function feedCard(item, { from = null } = {}) {
 
 /*
  * An upcoming show on Home: ticket sales, an event or a guestlist, each as
- * { id, title, image, day: 'YYYY-MM-DD', time, venue, city, category, ticketed, guestlist, price, gigId }.
+ * { id, title, image, ambientColor, day: 'YYYY-MM-DD', time, venue, city, category, ticketed, guestlist, price, gigId }.
  * from: the current location, so a guestlist opens as a sheet over the list.
  * A volunteer gig's card opens the gig on Community, like the community rail.
  */
@@ -105,6 +107,7 @@ export function showCard(e, { from = null } = {}) {
     return {
         type: gig ? 'gig' : 'event',
         image: e.image || null,
+        ambientColor: e.ambientColor,
         title: e.title,
         eyebrow: e.category || null,
         chips: [{ icon: MapPin, label: e.city }],

@@ -4,6 +4,7 @@ import { isPresent } from '../present';
 import { closingDate, isOpen, itemDate } from '../feedItems';
 import { fetchAppFeed } from '../appFeed';
 import { gigDayKeys } from '../gigApplications';
+import { cleanAmbient, firstAmbient } from '../ambientColor';
 
 export { itemDate };
 
@@ -40,6 +41,7 @@ export const normalise = (type, item, to, extra = {}) => {
         title: item.title || item.name || '',
         description: item.description || item.subtitle || '',
         image: firstImage(item.hubImage, item.image, item.posterUrl, item.poster, item.thumbnail, item.coverImage),
+        ambientColor: cleanAmbient(item.ambientColor),
         date,
         closesAt: closingDate(item),
         time: isPresent(item.time) ? item.time : null,
@@ -99,7 +101,7 @@ export const buildFeed = ({ events = [], guestlists = [], gigs = [], giveaways =
         if (seenLists.has(gl.id)) return;
         seenLists.add(gl.id);
         const owner = (ownerId && eventsById.get(ownerId)) || gigsById.get(gl.id) || {};
-        const merged = { ...owner, ...gl, date: owner.date || gl.date, hubImage: owner.hubImage || gl.hubImage, image: gl.image || owner.image };
+        const merged = { ...owner, ...gl, date: owner.date || gl.date, hubImage: owner.hubImage || gl.hubImage, image: gl.image || owner.image, ambientColor: firstAmbient(gl.ambientColor, owner.ambientColor) };
         items.push(normalise('guestlist', merged, link(`/community/g/${gl.id}`)));
     });
     gigs.filter(isOpen).forEach(g => {

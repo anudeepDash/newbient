@@ -24,6 +24,8 @@ import { TASK_TYPES, blankTask, newTaskId, campaignStatus, stripHtml, formatDay,
 import ThemedSelect from '../ThemedSelect';
 import { cleanPassTiers } from './ticketModel';
 import X from 'lucide-react/dist/esm/icons/x';
+import { AmbientColorField } from '../forms/kit';
+import { cleanAmbient } from '../../../lib/ambientColor';
 
 /*
  * Create / edit a campaign. Sections follow the order an admin thinks in:
@@ -51,7 +53,7 @@ const blankForm = (uid) => ({
     title: '', brand: '', brandLogo: '', description: '', whatsappLink: '',
     targetCity: 'Any', targetCollege: '', minInstagramFollowers: '', preferredNiches: [],
     reward: '', payoutPerCreator: '', totalSpots: '', spotsLeft: '',
-    thumbnail: '', websiteApplyEnabled: true, autoShortlistEligible: false, isPinned: false,
+    thumbnail: '', ambientColor: '', websiteApplyEnabled: true, autoShortlistEligible: false, isPinned: false,
     applyMethod: 'newbi', applyFormUrl: '', applyFormNeedsSignIn: false,
     eventId: '', ticketsPerCreator: '', passKind: 'qr', passTiers: [],
     eventName: '', eventDate: '', eventTime: '', venue: '', boxOfficeTime: '', entryVia: '',
@@ -76,6 +78,7 @@ const toForm = (c, { copy = false } = {}) => ({
     totalSpots: toStr(c.totalSpots),
     spotsLeft: copy ? '' : toStr(c.spotsLeft),
     thumbnail: c.thumbnail || '',
+    ambientColor: cleanAmbient(c.ambientColor),
     eventId: c.eventId || '',
     ticketsPerCreator: toStr(c.ticketsPerCreator),
     passKind: ['confirmation', 'guestlist'].includes(c.passKind) ? c.passKind : 'qr',
@@ -128,6 +131,7 @@ const toPayload = (f) => ({
     totalSpots: num(f.totalSpots),
     spotsLeft: num(f.spotsLeft),
     thumbnail: f.thumbnail.trim(),
+    ambientColor: cleanAmbient(f.ambientColor),
     // Event passes for selected creators: a linked event (optional; without one the pass uses the
     // name, date and venue below), QR pass, confirmation or guestlist place (no QR for those two), and how many each.
     eventId: f.eventId || null,
@@ -706,6 +710,7 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
                             onClear={() => set({ thumbnail: '' })}
                             onPaste={(e) => { const f = firstImageFrom(e); if (f) { e.preventDefault(); upload('thumbnail', f, (url) => set({ thumbnail: url })); } }}
                         />
+                        <AmbientColorField className="mt-5" image={form.thumbnail} value={form.ambientColor} onChange={(v) => set({ ambientColor: v })} />
                     </BuilderCard>
 
                     <BuilderCard id="cm-visibility" title="Visibility" hint="Who sees it and what happens when people apply">

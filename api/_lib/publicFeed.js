@@ -17,6 +17,7 @@
 
 import { isPresent } from '../../src/lib/present.js';
 import { closingDate, isCampaignOpen, isOpen } from '../../src/lib/feedItems.js';
+import { cleanAmbient } from '../../src/lib/ambientColor.js';
 
 const str = (v, max = 400) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 const num = (v) => (Number.isFinite(Number(v)) && v !== '' && v !== null ? Number(v) : null);
@@ -120,6 +121,7 @@ function upcomingEvents(list, guestlists = []) {
             location: str(e.location || e.venue, 140),
             city: str(e.city, 60),
             image: url(e.image),
+            ambientColor: cleanAmbient(e.ambientColor) || undefined,
             category: str(e.category || e.performanceType, 40),
             isTicketed: Boolean(e.isTicketed),
             hasGuestlist: Boolean(e.isGuestlistEnabled || e.guestlistEnabled),
@@ -219,6 +221,7 @@ function openCampaigns(list) {
                 brand: str(c.brand, 60),
                 brandLogo: url(c.brandLogo),
                 thumbnail: url(c.thumbnail),
+                ambientColor: cleanAmbient(c.ambientColor) || undefined,
                 targetCity: str(c.targetCity, 60),
                 reward: str(c.reward, 60),
                 description: stripHtml(c.description),
@@ -315,7 +318,7 @@ export const COMMUNITY_FIELDS = [
     'title', 'name', 'description', 'subtitle',
     'date', 'time', 'dates', 'eventDate', 'startDate', 'endsAt', 'endDate', 'closesAt', 'deadline',
     'status', 'activeLabel', 'isActive', 'hidden', 'isPinned', 'showInApp',
-    'hubImage', 'image', 'posterUrl', 'poster', 'thumbnail', 'coverImage',
+    'hubImage', 'image', 'posterUrl', 'poster', 'thumbnail', 'coverImage', 'ambientColor',
     'venue', 'location', 'city', 'targetCity',
     'isGuestlistEnabled', 'guestlistEnabled', 'eventId', 'isEmbedded', 'guestlistId',
     'formId', 'gigId', 'interestedCount', 'slots', 'totalSlots', 'maxVolunteers', 'slug',

@@ -21,6 +21,7 @@ import TaskActionLinks from './TaskActionLinks';
 import { linkifyContent, extractTaskActionLinks, cleanTaskDescription, getTaskGoogleFormUrl } from '../../lib/taskLinks';
 import { buildCampaignUrl } from '../../lib/campaignLinks';
 import { copyToClipboard } from '../../lib/clipboard';
+import { AMBIENT_OFF, cleanAmbient } from '../../lib/ambientColor';
 
 const POPULAR_NICHES = [
     'Fashion & Style',
@@ -699,6 +700,11 @@ const CampaignDetailModal = ({
         (parsedFollowersNum > 0 && (minFollowers <= 0 || parsedFollowersNum >= minFollowers)) ||
         (minFollowers <= 0 && Boolean(form.instagram?.trim()));
 
+    // The admin's glow colour (lib/ambientColor.js): a colour replaces the blurred thumbnail, 'none' drops it.
+    const glow = cleanAmbient(campaign.ambientColor);
+    const glowStyle = glow ? { backgroundColor: glow } : { backgroundImage: `url(${campaign.thumbnail})` };
+    const showGlow = glow !== AMBIENT_OFF && Boolean(campaign.thumbnail || glow);
+
     return createPortal(
         <motion.div 
             initial={{ opacity: 0 }}
@@ -714,12 +720,12 @@ const CampaignDetailModal = ({
             />
 
             {/* Ambient Color Glow Behind Modal (Dynamic ambient backlight sampled from campaign thumbnail) */}
-            {campaign.thumbnail ? (
+            {showGlow ? (
                 <div 
                     className="hidden sm:block absolute w-[1000px] h-[700px] -top-20 left-1/2 -translate-x-1/2 bg-cover bg-center filter blur-[160px] opacity-20 dark:opacity-40 pointer-events-none rounded-full transform-gpu"
-                    style={{ backgroundImage: `url(${campaign.thumbnail})` }}
+                    style={glowStyle}
                 />
-            ) : (
+            ) : glow === AMBIENT_OFF ? null : (
                 <div className="hidden sm:block absolute w-[600px] h-[600px] bg-emerald-500/10 dark:bg-neon-green/5 rounded-full blur-[160px] pointer-events-none" />
             )}
 
@@ -773,11 +779,11 @@ const CampaignDetailModal = ({
                 {/* Scrollable Modal Container */}
                 <div className="overflow-y-auto custom-scrollbar flex-1 flex flex-col relative">
                     {/* Ambient Image Color Spill into Modal Content (Image's authentic hues bleed down into the body) */}
-                    {campaign.thumbnail && (
+                    {showGlow && (
                         <div 
                             className="hidden sm:block absolute top-0 inset-x-0 h-[650px] bg-cover bg-center filter blur-[70px] opacity-15 dark:opacity-35 pointer-events-none transform-gpu -z-0"
                             style={{ 
-                                backgroundImage: `url(${campaign.thumbnail})`,
+                                ...glowStyle,
                                 WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 35%, rgba(0,0,0,0.5) 75%, rgba(0,0,0,0) 100%)',
                                 maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 35%, rgba(0,0,0,0.5) 75%, rgba(0,0,0,0) 100%)'
                             }}
@@ -796,10 +802,12 @@ const CampaignDetailModal = ({
                             {campaign.thumbnail ? (
                                 <>
                                     {/* Ambient Image Aura inside Banner */}
-                                    <div 
-                                        className="absolute -inset-10 bg-cover bg-center filter blur-2xl opacity-90 scale-110 pointer-events-none transform-gpu"
-                                        style={{ backgroundImage: `url(${campaign.thumbnail})` }}
-                                    />
+                                    {glow !== AMBIENT_OFF && (
+                                        <div 
+                                            className="absolute -inset-10 bg-cover bg-center filter blur-2xl opacity-90 scale-110 pointer-events-none transform-gpu"
+                                            style={glowStyle}
+                                        />
+                                    )}
 
                                     {/* Crisp Foreground Image - Full bleed edge-to-edge */}
                                     <img 

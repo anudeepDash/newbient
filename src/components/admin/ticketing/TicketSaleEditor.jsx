@@ -20,6 +20,7 @@ import { computeAvailability } from '../../../lib/ticketing';
 import { tierColor } from '../../../lib/venueMap';
 import { APP_ORIGIN } from '../../../app/host';
 import VenueMapBuilder from './VenueMapBuilder';
+import { AmbientColorField } from '../forms/kit';
 import {
     AGE_LIMITS, SEATING, TIER_BADGES, VENUE_TYPES, EMPTY_SALE, blankTier, fromEvent, newRowId, saleProblems, toPayload, usesSiteUpi,
 } from './saleModel';
@@ -363,6 +364,7 @@ const TicketSaleEditor = ({ open, onClose, event, onSaved, initialSection }) => 
                                 onPaste={pasteInto('image', (url) => set({ image: url }))}
                             />
                         </div>
+                        <AmbientColorField image={form.image} value={form.ambientColor} onChange={(v) => set({ ambientColor: v })} />
                         <Field label="About the event" optional>
                             <textarea className={cn(areaCls, 'min-h-[140px]')} value={form.description} onChange={(e) => set({ description: e.target.value })} placeholder="What's the night about, the vibe, the music…" />
                         </Field>

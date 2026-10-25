@@ -145,6 +145,7 @@ const FeedbackPage = () => {
     const hero = (
         <ExpandedHero
             image={isPresent(d.campaign.image) ? d.campaign.image : null}
+            ambientColor={d.campaign.ambientColor}
             icon={MessageSquareQuote}
             chips={[{ label: answered ? t('Answered') : t('Feedback'), tone: answered ? 'accent' : undefined }]}
         />

@@ -22,7 +22,7 @@ import { BuilderCard, ImageSlot } from '../events/EditorParts';
 import { Field, Toggle, Choice, fieldCls, areaCls } from '../uploads/UploadKit';
 import CityInput, { cleanCity } from '../CityInput';
 import LivePreview from '../LivePreview';
-import { EditorBar, PhoneBar, slugify, todayKey, useConfirm, useImageField, useUnsavedWarning } from '../forms/kit';
+import { AmbientColorField, EditorBar, PhoneBar, slugify, todayKey, useConfirm, useImageField, useUnsavedWarning } from '../forms/kit';
 import { TASK_PRESETS, TASK_PRESET_MAP, giveawayEndsAt } from './giveawayUtils';
 
 export const TASK_ICONS = {
@@ -41,6 +41,7 @@ const EMPTY = {
     endTime: '',
     winnerAnnouncementDate: '',
     posterUrl: '',
+    ambientColor: '',
     giveawayType: 'Standard',
     tasks: [],
     status: 'Open',
@@ -280,8 +281,9 @@ const GiveawayEditor = ({ giveaway, giveaways, onDone }) => {
                     </BuilderCard>
 
                     <BuilderCard title="Poster" hint="Upload, paste or link · portrait works best">
-                        <div className="max-w-[240px]">
+                        <div className="grid gap-5 sm:grid-cols-[240px_minmax(0,1fr)]">
                             <ImageSlot label={poster.uploading ? 'Uploading…' : 'Poster'} hint="4:5 portrait" aspect="aspect-[4/5]" {...poster.slotProps} />
+                            <AmbientColorField image={data.posterUrl} value={data.ambientColor} onChange={(v) => set({ ambientColor: v })} />
                         </div>
                     </BuilderCard>
 

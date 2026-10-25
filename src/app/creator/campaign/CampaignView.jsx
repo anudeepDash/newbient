@@ -270,6 +270,7 @@ const CampaignView = ({ campaign: source, variant = 'page', initialTaskId, onClo
     const hero = (
         <ExpandedHero
             image={campaign.thumbnail}
+            ambientColor={campaign.ambientColor}
             icon={KindIcon}
             chips={[{ icon: MapPin, label: city }, { icon: GraduationCap, label: campaign.targetCollege }]}
         />
