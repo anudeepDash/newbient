@@ -141,6 +141,7 @@ describe('venue maps', () => {
         expect(legacyVenueMap(ev).elements[0]).toMatchObject({ tierId: 'ga', x: 100, y: 140, w: 300, h: 70 });
         expect(eventVenueMap({ ...ev, venueMap: { elements: [{ type: 'stage' }] } }).elements[0].type).toBe('stage');
         expect(eventVenueMap({})).toBeNull();
+        expect(eventVenueMap({ ...ev, hideVenueMap: true, venueMap: { elements: [{ type: 'stage' }] } })).toBeNull();
         void tiers;
     });
 });
