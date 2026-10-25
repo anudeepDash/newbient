@@ -8,12 +8,11 @@ import { runPostsOpen, tellPostsOpened } from '../api/_lib/postsOpen.js';
 import { openedTaskIds } from '../src/lib/creator/tasks.js';
 import { TEMPLATES, problemsWith } from '../scripts/submit-wa-templates.mjs';
 import { WA_TEMPLATES, renderTemplatePreview } from '../src/lib/outreach/whatsappTemplate.js';
-import { runTeamDigest, digestCounts } from '../api/_lib/teamDigest.js';
 import { advanceWaitlist, _internal } from '../api/_lib/passes.js';
 
 /* Messages that go out by themselves on site actions and the daily worker. */
 
-const LIVE = ['CAMPAIGN_INVITE', 'CAMPAIGN_POSTS_OPEN', 'CAMPAIGN_POST_DUE', 'CAMPAIGN_POST_OVERDUE', 'TEAM_DAILY_BRIEF', 'GUESTLIST_SPOT_OPENED', 'GUESTLIST_PENDING'];
+const LIVE = ['CAMPAIGN_INVITE', 'CAMPAIGN_POSTS_OPEN', 'CAMPAIGN_POST_DUE', 'CAMPAIGN_POST_OVERDUE', 'GUESTLIST_SPOT_OPENED', 'GUESTLIST_PENDING'];
 const NOW = Date.parse('2026-11-11T03:30:00Z'); // 09:00 IST, 11 Nov
 
 let db;
@@ -138,36 +137,6 @@ describe('posting opens', () => {
         expect(problemsWith(t)).toEqual([]);
         const preview = renderTemplatePreview('posts_open', { application: { fullName: 'Riya Sharma' }, campaign: { title: 'Bacardi NH7 Hype' }, data: { opensAt: 'today', whatToPost: 'Reel', dueAt: 'Sunday, 15 November' } });
         expect(preview).toContain('Your post for *Bacardi NH7 Hype* can go up from today.');
-    });
-});
-
-describe('morning team digest', () => {
-    beforeEach(() => {
-        db.store.set('admins/f1', { role: 'founder', email: 'f@newbi.live', phone: '+919876500020', displayName: 'Founder' });
-        db.store.set('admins/e1', { role: 'editor', email: 'e@newbi.live', phone: '+919876500021' });
-        db.store.set('ticket_orders/o1', { status: 'pending' });
-        db.store.set('guestlists/g1', { status: 'Open' });
-        db.store.set('guestlists/g1/entries/x', { status: 'pending' });
-        db.store.set('campaigns/c1', { title: 'C' });
-        db.store.set('campaigns/c1/applications/a1', { status: 'posted', deliverables: { r: { status: 'submitted' } } });
-        db.store.set('campaigns/c1/submissions/u1', { tasks: { t1: { status: 'submitted' } } });
-    });
-
-    it('counts what waits and sends one message a day to the leads team', async () => {
-        expect(await digestCounts(db)).toEqual({ orders: 1, signUps: 1, posts: 2, payouts: 1 });
-        const out = await runTeamDigest({ db, now: NOW });
-        expect(out.sent).toBe(1);
-        expect(sent).toHaveLength(1);
-        expect(sent[0].template.name).toBe('team_daily_brief');
-        expect(sent[0].template.components.find(c => c.type === 'body').parameters.map(p => p.text)).toEqual(['1', '1', '2', '1']);
-        expect((await runTeamDigest({ db, now: NOW })).skipped).toBe('already sent today');
-    });
-
-    it('stays quiet when nothing waits', async () => {
-        db = new FakeFirestore({ 'admins/f1': { role: 'founder', phone: '+919876500020' } });
-        setDbForTests(db);
-        expect((await runTeamDigest({ db, now: NOW })).skipped).toBe('nothing waiting');
-        expect(sent).toHaveLength(0);
     });
 });
 

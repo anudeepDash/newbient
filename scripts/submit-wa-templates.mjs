@@ -117,13 +117,6 @@ export const TEMPLATES = [
         buttons: [{ type: 'URL', text: 'Send my posts', url: `${APP}/d/{{1}}`, example: [`${APP}/d/sample-token`] }],
         footer: 'Newbi Creators · app.newbi.live',
     },
-    {
-        name: 'team_daily_brief',
-        body: "☀️ *Today's to-do at Newbi*\n\n*Ticket orders to check:* {{1}}\n*Guestlist sign-ups to review:* {{2}}\n*Creator posts to review:* {{3}}\n*Payouts to send:* {{4}}\n\nOpen the admin panel to clear them. The numbers there are live, so they may have changed since this message.",
-        samples: ['3', '12', '7', '5'],
-        buttons: [{ type: 'URL', text: 'Open admin', url: 'https://admin.newbi.live/admin' }],
-        footer: 'Newbi team · admin.newbi.live',
-    },
 ];
 
 /* What Meta checks before review: numbered variables in order, one sample each, none at the edges or touching. */
