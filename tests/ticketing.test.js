@@ -154,3 +154,13 @@ describe('gateway signature', () => {
         expect(gatewaySignatureOk('order_1', 'pay_1', sig, '')).toBe(false);
     });
 });
+
+describe('sale settings', () => {
+    it('keeps the payment screenshot rule (off for old sales)', async () => {
+        const { fromEvent, toPayload } = await import('../src/components/admin/ticketing/saleModel.js');
+        expect(fromEvent({ payments: { upi: true } }).payments.requireProof).toBe(false);
+        const form = fromEvent({ payments: { upi: true, requireProof: true } });
+        expect(form.payments.requireProof).toBe(true);
+        expect(toPayload(form).payments).toMatchObject({ upi: true, requireProof: true });
+    });
+});

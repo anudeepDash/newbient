@@ -16,7 +16,8 @@ import { uploadProof } from '../creator/api';
  *            limits, the order limit, seats left and sale windows
  *   review   the order, a coupon, the buyer's details, the terms
  *   pay      UPI: open a UPI app (or scan the QR) for the exact amount, then
- *            enter the 12-digit UTR (and, optionally, a screenshot). The order
+ *            enter the 12-digit UTR (and a screenshot: optional unless the
+ *            sale requires one). The order
  *            is then "pending" until the team checks the payment.
  *            Razorpay (when the event has it on): pay in their checkout and
  *            the order confirms itself.
@@ -171,6 +172,13 @@ export function useTicketCheckout(event, { open }) {
     const people = linesAdmit(lines);
     const orderMax = event ? eventMaxPerOrder(event) : 10;
 
+    /* How this sale takes money: the server's word once availability loads, else the event's. */
+    const payments = {
+        upi: availability?.payments ? availability.payments.upi : event?.payments?.upi !== false,
+        gateway: Boolean(availability?.payments?.gateway),
+        requireProof: availability?.payments ? Boolean(availability.payments.requireProof) : event?.payments?.requireProof === true,
+    };
+
     /* The most of this tier the cart can hold right now. */
     const tierCap = (tier) => {
         const elsewhere = Object.entries(cart).reduce((a, [id, n]) => a + (id === tier.id ? 0 : n), 0);
@@ -321,6 +329,7 @@ export function useTicketCheckout(event, { open }) {
         if (!free) {
             if (!clean) { setError('Enter the 12-digit UTR from your UPI app.'); return false; }
             if (!isValidUtr(clean)) { setError('A UTR is 12 digits. Copy it from the payment in your UPI app.'); return false; }
+            if (payments.requireProof && !proof) { setError('Add a screenshot of the payment to confirm your booking.'); return false; }
         }
         setBusy(true);
         setError('');
@@ -404,17 +413,15 @@ export function useTicketCheckout(event, { open }) {
         if (file.size > 8 * 1024 * 1024) { setError('That image is too big. Pick one under 8 MB.'); return; }
         setProofBusy(true);
         setError('');
-        try { setProof(await uploadProof(file)); } catch { setError('The screenshot didn’t upload. You can still confirm with the UTR alone.'); }
+        try { setProof(await uploadProof(file)); } catch {
+            setError(payments.requireProof ? 'The screenshot didn’t upload. Check your connection and try again.' : 'The screenshot didn’t upload. You can still confirm with the UTR alone.');
+        }
         finally { setProofBusy(false); }
     };
 
     const setUtr = (v) => { setUtrRaw(String(v || '').replace(/[^\dA-Za-z:\s-]/g, '').slice(0, 40)); setError(''); };
 
     const upiId = event?.upiId || event?.paymentDetails?.upiId || payment?.upiId || '';
-    const payments = {
-        upi: availability?.payments ? availability.payments.upi : event?.payments?.upi !== false,
-        gateway: Boolean(availability?.payments?.gateway),
-    };
 
     return {
         step, setStep,

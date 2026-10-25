@@ -131,7 +131,7 @@ const TicketSheet = ({ event, open, onClose, startTier = null }) => {
             return (
                 <div className="space-y-2">
                     <ErrorText>{co.error}</ErrorText>
-                    <Button size="lg" className="w-full" onClick={() => co.placeOrder(customer())} loading={co.busy} disabled={!co.utrValid || co.proofBusy}>
+                    <Button size="lg" className="w-full" onClick={() => co.placeOrder(customer())} loading={co.busy} disabled={!co.utrValid || co.proofBusy || (co.payments.requireProof && !co.proof)}>
                         {t('I’ve paid · Confirm booking')}
                     </Button>
                     <p className="text-center text-[12px] text-gray-500 dark:text-zinc-500">{t('Tap this only after the payment goes through.')}</p>

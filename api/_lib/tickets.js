@@ -72,6 +72,7 @@ export const gatewayConfigured = () => {
 };
 const gatewayOn = (event) => gatewayConfigured() && event?.payments?.gateway === true;
 const upiOn = (event) => event?.payments?.upi !== false;
+const proofRequired = (event) => upiOn(event) && event?.payments?.requireProof === true;
 
 const razorpay = async (path, { method = 'GET', body } = {}) => {
     const { id, secret } = gatewayKeys();
@@ -108,7 +109,7 @@ const publicAvailability = (event, availability) => {
         soldOut: availability.total.remaining === 0
             || (Object.values(availability.tiers).length > 0 && Object.values(availability.tiers).every(t => t.remaining === 0)),
         sale: { state: sale.state, opensAt: sale.opensAt?.toISOString?.() || null },
-        payments: { upi: upiOn(event), gateway: gatewayOn(event) },
+        payments: { upi: upiOn(event), gateway: gatewayOn(event), requireProof: proofRequired(event) },
     };
 };
 
@@ -283,6 +284,7 @@ const placeOrder = async (db, body, decodedToken, method) => {
         if (method === 'upi' && isPaid) {
             if (!rawUtr) throw new TicketError('UTR_REQUIRED', 'Enter the 12-digit UTR from your UPI app.');
             if (!isValidUtr(utr)) throw new TicketError('UTR_INVALID', 'A UTR is 12 digits. Copy it from the payment in your UPI app.');
+            if (!proof && proofRequired(freshEvent)) throw new TicketError('PROOF_REQUIRED', 'Add a screenshot of the payment to confirm your booking.');
             if (duplicateSnap && !duplicateSnap.empty) {
                 throw new TicketError('DUPLICATE_PAYMENT', 'This UTR has already been used for a booking. Check the number in your UPI app.', 409);
             }
