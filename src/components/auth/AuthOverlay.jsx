@@ -18,6 +18,7 @@ import LoadingSpinner from '../ui/LoadingSpinner';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import { cn } from '../../lib/utils';
+import GlassSelect from '../ui/GlassSelect';
 
 const AuthOverlay = () => {
     const { loginWithGoogle, signUpWithEmail, signInWithEmail, resetPassword, isAuthOpen, setAuthModal } = useStore();
@@ -449,16 +450,17 @@ const AuthOverlay = () => {
                                             <div className="space-y-1.5">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Phone Number</label>
                                                 <div className="flex gap-2">
-                                                    <select 
-                                                        value={countryCode} 
+                                                    <GlassSelect
+                                                        value={countryCode}
                                                         onChange={(e) => setCountryCode(e.target.value)}
-                                                        className="w-20 h-12 bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/5 rounded-xl text-gray-900 dark:text-white text-xs px-2 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all outline-none font-bold"
+                                                        aria-label="Country code"
+                                                        className="w-24 h-12 shrink-0 bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/5 rounded-xl text-gray-900 dark:text-white text-xs pl-3 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all outline-none font-bold"
                                                     >
-                                                        <option value="+91" className="bg-white dark:bg-zinc-900">🇮🇳 +91</option>
-                                                        <option value="+1" className="bg-white dark:bg-zinc-900">🇺🇸 +1</option>
-                                                        <option value="+44" className="bg-white dark:bg-zinc-900">🇬🇧 +44</option>
-                                                        <option value="+971" className="bg-white dark:bg-zinc-900">🇦🇪 +971</option>
-                                                    </select>
+                                                        <option value="+91">🇮🇳 +91</option>
+                                                        <option value="+1">🇺🇸 +1</option>
+                                                        <option value="+44">🇬🇧 +44</option>
+                                                        <option value="+971">🇦🇪 +971</option>
+                                                    </GlassSelect>
                                                     <div className="relative flex-1 group">
                                                         <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={16} />
                                                         <Input

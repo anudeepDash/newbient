@@ -512,7 +512,7 @@ const StudioRichEditor = ({
                             </button>
                             
                             {showStyleDropdown && (
-                                <div className="absolute top-full left-0 mt-1.5 w-44 bg-gray-100 dark:bg-zinc-950/95 border border-black/10 dark:border-white/10 rounded-2xl p-1.5 shadow-2xl backdrop-blur-xl z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                                <div className="nb-glass-menu absolute top-full left-0 mt-1.5 w-44 rounded-[1.1rem] p-1.5 z-50">
                                     <button
                                         type="button"
                                         onMouseDown={(e) => e.preventDefault()}
@@ -525,7 +525,7 @@ const StudioRichEditor = ({
                                             "w-full text-left px-3 py-2 rounded-xl text-[11px] transition-all flex items-center gap-2 font-bold border border-transparent",
                                             activeFormats.blockType === 'p' 
                                                 ? activeBtnClass
-                                                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
+                                                : "nb-glass-option text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                                         )}
                                     >
                                         <Type size={14} />
@@ -542,7 +542,7 @@ const StudioRichEditor = ({
                                             "w-full text-left px-3 py-2 rounded-xl text-[11px] transition-all flex items-center gap-2 font-bold border border-transparent",
                                             activeFormats.blockType === 'h1' 
                                                 ? activeBtnClass
-                                                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
+                                                : "nb-glass-option text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                                         )}
                                     >
                                         <Heading1 size={14} />
@@ -559,7 +559,7 @@ const StudioRichEditor = ({
                                             "w-full text-left px-3 py-2 rounded-xl text-[11px] transition-all flex items-center gap-2 font-bold border border-transparent",
                                             activeFormats.blockType === 'h2' 
                                                 ? activeBtnClass
-                                                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
+                                                : "nb-glass-option text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                                         )}
                                     >
                                         <Heading2 size={14} />
@@ -630,7 +630,7 @@ const StudioRichEditor = ({
                                 {showTableSelector && (
                                     <div 
                                         onMouseDown={(e) => e.preventDefault()}
-                                        className="absolute top-full mt-2.5 right-0 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-2xl p-4 shadow-2xl z-[90] space-y-2 animate-in fade-in slide-in-from-top-1 duration-150"
+                                        className="nb-glass-menu absolute top-full mt-2.5 right-0 rounded-[1.1rem] p-4 z-[90] space-y-2"
                                         onMouseLeave={() => setHoveredGrid({ rows: 0, cols: 0 })}
                                     >
                                         <div className="text-[9px] font-black uppercase tracking-wider text-neon-green text-center">
@@ -900,7 +900,7 @@ const StudioRichEditor = ({
                                             "px-2 py-1 rounded text-[10px] font-bold transition-all",
                                             selectedImage.style.width === w 
                                                 ? "bg-neon-green/20 text-neon-green" 
-                                                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
+                                                : "nb-glass-option text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                                         )}
                                     >
                                         {w}

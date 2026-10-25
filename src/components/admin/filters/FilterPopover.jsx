@@ -101,21 +101,22 @@ const FilterPopover = ({ label, summary, active, onClear, onOpen, width = 320, t
             {open && createPortal(
                 phone ? (
                     <>
-                        <div className="fixed inset-0 z-[10000] bg-black/40 dark:bg-black/60" onClickCapture={guard} onClick={close} aria-hidden="true" />
+                        <div className="nb-glass-backdrop fixed inset-0 z-[10000]" onClickCapture={guard} onClick={close} aria-hidden="true" />
                         <div ref={panelRef} role="dialog" aria-label={title || label} onClickCapture={guard}
-                            className="fixed inset-x-0 bottom-0 z-[10001] flex max-h-[85dvh] flex-col rounded-t-[1.75rem] border-t border-black/[0.08] bg-white font-heading shadow-2xl dark:border-white/[0.08] dark:bg-[#14161d]">
-                            <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-black/15 dark:bg-white/15" />
+                            className="nb-glass-menu nb-glass-sheet fixed inset-x-0 bottom-0 z-[10001] flex max-h-[85dvh] flex-col rounded-t-[1.75rem] font-heading">
+                            <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-black/15 dark:bg-white/20" />
                             <p className="shrink-0 px-5 pb-1 pt-3 text-[16px] font-bold">{title || label}</p>
                             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-2">{body}</div>
-                            {foot && <div className="shrink-0 border-t border-black/[0.06] px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 dark:border-white/[0.06]">{foot}</div>}
+                            {foot && <div className="nb-glass-divider shrink-0 border-t px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3">{foot}</div>}
                         </div>
                     </>
                 ) : pos && (
                     <div ref={panelRef} role="dialog" aria-label={title || label}
                         style={{ position: 'fixed', left: pos.left, width: pos.width, top: pos.top, bottom: pos.bottom, maxHeight: Math.min(520, pos.maxHeight) }}
-                        className="z-[10001] flex flex-col overflow-hidden rounded-2xl border border-black/10 bg-white font-heading shadow-2xl shadow-black/10 dark:border-white/10 dark:bg-[#14161d] dark:shadow-black/50">
+                        data-side={pos.bottom !== undefined ? 'top' : 'bottom'}
+                        className="nb-glass-menu z-[10001] flex flex-col overflow-hidden rounded-[1.1rem] font-heading">
                         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">{body}</div>
-                        {foot && <div className="shrink-0 border-t border-black/[0.06] p-3 dark:border-white/[0.06]">{foot}</div>}
+                        {foot && <div className="nb-glass-divider shrink-0 border-t p-3">{foot}</div>}
                     </div>
                 ),
                 document.body

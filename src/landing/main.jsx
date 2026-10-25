@@ -17,6 +17,7 @@ import '@fontsource/outfit/600.css';
 import '@fontsource/outfit/700.css';
 import '@fontsource/outfit/800.css';
 import './landing.css';
+import '../styles/glass-menu.css';
 import LandingApp from './LandingApp';
 import { findRoute } from './routes';
 import { loadFeed } from './feed';

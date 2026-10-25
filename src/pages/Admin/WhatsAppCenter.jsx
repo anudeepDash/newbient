@@ -15,6 +15,7 @@ import { when } from '../../components/admin/campaigns/outreach/parts';
 import { ConfirmSheet } from '../../components/admin/campaigns/parts';
 import { FIELDS, fieldsFor, isAuto, token, fillTokens } from '../../lib/outreach/waFields';
 import { STATUSES, STATUS_META, isOnShortlist } from '../../lib/outreach/status';
+import ThemedSelect from '../../components/admin/ThemedSelect';
 
 /*
  * The WhatsApp center (/admin/whatsapp): every conversation on the Newbi
@@ -228,10 +229,10 @@ const SendPanel = ({ templatesState, prefill, onSent }) => {
             <Card className="space-y-5 p-5">
                 <label className="block space-y-1.5">
                     <span className="text-[13px] font-bold">Template</span>
-                    <select className={fieldCls} value={key} onChange={e => setKey(e.target.value)}>
+                    <ThemedSelect className={fieldCls} value={key} onChange={e => setKey(e.target.value)}>
                         <option value="">Choose an approved template</option>
                         {approved.map(t => <option key={`${t.name}|${t.language}`} value={`${t.name}|${t.language}`}>{t.name} · {t.language} · {statusLabel(t.category)}</option>)}
-                    </select>
+                    </ThemedSelect>
                 </label>
 
                 {tpl && (

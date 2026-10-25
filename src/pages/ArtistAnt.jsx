@@ -56,6 +56,7 @@ import { PREDEFINED_CITIES } from '../lib/constants';
 import GlobalLoader from '../components/ui/GlobalLoader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import artistantLogo from '../assets/logo/artistant.png';
+import GlassSelect from '../components/ui/GlassSelect';
 
 // Artistant Theme Colors: Coral/Orange & Purple/Blue
 const ARTISTANT_THEME = {
@@ -993,31 +994,29 @@ const FormField = ({ label, isTextArea, ...props }) => (
     </div>
 );
 
-const FormSelect = ({ label, options, value, ...props }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    return (
-        <div className="space-y-4 relative">
-            <label className="text-[9px] font-black text-gray-600 uppercase tracking-[0.4em] px-2">{label}</label>
-            <div className="relative group">
-                <select 
-                    {...props} 
-                    value={value}
-                    onFocus={() => setIsOpen(true)}
-                    onBlur={() => setIsOpen(false)}
-                    className={cn(
-                        "w-full h-20 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl px-10 text-[14px] font-black outline-none appearance-none cursor-pointer transition-all shadow-2xl focus:bg-white/[0.04] focus:border-[#FF6B6B]/30",
-                        !value ? "text-gray-900 dark:text-white/10" : "text-gray-900 dark:text-white"
-                    )}
-                >
-                    <option value="" disabled className="bg-[#050505] text-gray-900 dark:text-white/10">Please select an option</option>
-                    {options.map(o => <option key={o} value={o} className="bg-[#050505] font-bold text-gray-900 dark:text-white">{o.toUpperCase()}</option>)}
-                </select>
-                <div className="absolute inset-0 rounded-2xl border border-[#FF6B6B]/0 group-focus-within:border-[#FF6B6B]/20 pointer-events-none transition-all duration-500" />
-                <ChevronDown className={cn("absolute right-8 top-1/2 -translate-y-1/2 text-gray-700 pointer-events-none transition-transform duration-300", isOpen ? "rotate-180 text-[#FF6B6B]" : "rotate-0")} size={18} />
-            </div>
+const FormSelect = ({ label, options, value, ...props }) => (
+    <div className="space-y-4 relative">
+        <label className="text-[9px] font-black text-gray-600 uppercase tracking-[0.4em] px-2">{label}</label>
+        <div className="relative group">
+            {/* Liquid glass list in Artistant coral (shared GlassSelect). */}
+            <GlassSelect
+                {...props}
+                value={value}
+                aria-label={label}
+                placeholder="Please select an option"
+                picked="bg-[#FF6B6B]/15 text-[#d9483f] dark:text-[#FF6B6B]"
+                className={cn(
+                    "w-full h-20 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl px-10 text-[14px] font-black outline-none transition-all shadow-2xl focus:bg-white/[0.04] focus:border-[#FF6B6B]/30",
+                    !value ? "text-gray-900 dark:text-white/40" : "text-gray-900 dark:text-white"
+                )}
+            >
+                <option value="" disabled>Please select an option</option>
+                {options.map(o => <option key={o} value={o}>{o.toUpperCase()}</option>)}
+            </GlassSelect>
+            <div className="absolute inset-0 rounded-2xl border border-[#FF6B6B]/0 group-focus-within:border-[#FF6B6B]/20 pointer-events-none transition-all duration-500" />
         </div>
-    );
-};
+    </div>
+);
 
 const DashboardStat = ({ label, value, icon, color }) => (
     <div className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl md:rounded-[1.5rem] p-5 md:p-8 min-w-0 md:min-w-[180px] space-y-2 md:space-y-3 group hover:border-black/20 dark:hover:border-white/20 transition-all">

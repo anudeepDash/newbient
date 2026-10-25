@@ -285,14 +285,9 @@ const StudioSelect = ({
                             exit={{ opacity: 0, y: position === "top" ? -8 : 8, scale: 0.98 }}
                             transition={{ duration: 0.15, ease: "easeOut" }}
                             style={dropdownStyles}
-                            className={cn(
-                                "shadow-2xl backdrop-blur-2xl border overflow-hidden",
-                                // Light mode: Clean glassmorphic card
-                                "bg-white/95 text-gray-900 border-black/10 shadow-[0_20px_45px_-10px_rgba(0,0,0,0.15)]",
-                                // Dark mode: Obsidian deep titanium
-                                "dark:bg-[#0c0e17]/95 dark:text-white dark:border-white/10 dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)]",
-                                "rounded-2xl p-1.5"
-                            )}
+                            // Liquid glass, shared with every dropdown (src/styles/glass-menu.css);
+                            // framer-motion handles the entrance here, so the CSS one is off.
+                            className="nb-glass-menu nb-glass-static overflow-hidden rounded-[1.1rem] p-1.5"
                         >
                         {/* Search Input for Long Option Lists */}
                         {isSearchable && (
@@ -307,7 +302,7 @@ const StudioSelect = ({
                                         placeholder="Search options..."
                                         className={cn(
                                             "w-full h-8 pl-8 pr-7 rounded-lg text-xs outline-none transition-all",
-                                            "bg-black/[0.03] dark:bg-white/[0.05] border border-black/5 dark:border-white/5",
+                                            "nb-glass-well",
                                             "text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-500",
                                             currentAccent.searchFocus
                                         )}
@@ -348,7 +343,7 @@ const StudioSelect = ({
                                             "px-3 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all flex items-center justify-between gap-2",
                                             active 
                                                 ? currentAccent.activeItem 
-                                                : cn("text-gray-700 dark:text-zinc-300 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]", currentAccent.hoverItem)
+                                                : cn("nb-glass-option text-gray-700 dark:text-zinc-300", currentAccent.hoverItem)
                                         )}
                                     >
                                         <div className="flex items-center gap-2 min-w-0 flex-1">

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Field, fieldCls } from '../uploads/UploadKit';
 import { callOutreach } from '../campaigns/outreach/outreachApi';
 import { FIELDS, fieldsFor, isAuto, token, fillTokens } from '../../../lib/outreach/waFields';
+import ThemedSelect from '../ThemedSelect';
 
 /*
  * Picking an approved WhatsApp template and filling its variables (the
@@ -76,10 +77,10 @@ export const WhatsAppTemplateFields = ({ wa, campaign = null, sampleName = '' })
     return (
         <div className="space-y-3">
             <Field label="Approved template">
-                <select className={fieldCls} value={key} onChange={(e) => setKey(e.target.value)}>
+                <ThemedSelect className={fieldCls} value={key} onChange={(e) => setKey(e.target.value)}>
                     <option value="">Choose a template</option>
                     {templates.list.map(t => <option key={`${t.name}|${t.language}`} value={`${t.name}|${t.language}`}>{t.name} · {t.language}</option>)}
-                </select>
+                </ThemedSelect>
             </Field>
             {tpl && (
                 <>

@@ -43,7 +43,8 @@ export default function LangToggle({ className = '', up = false }) {
             {open && (
                 <ul
                     id={menuId}
-                    className={`absolute right-0 z-[70] min-w-[9.5rem] overflow-hidden rounded-2xl border border-black/10 bg-white p-1 shadow-xl dark:border-white/15 dark:bg-[#15171d] ${up ? 'bottom-full mb-2' : 'top-full mt-2'}`}
+                    data-side={up ? 'top' : 'bottom'}
+                    className={`nb-glass-menu absolute right-0 z-[70] min-w-[9.5rem] overflow-hidden rounded-[1.1rem] p-1 ${up ? 'bottom-full mb-2' : 'top-full mt-2'}`}
                 >
                     {Object.entries(LANGS).map(([code, label]) => (
                         <li key={code}>
@@ -52,9 +53,9 @@ export default function LangToggle({ className = '', up = false }) {
                                 lang={code === 'hi' ? 'hi-Latn' : 'en'}
                                 aria-pressed={lang === code}
                                 onClick={() => choose(code)}
-                                className={`flex h-10 w-full items-center justify-between gap-3 rounded-xl px-3 text-left font-heading text-sm font-semibold transition-colors ${lang === code
-                                    ? 'bg-neon-green/20 text-gray-950 dark:text-white'
-                                    : 'text-gray-700 hover:bg-black/5 dark:text-zinc-300 dark:hover:bg-white/10'}`}
+                                className={`flex h-10 w-full items-center justify-between gap-3 rounded-xl px-3 text-left font-heading text-sm font-semibold ${lang === code
+                                    ? 'nb-glass-picked'
+                                    : 'nb-glass-option text-gray-700 dark:text-zinc-300'}`}
                             >
                                 {label}
                                 {lang === code && <Check size={15} aria-hidden="true" />}

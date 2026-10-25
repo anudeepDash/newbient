@@ -12,6 +12,7 @@ import { Toggle, fieldCls } from '../uploads/UploadKit';
 import { CheckBox, Spinner } from './parts';
 import { creatorHandle, creatorKeys, creatorPhotoOf, isSelected } from './campaignModel';
 import { DONE_ROW_STATUS, MEMBER_BADGE, checkedSheetSpec, creatorEntriesFor, doneRowNote, newbiIdOf, readDeliverablesCsv } from './shortlistModel';
+import ThemedSelect from '../ThemedSelect';
 
 /*
  * "Add completed work": creators who already did a deliverable (the client sent
@@ -243,14 +244,14 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
                                 {[{ key: 'instagram', label: 'Instagram handle from' }, { key: 'phone', label: 'Phone from' }].map(({ key, label: what }) => (
                                     <label key={key} className="min-w-0 space-y-1">
                                         <span className="block text-[12px] font-bold text-gray-500">{what}</span>
-                                        <select
+                                        <ThemedSelect
                                             className={cn(fieldCls, 'h-11')}
                                             value={parsed.columns?.[key] ?? -1}
                                             onChange={e => { setCols(c => ({ ...c, [key]: Number(e.target.value) })); setSkipped(new Set()); }}
                                         >
                                             <option value={-1}>No column</option>
                                             {parsed.header.map((h, idx) => <option key={idx} value={idx}>{String(h || '').trim() || `Column ${idx + 1}`}</option>)}
-                                        </select>
+                                        </ThemedSelect>
                                     </label>
                                 ))}
                             </div>

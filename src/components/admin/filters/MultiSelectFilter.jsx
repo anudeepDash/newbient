@@ -56,7 +56,7 @@ const MultiSelectFilter = ({ label, allLabel = 'All', options, value = [], onCha
                             value={q}
                             onChange={(e) => setQ(e.target.value)}
                             placeholder={searchPlaceholder || `Search ${many}`}
-                            className="h-10 w-full rounded-xl border border-black/10 bg-white pl-9 pr-3 text-[14px] outline-none focus:border-emerald-500/60 dark:border-white/10 dark:bg-white/[0.04]"
+                            className="nb-glass-well h-10 w-full rounded-xl pl-9 pr-3 text-[14px] outline-none focus:border-emerald-500/60 dark:focus:border-neon-green/40"
                         />
                     </label>
                 )}
@@ -70,8 +70,8 @@ const MultiSelectFilter = ({ label, allLabel = 'All', options, value = [], onCha
                                     role="option"
                                     aria-selected={on}
                                     onClick={() => toggle(o.value)}
-                                    className={cn('flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-[14px] transition-colors',
-                                        on ? cn(a.soft, 'font-semibold') : 'hover:bg-black/[0.04] dark:hover:bg-white/[0.06]')}
+                                    className={cn('nb-glass-option flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-[14px]',
+                                        on && cn(a.soft, 'font-semibold'))}
                                 >
                                     <span className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors',
                                         on ? cn(a.solid, 'border-transparent') : 'border-gray-300 dark:border-white/25')}>
