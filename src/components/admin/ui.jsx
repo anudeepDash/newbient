@@ -105,22 +105,24 @@ export const CampaignStatusBadge = ({ status }) => {
 export const StatTile = ({ label, value, hint, to, onClick, active, tone, icon: Icon, className }) => {
     const moduleAccent = useAccent();
     const a = tone ? accent(tone) : moduleAccent;
+    // Below xl the icon sits above the text, so narrow tiles (two on a phone, four
+    // beside the sidebar) keep their whole label and amount instead of "₹30,0…".
     const body = (
-        <div className="flex items-start gap-3">
+        <div className="flex flex-col gap-2.5 xl:flex-row xl:items-start xl:gap-3">
             {Icon && (
-                <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', a.chip)}>
-                    <Icon size={18} />
+                <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-10 sm:w-10', a.chip)}>
+                    <Icon size={17} />
                 </div>
             )}
             <div className="min-w-0 flex-1">
                 <p className="truncate text-[12px] font-semibold text-gray-500 dark:text-zinc-400">{label}</p>
-                <p className="mt-0.5 truncate font-heading text-[22px] font-extrabold leading-tight tabular-nums text-gray-900 dark:text-white" title={typeof value === 'string' || typeof value === 'number' ? String(value) : undefined}>{value}</p>
-                {hint && <p className="mt-0.5 line-clamp-1 text-[12px] text-gray-500 dark:text-zinc-400">{hint}</p>}
+                <p className="mt-0.5 truncate font-heading text-[20px] font-extrabold leading-tight tabular-nums text-gray-900 dark:text-white sm:text-[22px]" title={typeof value === 'string' || typeof value === 'number' ? String(value) : undefined}>{value}</p>
+                {hint && <p className="mt-0.5 line-clamp-2 text-[12px] text-gray-500 dark:text-zinc-400 xl:line-clamp-1">{hint}</p>}
             </div>
         </div>
     );
     const cls = cn(
-        'block w-full rounded-2xl border bg-white p-4 text-left transition-all dark:bg-white/[0.03]',
+        'block w-full rounded-2xl border bg-white p-3.5 text-left transition-all dark:bg-white/[0.03] sm:p-4',
         active ? cn(a.border, a.soft) : 'border-black/[0.06] dark:border-white/[0.08]',
         (to || onClick) && 'hover:-translate-y-0.5 hover:border-black/15 dark:hover:border-white/20',
         className
