@@ -53,6 +53,7 @@ const sections = [
                     'Your public Instagram profile details: username, name, follower and post counts, account type and profile picture. See “Instagram” below.',
                     'Campaign applications: the details on the form, your consent to WhatsApp updates (with the time and wording you agreed to), the links and screenshots of the posts you deliver, and your status in each campaign.',
                     'Payouts: your UPI ID and name, and the amount, date and reference of each payout. We also keep these in our accounts.',
+                    'Campaign feedback: after a campaign, your rating, comments and, if you write one, your testimonial, with your answer on whether we may publish it. We only show a testimonial on our website if you said yes, in the way you chose (your name and Instagram handle, or your first name only), and you can change that or ask us to take it down from the same link at any time.',
                 ]} />
                 <H3>Giveaways, gigs, forms and messages</H3>
                 <UL items={[
@@ -101,7 +102,7 @@ const sections = [
                 <P>
                     We send WhatsApp messages from our business number through Meta’s WhatsApp Business Platform:
                     tickets and passes, order and guestlist updates, and, if you’re a creator who opted in, campaign updates (shortlists,
-                    group invites, reminders, deliverable requests and payouts). Meta processes these messages under its own terms
+                    group invites, reminders, deliverable requests, payouts and a feedback request after the campaign). Meta processes these messages under its own terms
                     and policies.
                 </P>
                 <UL items={[

@@ -13,6 +13,7 @@ import { runPostReminders } from './_lib/postReminders.js';
 import { runPostsOpen } from './_lib/postsOpen.js';
 import { runTeamDigest } from './_lib/teamDigest.js';
 import { runWaitlists } from './_lib/waitlistSweep.js';
+import { runCampaignFeedback, runPendingEmails as runFeedbackEmails } from './_lib/campaignFeedback.js';
 import { STAFF_TEMPLATES, hasTemplate } from './_lib/mail/templates/index.js';
 
 /*
@@ -93,6 +94,11 @@ const runWorker = async (req, { budgetMs = 48000, depth = 0 } = {}) => {
     const posts = depth === 0
         ? await runPostReminders().catch(e => { console.error('[MAIL] post reminders failed:', e.message); return null; })
         : null;
+    // The day after a campaign's event: ask everyone who took part for feedback (WhatsApp is queued for
+    // the run below; emails go out here, and any left over carry on in the chained runs).
+    const feedback = depth === 0
+        ? await runCampaignFeedback({ deadline: Date.now() + 12000 }).catch(e => { console.error('[MAIL] campaign feedback failed:', e.message); return null; })
+        : await runFeedbackEmails(undefined, { deadline: Date.now() + 15000 }).catch(e => { console.error('[MAIL] feedback emails failed:', e.message); return null; });
     // Campaign outreach: leftover sends and due join reminders (the queue keeps to its own rate limit).
     const outreach = depth === 0
         ? await runOutreachQueue({ deadline: started + 20000 }).catch(e => { console.error('[MAIL] outreach queue failed:', e.message); return null; })
@@ -111,8 +117,8 @@ const runWorker = async (req, { budgetMs = 48000, depth = 0 } = {}) => {
         : null;
     const campaigns = await runCampaignWorker({ deadline: started + budgetMs }).catch(e => { console.error('[MAIL] campaign worker failed:', e); return { campaigns: 0, sent: 0, more: false }; });
     let chained = false;
-    if (campaigns.more) chained = await chainWorker(req, depth);
-    return { retried, waRetried, outreachSent: outreach?.sent || 0, remindersSent: reminders?.sent || 0, postReminders: posts, postsOpen: opening, teamDigest: digest?.sent || 0, ...campaigns, chained, ms: Date.now() - started };
+    if (campaigns.more || feedback?.waiting) chained = await chainWorker(req, depth);
+    return { retried, waRetried, outreachSent: outreach?.sent || 0, feedback, remindersSent: reminders?.sent || 0, postReminders: posts, postsOpen: opening, teamDigest: digest?.sent || 0, ...campaigns, chained, ms: Date.now() - started };
 };
 
 /* ---------- Free-form staff mail (the composer screens) ---------- */
