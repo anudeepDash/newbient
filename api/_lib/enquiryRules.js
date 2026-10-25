@@ -6,7 +6,6 @@
 export const AUDIENCES = {
     brand: 'Brand',
     college: 'College',
-    creator: 'Creator',
     artist: 'Artist / manager',
     other: 'Something else',
 };
