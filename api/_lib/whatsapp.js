@@ -219,7 +219,7 @@ export const sendTemplate = async ({ to, template, language, header: givenHeader
  * hours of the person's last message; the caller checks that window.
  * → { ok, status, messageId, error, errorCode, retriable }. Never throws, never auto-retries.
  */
-export const sendText = async ({ to, text, event = 'inbox-reply', ref = null }) => {
+export const sendText = async ({ to, text, event = 'inbox-reply', ref = null, replyTo = null }) => {
     if (!isWhatsAppConfigured()) return { ok: false, status: 'skipped', error: 'WhatsApp is not set up' };
     const phone = toE164(to);
     if (!phone) return { ok: false, status: 'skipped', error: 'No valid WhatsApp number' };
@@ -229,7 +229,10 @@ export const sendText = async ({ to, text, event = 'inbox-reply', ref = null }) 
     const base = { channel: 'whatsapp', to: phone, template: null, event, ref, createdAt: nowIso(), updatedAt: nowIso() };
     let result;
     try {
-        result = await callMeta({ messaging_product: 'whatsapp', recipient_type: 'individual', to: phone.slice(1), type: 'text', text: { body, preview_url: true } });
+        result = await callMeta({
+            messaging_product: 'whatsapp', recipient_type: 'individual', to: phone.slice(1), type: 'text', text: { body, preview_url: true },
+            ...(replyTo ? { context: { message_id: replyTo } } : {}),
+        });
     } catch (err) {
         result = { ok: false, status: 0, data: { error: { message: err.message } } };
     }
@@ -246,6 +249,26 @@ export const sendText = async ({ to, text, event = 'inbox-reply', ref = null }) 
     await logRef.set({ ...base, status: 'failed', error: message, errorCode: code || null }).catch(() => {});
     await writeDelivery(ref, { status: 'failed', at: nowIso(), error: message });
     return { ok: false, status: 'failed', error: message, errorCode: code || null, retriable: !permanent, logId: logRef.id };
+};
+
+/**
+ * A reaction on one message in a conversation (inbox), or '' to take ours off.
+ * Same 24-hour window as free text. Not logged: it isn't a message anyone is billed for.
+ * → { ok, error }. Never throws.
+ */
+export const sendReaction = async ({ to, messageId, emoji }) => {
+    if (!isWhatsAppConfigured()) return { ok: false, error: 'WhatsApp is not set up' };
+    const phone = toE164(to);
+    if (!phone || !messageId) return { ok: false, error: 'Nothing to react to' };
+    let result;
+    try {
+        result = await callMeta({ messaging_product: 'whatsapp', recipient_type: 'individual', to: phone.slice(1), type: 'reaction', reaction: { message_id: messageId, emoji: String(emoji || '') } });
+    } catch (err) {
+        result = { ok: false, status: 0, data: { error: { message: err.message } } };
+    }
+    if (result.ok) return { ok: true };
+    const err = result.data?.error || {};
+    return { ok: false, error: String(err.error_data?.details || err.message || `HTTP ${result.status}`).slice(0, 300) };
 };
 
 let cachedBusinessNumber = null;

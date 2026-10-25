@@ -319,6 +319,37 @@ describe('Joined, inbox and replies', () => {
         expect((await call('inbox-list', { state: 'open' })).body.threads).toHaveLength(0);
     });
 
+    it('keeps their reaction with the message it’s on, and lets us react and quote-reply', async () => {
+        await onOutreachInbound({ from: '919876500001', id: 'wamid.in2', type: 'text', text: { body: 'Hi!' } }, { db });
+        const reply = await call('inbox-reply', { threadId: threadId(), text: 'Hey Riya' });
+        const ourWamid = `wamid.${sent.length}`; // the fake Meta numbers its answers
+        await onOutreachInbound({ from: '919876500001', id: 'wamid.in3', type: 'reaction', reaction: { message_id: ourWamid, emoji: '❤️' } }, { db });
+        await onOutreachInbound({ from: '919876500001', id: 'wamid.in4', type: 'text', text: { body: 'See you there' }, context: { id: ourWamid } }, { db });
+        let open = await call('inbox-thread', { threadId: threadId() });
+        const byText = Object.fromEntries(open.body.messages.map(m => [m.text, m]));
+        expect(byText['Hey Riya'].wamid).toBe(ourWamid);
+        expect(byText['❤️']).toMatchObject({ type: 'reaction', direction: 'in', reactTo: ourWamid });
+        expect(byText['See you there'].replyTo).toBe(ourWamid);
+        expect(thread().lastText).toBe('See you there');
+
+        const hiId = byText['Hi!'].id;
+        let res = await call('inbox-react', { threadId: threadId(), messageId: hiId, emoji: '👍' });
+        expect(res.body).toMatchObject({ success: true, emoji: '👍' });
+        expect(sent.at(-1)).toMatchObject({ type: 'reaction', to: '919876500001', reaction: { message_id: 'wamid.in2', emoji: '👍' } });
+        await call('inbox-react', { threadId: threadId(), messageId: hiId, emoji: '😂' });
+        open = await call('inbox-thread', { threadId: threadId() });
+        expect(open.body.messages.filter(m => m.type === 'reaction' && m.direction === 'out').map(m => m.text)).toEqual(['😂']);
+        expect((await call('inbox-react', { threadId: threadId(), messageId: hiId, emoji: 'lol' })).statusCode).toBe(400);
+
+        res = await call('inbox-reply', { threadId: threadId(), text: 'Gate 2', replyToId: hiId });
+        expect(sent.at(-1)).toMatchObject({ type: 'text', context: { message_id: 'wamid.in2' } });
+        expect(db.store.get(`outreach_inbox/${threadId()}/inbox_messages/${res.body.messageId}`).replyTo).toBe('wamid.in2');
+        expect(reply.body.success).toBe(true);
+
+        vi.setSystemTime(Date.now() + 25 * 3600_000);
+        expect((await call('inbox-react', { threadId: threadId(), messageId: hiId, emoji: '👍' })).body.code).toBe('window_closed');
+    });
+
     it('a queued reply that misses the window is cancelled, not sent', async () => {
         await onOutreachInbound({ from: '919876500001', id: 'wamid.in2', type: 'text', text: { body: 'Hi!' } }, { db });
         vi.stubEnv('OUTREACH_WA_PER_MINUTE', '1');

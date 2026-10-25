@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import MessagesSquare from 'lucide-react/dist/esm/icons/messages-square';
 import Send from 'lucide-react/dist/esm/icons/send';
 import History from 'lucide-react/dist/esm/icons/history';
 import LayoutTemplate from 'lucide-react/dist/esm/icons/layout-template';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import { cn } from '../../lib/utils';
 import { useStore } from '../../lib/store';
 import { Card, Button, Badge, EmptyState, SegmentedTabs, Select } from '../../components/admin/ui';
@@ -15,6 +16,7 @@ import { when } from '../../components/admin/campaigns/outreach/parts';
 import { ConfirmSheet } from '../../components/admin/campaigns/parts';
 import { FIELDS, fieldsFor, isAuto, token, fillTokens } from '../../lib/outreach/waFields';
 import { STATUSES, STATUS_META, isOnShortlist } from '../../lib/outreach/status';
+import { waText as formatted } from '../../components/admin/whatsapp/waText';
 import ThemedSelect from '../../components/admin/ThemedSelect';
 
 /*
@@ -42,13 +44,6 @@ const eventLabel = (e = '') => {
 };
 
 const fill = (text, values) => String(text || '').replace(/\{\{(\d+)\}\}/g, (_, n) => values[Number(n) - 1] || `{{${n}}}`);
-
-/* WhatsApp's own formatting: *bold* and _italic_, enough for a preview. */
-const formatted = (text) => String(text || '').split(/(\*[^*\n]+\*|_[^_\n]+_)/g).map((part, i) => {
-    if (/^\*[^*]+\*$/.test(part)) return <strong key={i}>{part.slice(1, -1)}</strong>;
-    if (/^_[^_]+_$/.test(part)) return <em key={i}>{part.slice(1, -1)}</em>;
-    return <React.Fragment key={i}>{part}</React.Fragment>;
-});
 
 const useTemplates = () => {
     const [state, setState] = useState({ loading: true, templates: [], error: '' });
@@ -494,7 +489,9 @@ const NAME_STATUS = {
 const QUALITY = { GREEN: 'High', YELLOW: 'Medium', RED: 'Low' };
 const CAN_SEND = { AVAILABLE: 'Can send', LIMITED: 'Limited', BLOCKED: 'Blocked' };
 const DOT = { green: 'bg-emerald-500', amber: 'bg-amber-500', rose: 'bg-rose-500', gray: 'bg-gray-400' };
-const RING = { green: 'border-emerald-500/30', amber: 'border-amber-500/30', rose: 'border-rose-500/40', gray: '' };
+const PING = { green: 'bg-emerald-400', amber: 'bg-amber-400', rose: 'bg-rose-400', gray: '' };
+/* The pill's word for each state; the dropdown has the full story. */
+const SHORT = { green: 'Sending', amber: 'Needs a look', rose: 'Not sending', gray: 'Unknown' };
 
 /* "TIER_1K" → "1,000 people a day". */
 const limitLabel = (tier) => {
@@ -506,20 +503,23 @@ const limitLabel = (tier) => {
 
 const Fact = ({ label, children }) => (children ? (
     <div className="min-w-0">
-        <p className="text-[11.5px] font-semibold uppercase tracking-wide text-gray-500">{label}</p>
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">{label}</p>
         <p className="text-[13px] font-semibold">{children}</p>
     </div>
 ) : null);
 
 /*
- * Whether the number can send right now: Meta's health check, the display name
- * and its review, quality and limit, and how the last real message went
- * (api/_lib/whatsappCenter.js, wa-number).
+ * Whether the number can send right now, as a dot by the tabs (green, amber,
+ * red): Meta's health check, the display name and its review, quality and
+ * limit, and how the last real message went (api/_lib/whatsappCenter.js,
+ * wa-number). Clicking it opens the details.
  */
 const NumberStatus = () => {
     const addToast = useStore(s => s.addToast);
     const [state, setState] = useState({ loading: true });
     const [pushing, setPushing] = useState(false);
+    const [open, setOpen] = useState(false);
+    const boxRef = useRef(null);
     const load = useCallback(async () => {
         setState(s => ({ ...s, loading: true }));
         const r = await callOutreach('wa-number');
@@ -540,58 +540,104 @@ const NumberStatus = () => {
     }, [addToast, load]);
     // Opening the page gives waiting messages a push.
     useEffect(() => { load().then(d => { if (d?.queue?.waiting) sendWaiting({ quiet: true }); }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    useEffect(() => {
+        if (!open) return undefined;
+        const onDown = (e) => { if (!boxRef.current?.contains(e.target)) setOpen(false); };
+        const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+        document.addEventListener('mousedown', onDown);
+        window.addEventListener('keydown', onKey);
+        return () => { document.removeEventListener('mousedown', onDown); window.removeEventListener('keydown', onKey); };
+    }, [open]);
 
-    if (state.error) return <Card className="p-4 text-[13px] text-gray-500">Couldn’t read the number’s status from Meta: {state.error}</Card>;
-    if (!state.verdict) return <Card className="p-4 text-[13px] text-gray-500">Checking the number with Meta…</Card>;
     const { number: n, verdict: v, lastSend, queue } = state;
+    const tone = state.error ? 'gray' : v?.tone || 'gray';
+    const label = state.error ? 'Status unavailable' : v ? SHORT[tone] : 'Checking…';
+    const waiting = queue?.waiting || 0;
+
     return (
-        <Card className={cn('space-y-3 p-4', RING[v.tone])}>
-            <div className="flex items-start gap-3">
-                <span className={cn('mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full', DOT[v.tone])} aria-hidden="true" />
-                <div className="min-w-0 flex-1">
-                    <p className="text-[14px] font-bold">{v.title}</p>
-                    <p className="text-[12.5px] text-gray-500">{v.detail}</p>
+        <div className="relative" ref={boxRef}>
+            <button
+                type="button"
+                onClick={() => setOpen(o => !o)}
+                aria-expanded={open}
+                aria-label={`WhatsApp number: ${v?.title || label}`}
+                title={v?.title || label}
+                className={cn(
+                    'inline-flex h-9 items-center gap-2 rounded-full border px-3 text-[13px] font-semibold transition-colors',
+                    open ? 'border-black/15 bg-black/[0.04] dark:border-white/20 dark:bg-white/[0.06]' : 'border-black/10 hover:bg-black/[0.03] dark:border-white/10 dark:hover:bg-white/[0.04]',
+                )}
+            >
+                <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
+                    {v && !state.error && tone !== 'gray' && <span className={cn('absolute inline-flex h-full w-full animate-ping rounded-full opacity-60', PING[tone])} />}
+                    <span className={cn('relative inline-flex h-2.5 w-2.5 rounded-full', state.loading && !v ? 'animate-pulse bg-gray-300' : DOT[tone])} />
+                </span>
+                <span>{label}</span>
+                {waiting > 0 && <span className="rounded-full bg-amber-500/15 px-1.5 text-[11.5px] text-amber-700 dark:text-amber-300">{waiting} waiting</span>}
+                <ChevronDown size={14} className={cn('text-gray-400 transition-transform', open && 'rotate-180')} />
+            </button>
+
+            {open && (
+                <div className="absolute right-0 top-full z-40 mt-2 w-[min(400px,calc(100vw-32px))] overflow-hidden rounded-2xl border border-black/10 bg-white shadow-2xl shadow-black/10 dark:border-white/10 dark:bg-[#14161d] dark:shadow-black/50" role="dialog" aria-label="WhatsApp number status">
+                    {state.error ? (
+                        <div className="space-y-3 p-4 text-[13px]">
+                            <p className="text-gray-600 dark:text-zinc-400">Couldn’t read the number’s status from Meta: {state.error}</p>
+                            <Button size="sm" variant="ghost" onClick={load} disabled={state.loading}><RefreshCw size={13} className={state.loading ? 'animate-spin' : undefined} /> Try again</Button>
+                        </div>
+                    ) : !v ? (
+                        <p className="p-4 text-[13px] text-gray-500">Checking the number with Meta…</p>
+                    ) : (
+                        <>
+                            <div className="flex items-start gap-3 p-4">
+                                <span className={cn('mt-1 h-3 w-3 shrink-0 rounded-full ring-4', DOT[tone], { green: 'ring-emerald-500/15', amber: 'ring-amber-500/15', rose: 'ring-rose-500/15', gray: 'ring-gray-400/15' }[tone])} aria-hidden="true" />
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-[14px] font-bold">{v.title}</p>
+                                    <p className="text-[12.5px] text-gray-500">{v.detail}</p>
+                                </div>
+                                <button type="button" onClick={load} disabled={state.loading} aria-label="Check again" title="Check again" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-500 hover:bg-black/5 disabled:opacity-50 dark:hover:bg-white/5">
+                                    <RefreshCw size={14} className={state.loading ? 'animate-spin' : undefined} />
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 border-t border-black/[0.06] px-4 py-3 dark:border-white/[0.08]">
+                                <Fact label="Display name">{n.verifiedName ? `${n.verifiedName}${n.nameStatus ? ` · ${NAME_STATUS[n.nameStatus] || n.nameStatus}` : ''}` : (NAME_STATUS[n.nameStatus] || n.nameStatus)}</Fact>
+                                <Fact label="Meta says">{CAN_SEND[n.canSend] || n.canSend}</Fact>
+                                <Fact label="Quality">{QUALITY[n.quality] || (n.quality && n.quality !== 'UNKNOWN' ? n.quality : null)}</Fact>
+                                <Fact label="Limit">{limitLabel(n.limit)}</Fact>
+                                {n.phone && <Fact label="Number">{n.phone}</Fact>}
+                            </div>
+                            {n.newNameStatus && n.newNameStatus !== 'NONE' && n.newNameStatus !== n.nameStatus && (
+                                <p className="border-t border-black/[0.06] px-4 py-2.5 text-[12.5px] text-gray-500 dark:border-white/[0.08]">A new display name is {String(NAME_STATUS[n.newNameStatus] || n.newNameStatus).toLowerCase()}.</p>
+                            )}
+                            {n.issues?.length > 0 && (
+                                <ul className="space-y-1.5 border-t border-black/[0.06] px-4 py-3 text-[12.5px] dark:border-white/[0.08]">
+                                    {n.issues.map((x, i) => (
+                                        <li key={i} className="rounded-xl bg-black/[0.03] px-3 py-2 dark:bg-white/[0.04]">
+                                            <span className="font-semibold">{x.entity.charAt(0).toUpperCase() + x.entity.slice(1)}</span>: {x.text}
+                                            {x.fix && <span className="block text-gray-500">{x.fix}</span>}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                            {waiting > 0 && (
+                                <div className="flex items-center gap-3 border-t border-black/[0.06] bg-amber-500/[0.07] px-4 py-3 text-[12.5px] dark:border-white/[0.08]">
+                                    <span className="flex-1">
+                                        {waiting} message{waiting === 1 ? '' : 's'} waiting to go out
+                                        {queue.held ? ` (${queue.held} held while Meta refuses the number)` : ''}
+                                        {queue.nextAt ? ` · next try ${when(queue.nextAt)}` : ''}
+                                    </span>
+                                    <Button size="sm" variant="success" disabled={pushing} onClick={() => sendWaiting()}>{pushing ? 'Sending…' : 'Send now'}</Button>
+                                </div>
+                            )}
+                            {lastSend && (
+                                <p className="border-t border-black/[0.06] px-4 py-3 text-[12.5px] text-gray-500 dark:border-white/[0.08]">
+                                    Last message {when(lastSend.at)}{lastSend.template ? ` (${lastSend.template})` : ''}: <span className={cn('font-semibold', lastSend.status === 'failed' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-neon-green')}>{lastSend.status}</span>
+                                    {lastSend.status === 'failed' && lastSend.error ? ` · ${lastSend.error}` : ''}
+                                </p>
+                            )}
+                        </>
+                    )}
                 </div>
-                <Button size="sm" variant="ghost" onClick={load} disabled={state.loading} aria-label="Check again">
-                    <RefreshCw size={13} className={state.loading ? 'animate-spin' : undefined} /> Check again
-                </Button>
-            </div>
-            <div className="grid grid-cols-2 gap-3 border-t border-black/[0.06] pt-3 sm:grid-cols-4 dark:border-white/[0.08]">
-                <Fact label="Display name">{n.verifiedName ? `${n.verifiedName}${n.nameStatus ? ` · ${NAME_STATUS[n.nameStatus] || n.nameStatus}` : ''}` : (NAME_STATUS[n.nameStatus] || n.nameStatus)}</Fact>
-                <Fact label="Meta says">{CAN_SEND[n.canSend] || n.canSend}</Fact>
-                <Fact label="Quality">{QUALITY[n.quality] || (n.quality && n.quality !== 'UNKNOWN' ? n.quality : null)}</Fact>
-                <Fact label="Limit">{limitLabel(n.limit)}</Fact>
-            </div>
-            {n.newNameStatus && n.newNameStatus !== 'NONE' && n.newNameStatus !== n.nameStatus && (
-                <p className="text-[12.5px] text-gray-500">A new display name is {String(NAME_STATUS[n.newNameStatus] || n.newNameStatus).toLowerCase()}.</p>
             )}
-            {n.issues?.length > 0 && (
-                <ul className="space-y-1.5 text-[12.5px]">
-                    {n.issues.map((x, i) => (
-                        <li key={i} className="rounded-xl bg-black/[0.03] px-3 py-2 dark:bg-white/[0.04]">
-                            <span className="font-semibold">{x.entity.charAt(0).toUpperCase() + x.entity.slice(1)}</span>: {x.text}
-                            {x.fix && <span className="block text-gray-500">{x.fix}</span>}
-                        </li>
-                    ))}
-                </ul>
-            )}
-            {queue?.waiting > 0 && (
-                <div className="flex flex-wrap items-center gap-3 rounded-xl bg-amber-500/10 px-3 py-2 text-[12.5px]">
-                    <span className="flex-1">
-                        {queue.waiting} message{queue.waiting === 1 ? '' : 's'} waiting to go out
-                        {queue.held ? ` (${queue.held} held while Meta refuses the number)` : ''}
-                        {queue.nextAt ? ` · next try ${when(queue.nextAt)}` : ''}
-                    </span>
-                    <Button size="sm" variant="success" disabled={pushing} onClick={() => sendWaiting()}>{pushing ? 'Sending…' : 'Send now'}</Button>
-                </div>
-            )}
-            {lastSend && (
-                <p className="text-[12.5px] text-gray-500">
-                    Last message {when(lastSend.at)}{lastSend.template ? ` (${lastSend.template})` : ''}: <span className={cn('font-semibold', lastSend.status === 'failed' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-neon-green')}>{lastSend.status}</span>
-                    {lastSend.status === 'failed' && lastSend.error ? ` · ${lastSend.error}` : ''}
-                </p>
-            )}
-        </Card>
+        </div>
     );
 };
 
@@ -618,8 +664,7 @@ const WhatsAppCenter = () => {
 
     return (
         <div className="space-y-5">
-            <NumberStatus />
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <SegmentedTabs
                     value={tab}
                     onChange={setTab}
@@ -631,7 +676,10 @@ const WhatsAppCenter = () => {
                         { value: 'templates', label: 'Templates', icon: LayoutTemplate, count: templatesState.loading ? undefined : `${counts.approved}/${templatesState.templates.length}`, highlight: counts.pending > 0 },
                     ]}
                 />
-                {counts.pending > 0 && <p className="text-[12.5px] text-gray-500">{counts.pending} template{counts.pending > 1 ? 's' : ''} waiting for Meta’s review</p>}
+                <div className="flex flex-wrap items-center justify-end gap-3">
+                    {counts.pending > 0 && <p className="text-[12.5px] text-gray-500">{counts.pending} template{counts.pending > 1 ? 's' : ''} waiting for Meta’s review</p>}
+                    <NumberStatus />
+                </div>
             </div>
             {tab === 'inbox' && <InboxPanel configured onCompose={(p) => { setPrefill({ ...p, at: Date.now() }); setTab('send'); }} />}
             {tab === 'send' && <SendPanel templatesState={templatesState} prefill={prefill} onSent={() => setLogKey(k => k + 1)} />}

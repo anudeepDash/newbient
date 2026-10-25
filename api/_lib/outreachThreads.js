@@ -6,6 +6,7 @@
  *                                               state: 'open' | 'done', campaignIds[], lastCampaignId, lastAppId
  *   outreach_inbox/{contactId}/inbox_messages/{id}
  *       direction: 'in' | 'out', type, text, caption, mediaId, mimeType, wamid, status, sentBy,
+ *       replyTo (the wamid it quotes), reactTo (a reaction's message wamid; text is the emoji, '' = removed),
  *       campaignId, appId, at, expiresAt (a Firestore TTL policy deletes it after RETENTION_DAYS)
  *
  * contactId is the same hash creator_contacts uses, so a thread links to the
@@ -25,6 +26,7 @@ export const threadRef = (db, phone) => db.collection('outreach_inbox').doc(cont
 const messageIdFor = (wamid) => `w${createHash('sha256').update(String(wamid)).digest('hex').slice(0, 30)}`;
 
 const preview = (m) => {
+    if (m.type === 'reaction') return m.text ? `Reacted ${m.text}` : 'Removed a reaction';
     if (m.text) return String(m.text).slice(0, 140);
     if (m.caption) return `[${m.type}] ${String(m.caption).slice(0, 120)}`;
     return `[${m.type || 'message'}]`;
@@ -39,7 +41,7 @@ export const appendThreadMessage = async (db, message) => {
     const {
         phone, name = null, direction, type = 'text', text = '', caption = '', mediaId = null, mimeType = null,
         wamid = null, status = direction === 'in' ? 'received' : 'sent', sentBy = null, campaignId = null, appId = null,
-        at = nowIso(), id = null,
+        replyTo = null, reactTo = null, at = nowIso(), id = null,
     } = message;
     if (!phone) return null;
     const tRef = threadRef(db, phone);
@@ -50,6 +52,8 @@ export const appendThreadMessage = async (db, message) => {
         if (m.exists && direction === 'in') return;
         const cur = t.exists ? t.data() : {};
         const doc = { direction, type, text: String(text || '').slice(0, 4096), caption: String(caption || '').slice(0, 1024), mediaId, mimeType, wamid, status, sentBy, campaignId, appId, at, expiresAt };
+        if (replyTo) doc.replyTo = replyTo;
+        if (reactTo) doc.reactTo = reactTo;
         tx.set(mRef, doc, { merge: true });
         const campaignIds = [...new Set([...(cur.campaignIds || []), campaignId].filter(Boolean))];
         tx.set(tRef, {

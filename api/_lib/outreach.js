@@ -19,7 +19,7 @@
  * Phase 3 (api/_lib/outreachDeliver.js, api/_lib/outreachInbox.js):
  *   public  outreach-deliverables, outreach-submit, outreach-upi        (the creator's personal link)
  *   admin   outreach-review, outreach-ticket, outreach-payout, outreach-resend-link,
- *           inbox-list, inbox-thread, inbox-reply, inbox-template, inbox-state, inbox-media
+ *           inbox-list, inbox-thread, inbox-reply, inbox-react, inbox-template, inbox-state, inbox-media
  *
  * Data (see docs/campaign-outreach.md):
  *   campaigns/{id}                              public campaign fields (slug, artist, cities, dates, perks…)
@@ -53,7 +53,7 @@ import {
     handleCreatorJoined, handleMine,
 } from './outreachDeliver.js';
 import {
-    handleInboxList, handleInboxThread, handleInboxReply, handleInboxTemplate, handleInboxState, handleInboxMedia,
+    handleInboxList, handleInboxThread, handleInboxReply, handleInboxReact, handleInboxTemplate, handleInboxState, handleInboxMedia,
 } from './outreachInbox.js';
 import { ticketRuleOf, TICKET_RULES } from '../../src/lib/outreach/deliverables.js';
 import { WA_CENTER_ACTIONS, handleWhatsAppCenterAction } from './whatsappCenter.js';
@@ -63,7 +63,7 @@ export const OUTREACH_ACTIONS = new Set([
     'outreach-send', 'outreach-cancel', 'outreach-queue-run',
     'outreach-deliverables', 'outreach-submit', 'outreach-upi', 'outreach-joined', 'outreach-mine',
     'outreach-review', 'outreach-ticket', 'outreach-payout', 'outreach-resend-link',
-    'inbox-list', 'inbox-thread', 'inbox-reply', 'inbox-template', 'inbox-state', 'inbox-media',
+    'inbox-list', 'inbox-thread', 'inbox-reply', 'inbox-react', 'inbox-template', 'inbox-state', 'inbox-media',
     'outreach-city-notify', 'outreach-wame',
     // The admin WhatsApp center (api/_lib/whatsappCenter.js).
     ...WA_CENTER_ACTIONS,
@@ -656,6 +656,7 @@ export const handleOutreachAction = async (action, req, res, { decodedToken, db 
         if (action === 'inbox-list') return await handleInboxList(req, res, withActor);
         if (action === 'inbox-thread') return await handleInboxThread(req, res, withActor);
         if (action === 'inbox-reply') return await handleInboxReply(req, res, withActor);
+        if (action === 'inbox-react') return await handleInboxReact(req, res, withActor);
         if (action === 'inbox-template') return await handleInboxTemplate(req, res, withActor);
         if (action === 'inbox-state') return await handleInboxState(req, res, withActor);
         if (action === 'inbox-media') return await handleInboxMedia(req, res, withActor);
