@@ -48,7 +48,8 @@ export function BrandArt({ tags = TAGS }) {
 export default function Hero({ onChooseAudience }) {
     const t = useT();
     return (
-        <section className="relative overflow-hidden">
+        // Fills the screen under the sticky nav (h-16 + 1px border), content centred.
+        <section className="relative flex min-h-[calc(100svh-65px)] flex-col overflow-hidden">
             {/* A soft colour wash instead of the grid: neon from the top right, a cool tint bottom left. */}
             <div aria-hidden="true" className="absolute inset-0">
                 <div className="absolute inset-0 dark:hidden" style={{ background: 'radial-gradient(55% 55% at 88% 8%, rgba(57,255,20,0.32), transparent 70%), radial-gradient(45% 50% at 0% 85%, rgba(56,189,248,0.16), transparent 70%), radial-gradient(40% 40% at 45% 40%, rgba(255,255,255,0.7), transparent 70%)' }} />
@@ -56,7 +57,7 @@ export default function Hero({ onChooseAudience }) {
                 <div className="absolute inset-0 opacity-[0.035] text-black dark:text-white" style={{ backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)', backgroundSize: '22px 22px', maskImage: 'linear-gradient(to bottom, #000 30%, transparent 80%)', WebkitMaskImage: 'linear-gradient(to bottom, #000 30%, transparent 80%)' }} />
             </div>
 
-            <div className="relative mx-auto w-full max-w-[1600px] px-4 pb-12 pt-4 sm:px-6 sm:pt-10 md:pt-16 lg:px-10 lg:pb-16">
+            <div className="relative mx-auto flex w-full max-w-[1600px] flex-1 flex-col justify-center px-4 pb-12 pt-4 sm:px-6 sm:pt-10 md:pt-16 lg:px-10 lg:pb-16">
                 {/* Phones: the N. mark (small), then the headline and actions.
                     Desktop: headline | brand art. */}
                 <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-x-10">
