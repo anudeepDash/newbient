@@ -71,24 +71,29 @@ export const EVENTS = {
         whatsapp: {
             mode: 'always',
             // PDF tickets go as the template's document header; links use the URL button.
-            template: (d) => (d.whatsappDocumentUrl ? 'campaign_ticket' : 'campaign_ticket_link'),
-            build: (d) => ({
-                header: d.whatsappDocumentUrl ? { type: 'document', link: d.whatsappDocumentUrl, filename: d.pdfFilename || 'ticket.pdf' } : null,
-                bodyParams: [firstName(d.name), short(d.campaignTitle || 'your campaign'), short(d.eventName || d.campaignTitle || 'the event'), formatDate(d.date) || 'See ticket'],
-                buttons: d.ticketToken ? [{ index: 0, param: d.ticketToken }] : [],
-            }),
+            // Guestlist: the approved "You're on the list" template (name on the list, no QR code).
+            template: (d) => (d.guestlist ? 'guestlist_rsvp_confirmed' : d.whatsappDocumentUrl ? 'campaign_ticket' : 'campaign_ticket_link'),
+            build: (d) => (d.guestlist
+                ? { bodyParams: [firstName(d.name), short(d.eventName || d.campaignTitle || 'your event'), formatDate(d.date) || 'See your campaign', short(doorName(d), 80)] }
+                : {
+                    header: d.whatsappDocumentUrl ? { type: 'document', link: d.whatsappDocumentUrl, filename: d.pdfFilename || 'ticket.pdf' } : null,
+                    bodyParams: [firstName(d.name), short(d.campaignTitle || 'your campaign'), short(d.eventName || d.campaignTitle || 'the event'), formatDate(d.date) || 'See ticket'],
+                    buttons: d.ticketToken ? [{ index: 0, param: d.ticketToken }] : [],
+                }),
         },
         push: (d) => {
             const link = d.campaignUrl || d.ticketUrl;
             const tag = `ticket-${d.campaignId || d.ref || eventOf(d)}`;
             if (d.upgradedTo) return { title: `Upgraded to ${short(d.upgradedTo, 30)}`, body: `${eventOf(d)}: same pass, new category. Nothing else to do.`, link, tag };
             if (d.confirmation) return { title: `Confirmed for ${short(eventOf(d), 30)}`, body: `${join(when(d), d.venue) ? `${join(when(d), d.venue)}. ` : ''}Your confirmation is in the campaign.`, link, tag };
+            if (d.guestlist) return { title: `On the guestlist: ${short(eventOf(d), 28)}`, body: `Thanks for completing ${short(d.campaignTitle || 'the campaign', 40)}. ${join(when(d), d.venue) ? `${join(when(d), d.venue)}. ` : ''}Give your name at the guestlist counter.`, link, tag };
             return { title: `Your ticket for ${short(eventOf(d), 30)}`, body: `${join(when(d), d.venue) ? `${join(when(d), d.venue)}. ` : ''}It's in the campaign in the app.`, link, tag };
         },
         inApp: (d) => {
             const link = d.campaignUrl || d.ticketUrl || '';
             if (d.upgradedTo) return { title: `Upgraded to ${d.upgradedTo}: ${eventOf(d)}`, message: 'Same pass, new category. Nothing else to do.', type: 'ticket', link };
             if (d.confirmation) return { title: `Confirmed: ${eventOf(d)}`, message: `${join(when(d), d.venue) ? `${join(when(d), d.venue)}. ` : ''}Your confirmation is in the campaign.`, type: 'ticket', link };
+            if (d.guestlist) return { title: `On the guestlist: ${eventOf(d)}`, message: `Thanks for completing ${d.campaignTitle || 'the campaign'}. ${join(when(d), d.venue) ? `${join(when(d), d.venue)}. ` : ''}Your name is on the list as ${doorName(d)}. Give it at the guestlist counter.`, type: 'ticket', link };
             return { title: `Ticket ready: ${eventOf(d)}`, message: `${join(when(d), d.venue) ? `${join(when(d), d.venue)}. ` : ''}Open the campaign to see it.`, type: 'ticket', link };
         },
     },

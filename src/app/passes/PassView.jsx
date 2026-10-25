@@ -52,13 +52,14 @@ const PassView = ({ pass, token, offline = false, bare = false }) => {
     const pending = pass.status === 'pending';
     const showQr = pass.qr !== false && pass.mode !== 'rsvp' && !revoked && !pending;
     // An RSVP or a confirmation: their place is confirmed, with no QR code to scan.
-    const confirmation = pass.mode === 'confirmation' && pass.qr === false && !pass.externalTicket;
+    const confirmation = ['confirmation', 'guestlist'].includes(pass.mode) && pass.qr === false && !pass.externalTicket;
+    const onList = pass.mode === 'rsvp' || (confirmation && pass.mode === 'guestlist');
     const confirmed = !showQr && !revoked && !pending && (confirmation || pass.mode === 'rsvp');
     const qty = Math.max(1, Number(pass.qty) || 1);
     const tier = pass.tier || pass.externalTicket?.tier;
     const guests = Array.isArray(pass.plusOneNames) ? pass.plusOneNames.filter(Boolean).join(', ') : '';
     const note = pass.note || pass.externalTicket?.note;
-    const kindLabel = pass.mode === 'rsvp' ? t('Guestlist') : confirmation ? t('Confirmation') : t(SOURCE_LABEL[pass.source] || 'Pass');
+    const kindLabel = onList ? t('Guestlist') : confirmation ? t('Confirmation') : t(SOURCE_LABEL[pass.source] || 'Pass');
     const KindIcon = CARD_TYPES[pass.source === 'campaign' ? 'campaign' : pass.source === 'order' ? 'event' : 'guestlist'].icon;
     const firstName = isPresent(pass.holderName) ? String(pass.holderName).split(/\s+/)[0] : '';
 
@@ -148,7 +149,7 @@ const PassView = ({ pass, token, offline = false, bare = false }) => {
                         <CircleCheck size={30} className="shrink-0 text-emerald-600 dark:text-neon-green" />
                         <div className="min-w-0">
                             <p className="font-heading text-[18px] font-black leading-tight">
-                                {pass.mode === 'rsvp'
+                                {onList
                                     ? (firstName ? t('You’re on the list, {name}', { name: firstName }) : t('You’re on the list'))
                                     : (firstName ? t('You’re confirmed, {name}', { name: firstName }) : t('You’re confirmed'))}
                             </p>

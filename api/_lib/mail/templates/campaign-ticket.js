@@ -3,16 +3,23 @@ import { firstName, formatDate } from '../layout.js';
 /**
  * A ticket sent to a creator for their campaign (Newbi QR pass, a link from
  * the ticketing partner, or an attached PDF), or a confirmation of their place
- * without a QR code (data.confirmation). data.upgradedTo: their pass moved to
- * another category (an upgrade); same details, new heading.
+ * without a QR code (data.confirmation), or that their name was added to the
+ * event's guestlist (data.guestlist, no QR code either). data.upgradedTo: their
+ * pass moved to another category (an upgrade); same details, new heading.
  * data: { name, campaignTitle, eventName, date, time, venue, boxOffice, entry, tier, qty, note,
- *         ticketUrl, hasPdf, ref, confirmation, upgradedTo, previousTier }
+ *         ticketUrl, hasPdf, ref, confirmation, guestlist, upgradedTo, previousTier }
  */
 
 // Where to go at the venue (editor → Event passes → Entry).
 const ENTRY = {
     guestlist: { label: 'Guestlist counter', how: (pass) => `At the venue, go to the guestlist counter${pass ? ' and show your pass' : ' and give your name'}.` },
     tickets: { label: 'Ticket counter', how: (pass) => `At the venue, join the regular ticket holders' entry${pass ? ' and show your pass' : ''}.` },
+};
+
+// "Riya Sharma + 1": the name the door looks for on the guestlist.
+const listName = (data) => {
+    const extra = Math.max(0, (Number(data.qty) || 1) - 1);
+    return `${String(data.name || '').trim() || 'Your name'}${extra ? ` + ${extra}` : ''}`;
 };
 
 const details = (data) => [
@@ -23,13 +30,15 @@ const details = (data) => [
     ['Venue', data.venue],
     ['Entry', ENTRY[data.entry]?.label],
     ['Category', data.upgradedTo || data.tier],
-    ['Tickets', Number(data.qty) > 1 ? data.qty : ''],
+    data.guestlist ? ['Name on the list', listName(data)] : ['Tickets', Number(data.qty) > 1 ? data.qty : ''],
     ['Pass code', data.ref],
 ];
 
 export default (data = {}) => {
-    const what = data.confirmation ? 'confirmation' : 'ticket';
-    const entry = ENTRY[data.entry] ? { p: ENTRY[data.entry].how(!data.confirmation) } : null;
+    const noPass = data.confirmation || data.guestlist;
+    const what = data.guestlist ? 'guestlist place' : data.confirmation ? 'confirmation' : 'ticket';
+    const entry = ENTRY[data.entry] ? { p: ENTRY[data.entry].how(!noPass) }
+        : data.guestlist ? { p: 'At the venue, give your name at the guestlist counter. There’s no QR code or ticket to show.' } : null;
     const shared = [
         { details: details(data) },
         entry,
@@ -40,7 +49,7 @@ export default (data = {}) => {
         sender: 'creators',
         kind: 'transactional',
         hero: data.image ? { url: data.image, alt: data.eventName || data.campaignTitle || '' } : null,
-        cta: data.ticketUrl ? { label: data.confirmation ? 'View confirmation' : 'View ticket', url: data.ticketUrl } : null,
+        cta: data.ticketUrl ? { label: data.guestlist ? 'View details' : data.confirmation ? 'View confirmation' : 'View ticket', url: data.ticketUrl } : null,
         reason: "You're getting this because you're part of a Newbi creator campaign.",
     };
     if (data.upgradedTo) {
@@ -51,7 +60,21 @@ export default (data = {}) => {
             eyebrow: 'Upgrade',
             title: `You've been upgraded to ${data.upgradedTo}`,
             blocks: [
-                { p: `Hi ${firstName(data.name)}, good news: your ${what}${data.campaignTitle ? ` for the ${data.campaignTitle} campaign` : ''} is now ${data.upgradedTo}${data.previousTier ? ` (was ${data.previousTier})` : ''}. Same ${data.confirmation ? 'confirmation' : 'pass and code'}, nothing else to do. Here are your details again.` },
+                { p: `Hi ${firstName(data.name)}, good news: your ${what}${data.campaignTitle ? ` for the ${data.campaignTitle} campaign` : ''} is now ${data.upgradedTo}${data.previousTier ? ` (was ${data.previousTier})` : ''}. ${noPass ? 'Nothing else to do' : 'Same pass and code, nothing else to do'}. Here are your details again.` },
+                ...shared,
+            ],
+        };
+    }
+    if (data.guestlist) {
+        return {
+            ...base,
+            subject: `You're on the guestlist${data.eventName ? ` for ${data.eventName}` : ''}${data.campaignTitle && data.campaignTitle !== data.eventName ? ` · ${data.campaignTitle}` : ''}`,
+            preheader: `Thanks for completing the campaign. Your name is on the guestlist as ${listName(data)}.`,
+            eyebrow: 'Campaign guestlist',
+            title: "You're on the guestlist",
+            blocks: [
+                { p: `Hi ${firstName(data.name)}, thank you for completing ${data.campaignTitle ? `the ${data.campaignTitle} campaign` : 'the campaign'}! As a thank-you, your name has been added to the guestlist${data.eventName ? ` for ${data.eventName}` : ''}.` },
+                { p: "There's no ticket to download. You'll also find these details inside the campaign in the Newbi app." },
                 ...shared,
             ],
         };

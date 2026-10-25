@@ -707,7 +707,7 @@ const ScanScreen = ({ eventId, event, onChangeEvent, onBack, canOpenDesk, onOpen
 const useCampaignGates = () => {
     const campaigns = useStore(s => s.campaigns);
     return useMemo(() => (campaigns || [])
-        .filter(c => !c.eventId && c.passKind !== 'confirmation' && (c.eventName || c.eventDate))
+        .filter(c => !c.eventId && !['confirmation', 'guestlist'].includes(c.passKind) && (c.eventName || c.eventDate))
         .map(c => {
             const when = c.eventDate ? new Date(String(c.eventDate).length === 10 ? `${c.eventDate}T00:00:00` : c.eventDate) : null;
             return {
