@@ -500,6 +500,8 @@ const TicketSaleEditor = ({ open, onClose, event, onSaved, initialSection }) => 
                                         <input className={cn(fieldCls, 'max-w-[160px]')} inputMode="numeric" maxLength={4} value={form.upiMerchantCode} onChange={(e) => set({ upiMerchantCode: e.target.value.replace(/\D/g, '') })} placeholder="7929" />
                                     </Field>
                                 )}
+                                <Toggle label="Require a payment screenshot" hint="Buyers can't confirm until they add a screenshot of the payment, as well as the UTR."
+                                    checked={form.payments.requireProof} onChange={(v) => set({ payments: { ...form.payments, requireProof: v } })} />
                                 <Field label="QR image" optional hint="Your bank's QR. Blank: we make one for the exact amount.">
                                     <div className="flex items-center gap-2">
                                         <input className={fieldCls} type="url" inputMode="url" autoCapitalize="off" value={form.qrCodeUrl} onChange={(e) => set({ qrCodeUrl: e.target.value })} placeholder="https://…" />

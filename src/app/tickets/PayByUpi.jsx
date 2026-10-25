@@ -201,7 +201,7 @@ const PayByUpi = ({ co, onPayOnline }) => {
                                 </span>
                             ) : (
                                 <label className={cn('inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl border border-dashed border-black/15 px-3 text-[13px] font-bold text-gray-700 dark:border-white/20 dark:text-zinc-300', co.proofBusy && 'opacity-60')}>
-                                    <ImagePlus size={16} /> {co.proofBusy ? t('Uploading…') : t('Add payment screenshot (optional)')}
+                                    <ImagePlus size={16} /> {co.proofBusy ? t('Uploading…') : co.payments.requireProof ? t('Add payment screenshot') : t('Add payment screenshot (optional)')}
                                     <input type="file" accept="image/*" className="sr-only" disabled={co.proofBusy} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; co.attachProof(f); }} />
                                 </label>
                             )}

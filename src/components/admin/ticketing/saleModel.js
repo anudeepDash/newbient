@@ -17,7 +17,7 @@ import { normalizeVenueMap } from '../../../lib/venueMap';
  *                 ticketCapacity, maxPerOrder, salesStart, salesEnd, salesPaused,
  *                 ticketingDescription (a note over the tickets), ticketingRules (terms)
  *   Map           venueMap (src/lib/venueMap.js)
- *   Payments      payments { upi, gateway }, upiId, upiName, upiMerchant, upiMerchantCode, qrCodeUrl
+ *   Payments      payments { upi, gateway, requireProof }, upiId, upiName, upiMerchant, upiMerchantCode, qrCodeUrl
  *   Where shown   showOnSite, showInApp, listed (false: only people with the link)
  *
  * Fields this editor doesn't know about (guestlist settings, the Events
@@ -143,7 +143,7 @@ export const fromEvent = (e = {}) => {
         venueMap: normalizeVenueMap(e.venueMap),
         showVenueMap: e.hideVenueMap !== true,
 
-        payments: { upi: payments.upi !== false, gateway: payments.gateway === true },
+        payments: { upi: payments.upi !== false, gateway: payments.gateway === true, requireProof: payments.requireProof === true },
         upiId: str(e.upiId || e.paymentDetails?.upiId),
         upiName: str(e.upiName),
         upiMerchant: e.upiMerchant === true,
@@ -277,7 +277,7 @@ export const toPayload = (form) => {
         // Off keeps the drawn map (and any old venue image) but buyers don't see it.
         hideVenueMap: !form.showVenueMap,
 
-        payments: { upi: Boolean(form.payments.upi), gateway: Boolean(form.payments.gateway) },
+        payments: { upi: Boolean(form.payments.upi), gateway: Boolean(form.payments.gateway), requireProof: Boolean(form.payments.requireProof) },
         upiId: form.upiId.trim(),
         upiName: form.upiName.trim().slice(0, 50),
         upiMerchant: Boolean(form.upiMerchant),
