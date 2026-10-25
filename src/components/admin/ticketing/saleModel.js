@@ -141,6 +141,7 @@ export const fromEvent = (e = {}) => {
         ticketingRules: str(e.ticketingRules),
 
         venueMap: normalizeVenueMap(e.venueMap),
+        showVenueMap: e.hideVenueMap !== true,
 
         payments: { upi: payments.upi !== false, gateway: payments.gateway === true },
         upiId: str(e.upiId || e.paymentDetails?.upiId),
@@ -273,6 +274,8 @@ export const toPayload = (form) => {
         ticketingRules: form.ticketingRules.trim(),
 
         venueMap: normalizeVenueMap(form.venueMap),
+        // Off keeps the drawn map (and any old venue image) but buyers don't see it.
+        hideVenueMap: !form.showVenueMap,
 
         payments: { upi: Boolean(form.payments.upi), gateway: Boolean(form.payments.gateway) },
         upiId: form.upiId.trim(),

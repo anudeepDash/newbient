@@ -475,7 +475,9 @@ const TicketSaleEditor = ({ open, onClose, event, onSaved, initialSection }) => 
                     </Card>
 
                     <Card id="map" title="Venue map" hint="Like BookMyShow and District: buyers tap a zone to pick it. Optional.">
-                        <VenueMapBuilder value={form.venueMap} onChange={(m) => set({ venueMap: m })} tiers={form.tiers} />
+                        <Toggle label="Show a venue map" hint="Off: the event page and checkout skip the map and list the ticket types. Your map is kept for later."
+                            checked={form.showVenueMap} onChange={(v) => set({ showVenueMap: v })} />
+                        {form.showVenueMap && <VenueMapBuilder value={form.venueMap} onChange={(m) => set({ venueMap: m })} tiers={form.tiers} />}
                     </Card>
 
                     <Card id="payments" title="Payments" hint="How buyers pay. Paid orders wait for your check before the ticket is issued.">

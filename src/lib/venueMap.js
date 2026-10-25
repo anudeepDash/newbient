@@ -106,8 +106,8 @@ export const legacyVenueMap = (event) => {
     return { w: MAP_W, h, background: { url, opacity: 1, show: true, stretch: true }, elements, legacy: true };
 };
 
-/** The map to show for an event: its own, else one made from the old layout, else null. */
-export const eventVenueMap = (event) => normalizeVenueMap(event?.venueMap) || legacyVenueMap(event);
+/** The map to show for an event: its own, else one made from the old layout, else null (also when `hideVenueMap` is set). */
+export const eventVenueMap = (event) => (event?.hideVenueMap ? null : normalizeVenueMap(event?.venueMap) || legacyVenueMap(event));
 
 /** Zones linked to ticket types that exist (so a deleted tier's zone shows as plain). */
 export const mapZones = (map, tiers = []) => (map?.elements || [])
