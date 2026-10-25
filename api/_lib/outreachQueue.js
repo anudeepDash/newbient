@@ -214,6 +214,8 @@ const KINDS = {
     post_due: { button: 'link' },
     post_overdue: { button: 'link' },
     posts_open: { button: 'link' },
+    // After the campaign (api/_lib/campaignFeedback.js): data { feedbackId }. URL button: their feedback form.
+    feedback: { feedback: true },
     inbox_text: { text: true },
     // Any approved template, ready to send (WhatsApp center bulk sends): data { phone, name, template, language, header, bodyParams, buttons, text }.
     template: { custom: true },
@@ -249,6 +251,13 @@ export const submitUrlFor = (campaignId, appId) => {
     return token ? `${APP_URL}/d/${token}` : '';
 };
 
+/* Their feedback form after a campaign (/f/<token>, 60 days). `key` is the person's key in campaign_feedback. */
+export const feedbackToken = (campaignId, key) => makeSignedToken({ k: 'fb', c: campaignId, r: key }, SUBMIT_LINK_TTL);
+export const feedbackUrlFor = (campaignId, key) => {
+    const token = feedbackToken(campaignId, key);
+    return token ? `${APP_URL}/f/${token}` : '';
+};
+
 /** Loads what the message needs, or { skip } when it shouldn't go out any more. */
 const loadContext = async (db, job) => {
     if (!kindLive(job.kind)) return { skip: 'template_off' };
@@ -258,6 +267,18 @@ const loadContext = async (db, job) => {
         const contact = await db.collection('creator_contacts').doc(contactIdFor(job.data?.phone)).get();
         if (contact.exists && contact.data().whatsappOptOut?.at) return { skip: 'opted_out' };
         return { custom: true };
+    }
+    if (spec.feedback) {
+        const fRef = db.collection('campaign_feedback').doc(String(job.data?.feedbackId || 'x'));
+        const [fSnap, campSnap] = await Promise.all([fRef.get(), db.collection('campaigns').doc(String(job.campaignId || 'x')).get()]);
+        if (!fSnap.exists || !campSnap.exists) return { skip: 'not_found' };
+        const feedback = fSnap.data();
+        if (feedback.respondedAt) return { skip: 'answered' };
+        if (!feedback.phone) return { skip: 'no_phone' };
+        const contact = await db.collection('creator_contacts').doc(contactIdFor(feedback.phone)).get();
+        if (contact.exists && contact.data().whatsappOptOut?.at) return { skip: 'opted_out' };
+        if (!feedbackToken(job.campaignId, feedback.key)) return { skip: 'no_link_secret' };
+        return { feedback, fRef, campaign: campSnap.data() };
     }
     if (spec.text) {
         const tRef = db.collection('outreach_inbox').doc(String(job.data?.threadId || ''));
@@ -305,6 +326,8 @@ const SKIP_NOTE = {
     window_closed: 'More than 24 hours since their last message: WhatsApp only allows a template now.',
     opted_out: 'They asked to stop WhatsApp updates.',
     posts_in: 'Their posts came in before the reminder went out.',
+    answered: 'They answered the feedback form before it went out.',
+    no_phone: 'No WhatsApp number on file.',
     unknown_kind: 'Unknown message type.',
     template_off: 'Its WhatsApp template isn’t switched on yet (WHATSAPP_TEMPLATE_<NAME> in Vercel).',
 };
@@ -325,6 +348,10 @@ export const sendJob = async (db, job, { now = Date.now() } = {}) => {
             await db.collection('outreach_inbox').doc(String(job.data?.threadId || '')).collection('inbox_messages').doc(String(job.data?.messageId || 'x'))
                 .set({ status: 'failed', error: SKIP_NOTE[ctx.skip] }, { merge: true }).catch(() => {});
         }
+        if (spec.feedback && ctx.skip !== 'not_found') {
+            await db.collection('campaign_feedback').doc(String(job.data?.feedbackId || 'x'))
+                .set({ delivery: { whatsapp: { status: 'cancelled', at: iso(now), error: SKIP_NOTE[ctx.skip] } } }, { merge: true }).catch(() => {});
+        }
         return 'cancelled';
     }
     const attempts = Number(job.attempts || 0) + 1;
@@ -337,6 +364,22 @@ export const sendJob = async (db, job, { now = Date.now() } = {}) => {
             to: phone,
             text: job.data.text,
             ref: { collection: `outreach_inbox/${job.data.threadId}/inbox_messages`, id: job.data.messageId },
+        });
+    } else if (spec.feedback) {
+        const { feedback, campaign } = ctx;
+        phone = feedback.phone;
+        const tplCtx = { application: { fullName: feedback.name }, campaign };
+        text = renderTemplatePreview('feedback', tplCtx);
+        result = await sendTemplate({
+            to: phone,
+            template: WA_TEMPLATES.feedback.name,
+            image: campaignImageOf(campaign),
+            bodyParams: templateParamsFor('feedback', tplCtx),
+            buttons: [{ index: 0, param: feedbackToken(job.campaignId, feedback.key) }],
+            event: 'outreach-feedback',
+            ref: { collection: 'campaign_feedback', id: String(job.data.feedbackId) },
+            autoRetry: false,
+            logId: logIdOf(job),
         });
     } else if (spec.custom) {
         ({ phone, text } = job.data);
@@ -446,6 +489,8 @@ const afterSent = async (db, job, ctx, { at, messageId }) => {
         await auditRef(db, job.campaignId).set({ appId: job.appId, field: 'submit_link', from: null, to: 'sent', source: 'whatsapp_api', note: 'Personal link to send their posts', ...SYSTEM_ACTOR, at });
     } else if (job.kind === 'payout') {
         await appRefOf(db, job).update({ 'payout.noticeSentAt': at, updatedAt: at }).catch(() => {});
+    } else if (job.kind === 'feedback') {
+        await ctx.fRef.set({ whatsappSentAt: at, updatedAt: at }, { merge: true }).catch(() => {});
     }
 };
 
@@ -547,6 +592,8 @@ export const queueStatus = async (db, campaignId) => {
             if (j.status === 'queued') counts.reminders += 1;
             return;
         }
+        // Feedback requests have their own tab and counts.
+        if (j.kind === 'feedback') return;
         counts[j.status] = (counts[j.status] || 0) + 1;
         if (j.status === 'queued' && (!nextAt || j.nextAttemptAt < nextAt)) nextAt = j.nextAttemptAt;
     });

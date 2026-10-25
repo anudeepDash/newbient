@@ -13,6 +13,7 @@ import { HANDOFF_ACTIONS, handleHandoffAction } from './_lib/adminHandoff.js';
 import { OTP_ACTIONS, handleOtpAction } from './_lib/phoneOtp.js';
 import { WA_VERIFY_ACTIONS, handleWaVerifyAction } from './_lib/waVerify.js';
 import { SIGN_IN_ACTIONS, handleSignInSeen } from './_lib/securityAlerts.js';
+import { FEEDBACK_ACTIONS, handleFeedbackAction } from './_lib/campaignFeedback.js';
 
 export const maxDuration = 60;
 
@@ -475,6 +476,11 @@ export default async function handler(req, res) {
     // Campaign outreach: the public application form and the admin shortlist (api/_lib/outreach.js).
     if (OUTREACH_ACTIONS.has(action)) {
         return handleOutreachAction(action, req, res, { decodedToken });
+    }
+
+    // Feedback and testimonials after a campaign: the creator's form and the admin's Feedback tab (api/_lib/campaignFeedback.js).
+    if (FEEDBACK_ACTIONS.has(action)) {
+        return handleFeedbackAction(action, req, res, { decodedToken, db: adminDb });
     }
 
     // Staff sign-in carried over to admin.newbi.live (api/_lib/adminHandoff.js).

@@ -81,6 +81,15 @@ export const WA_TEMPLATES = {
         placeholders: ['first_name', 'campaign_title', 'due_at'],
         button: 'Send my posts',
     },
+    // The day after the campaign's event, to everyone who took part (api/_lib/campaignFeedback.js).
+    // URL button: https://app.newbi.live/f/{{1}} (their own feedback form). Category: Utility (if Meta
+    // moves it to Marketing, it still sends; it just costs more).
+    feedback: {
+        name: 'campaign_feedback',
+        body: "🙏 *Thanks for creating with us, {{1}}!*\n\nHow was *{{2}}* for you? Tell us what worked and what we should fix. It takes about a minute.\n\nIf you'd like, add a few lines about working with Newbi, and tell us whether we can share them on our website.",
+        placeholders: ['first_name', 'campaign_title'],
+        button: 'Share feedback',
+    },
 };
 
 export const NAME_FALLBACK = 'there';
