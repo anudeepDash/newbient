@@ -149,6 +149,12 @@ const callMeta = async (payload) => {
 // Meta error codes that won't succeed on retry: bad number, template missing/paused, not on WhatsApp.
 const PERMANENT_CODES = new Set([100, 131008, 131009, 131026, 131030, 131047, 131051, 132000, 132001, 132005, 132007, 132012, 132015, 132016, 133010]);
 
+// Templates Meta told us have no header ("Template does not contain title component").
+const NO_HEADER = new Set();
+export const resetNoHeaderForTests = () => NO_HEADER.clear();
+const isHeaderMismatch = (err) => Number(err?.code) === 132012
+    && /title component|^header\b/i.test(String(err?.error_data?.details || err?.message || ''));
+
 /**
  * sendTemplate({ to, template, language, header, image, bodyParams, buttons, event, uid, ref })
  * Templates with an image header (IMAGE_HEADERS) get `image` (the event's or
@@ -165,26 +171,37 @@ export const sendTemplate = async ({ to, template, language, header: givenHeader
     const phone = toE164(to);
     if (!phone) return { ok: false, status: 'skipped', error: 'No valid WhatsApp number' };
 
-    const header = givenHeader || imageHeaderFor(template, image);
     const name = templateName(template);
-    const payload = {
+    let header = givenHeader || (NO_HEADER.has(name) ? null : imageHeaderFor(template, image));
+    const payloadWith = (h) => ({
         messaging_product: 'whatsapp',
         recipient_type: 'individual',
         to: phone.slice(1),
         type: 'template',
-        template: { name, language: { code: language || process.env.WHATSAPP_TEMPLATE_LANG || 'en' }, components: buildComponents({ header, bodyParams, buttons }) },
-    };
+        template: { name, language: { code: language || process.env.WHATSAPP_TEMPLATE_LANG || 'en' }, components: buildComponents({ header: h, bodyParams, buttons }) },
+    });
 
     const db = getDb();
     const logRef = logId ? db.collection('message_log').doc(logId) : db.collection('message_log').doc();
     const base = { channel: 'whatsapp', to: phone, template: name, event, uid, ref, updatedAt: nowIso() };
     if (!logId) base.createdAt = nowIso();
 
-    let result;
-    try {
-        result = await callMeta(payload);
-    } catch (err) {
-        result = { ok: false, status: 0, data: { error: { message: err.message } } };
+    const send = async (h) => {
+        try {
+            return await callMeta(payloadWith(h));
+        } catch (err) {
+            return { ok: false, status: 0, data: { error: { message: err.message } } };
+        }
+    };
+    let result = await send(header);
+    // The picture we added isn't in the approved template (it was approved without
+    // a header, or the header edit is still in review): send it plain, and stop
+    // adding one to this template until the next deploy.
+    if (!result.ok && header && !givenHeader && isHeaderMismatch(result.data?.error)) {
+        NO_HEADER.add(name);
+        console.warn(`[WHATSAPP] ${name} has no header in Meta; sending without the picture.`);
+        header = null;
+        result = await send(null);
     }
 
     if (result.ok && result.data?.messages?.[0]?.id) {

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { FakeFirestore } from './helpers/fakeFirestore.js';
 import { setDbForTests } from '../api/_lib/db.js';
-import { setWhatsAppFetchForTests, headerImageUrl, imageHeaderFor, sendTemplate, campaignImageOf } from '../api/_lib/whatsapp.js';
+import { setWhatsAppFetchForTests, headerImageUrl, imageHeaderFor, sendTemplate, campaignImageOf, resetNoHeaderForTests } from '../api/_lib/whatsapp.js';
 import { notify } from '../api/_lib/notify.js';
 
 /* Image headers carry the event's or campaign's own picture when WhatsApp can show it, else the Newbi card. */
@@ -28,6 +28,7 @@ afterEach(() => {
     vi.unstubAllEnvs();
     setDbForTests(null);
     setWhatsAppFetchForTests(null);
+    resetNoHeaderForTests();
 });
 
 describe('headerImageUrl', () => {
@@ -81,5 +82,34 @@ describe('sending', () => {
     it('keeps a given header (a PDF ticket) over the picture', async () => {
         await sendTemplate({ to: '+919876500001', template: 'pass_confirmed', header: { type: 'document', link: 'https://x/t.pdf', filename: 't.pdf' }, image: CLOUDINARY });
         expect(headerOf(sent[0]).type).toBe('document');
+    });
+
+    it('sends without the picture when the approved template has no header', async () => {
+        setWhatsAppFetchForTests(async (url, init) => {
+            const body = JSON.parse(init.body);
+            sent.push(body);
+            if (headerOf(body)) {
+                return { ok: false, status: 400, json: async () => ({ error: { code: 132012, message: '(#132012) Parameter format does not match format in the created template', error_data: { details: 'header: Template does not contain title component, no parameters allowed' } } }) };
+            }
+            return { ok: true, status: 200, json: async () => ({ messages: [{ id: `wamid.${sent.length}` }] }) };
+        });
+        const first = await sendTemplate({ to: '+919876500001', template: 'pass_confirmed', bodyParams: ['Riya'] });
+        expect(first.ok).toBe(true);
+        expect(sent.map(headerOf)).toEqual([expect.objectContaining({ type: 'image' }), undefined]);
+
+        // Remembered: the next pass goes out plain on the first try.
+        await sendTemplate({ to: '+919876500001', template: 'pass_confirmed', bodyParams: ['Riya'] });
+        expect(sent).toHaveLength(3);
+        expect(headerOf(sent[2])).toBeUndefined();
+    });
+
+    it('keeps a given header when Meta rejects it', async () => {
+        setWhatsAppFetchForTests(async (url, init) => {
+            sent.push(JSON.parse(init.body));
+            return { ok: false, status: 400, json: async () => ({ error: { code: 132012, error_data: { details: 'header: Template does not contain title component, no parameters allowed' } } }) };
+        });
+        const res = await sendTemplate({ to: '+919876500001', template: 'campaign_ticket', header: { type: 'document', link: 'https://x/t.pdf' } });
+        expect(res.ok).toBe(false);
+        expect(sent).toHaveLength(1);
     });
 });
