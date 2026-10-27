@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { FakeFirestore, fakeReq, fakeRes } from './helpers/fakeFirestore.js';
-import { handleWaVerifyAction, onVerifyMessage, REPLIES } from '../api/_lib/waVerify.js';
+import { handleWaVerifyAction, onVerifyMessage, REPLIES, loginMessageText } from '../api/_lib/waVerify.js';
 import { resetBusinessNumberForTests } from '../api/_lib/whatsapp.js';
 
 const ME = { uid: 'u-me' };
@@ -19,6 +19,7 @@ const adminAuth = {
     },
     updateUser: async (uid, { phoneNumber }) => { authUsers[phoneNumber] = uid; },
     createCustomToken: async (uid) => `token-for-${uid}`,
+    createUser: async ({ phoneNumber }) => { authUsers[phoneNumber] = 'u-new'; return { uid: 'u-new', phoneNumber }; },
 };
 
 const call = async (action, { token = ME, body = {}, canSign = true } = {}) => {
@@ -147,5 +148,79 @@ describe('verify by messaging us', () => {
         const res = await call('wa-verify-start');
         expect(res.statusCode).toBe(503);
         expect(res.body.code).toBe('whatsapp_unavailable');
+    });
+});
+
+describe('sign in by messaging us', () => {
+    const login = async (body = {}, ip) => {
+        const res = fakeRes();
+        await handleWaVerifyAction('wa-login-start', fakeReq({ body, ip }), res, { decodedToken: null, db, adminAuth, canSign: true, now: () => clock });
+        return res;
+    };
+    const status = (body) => call('wa-login-status', { token: null, body });
+
+    it('works signed out and types a sign-in message', async () => {
+        const res = await login();
+        expect(res.statusCode).toBe(200);
+        expect(res.body.pollKey).toBeTruthy();
+        expect(decodeURIComponent(res.body.link)).toContain(loginMessageText(res.body.code));
+    });
+
+    it('signs in to the account with the number messaged from, once', async () => {
+        authUsers[PHONE] = 'u-existing';
+        const { code, pollKey } = (await login()).body;
+        expect((await status({ code, pollKey })).body.state).toBe('waiting');
+        await message(loginMessageText(code));
+        expect(replies[0].text).toBe(REPLIES.signedIn);
+        const done = (await status({ code, pollKey })).body;
+        expect(done).toMatchObject({ state: 'verified', phone: PHONE, token: 'token-for-u-existing' });
+        expect((await status({ code, pollKey })).body.state).toBe('expired');
+    });
+
+    it('creates the account when the number has none', async () => {
+        const { code, pollKey } = (await login()).body;
+        await message(loginMessageText(code));
+        expect((await status({ code, pollKey })).body.token).toBe('token-for-u-new');
+    });
+
+    it('never hands the sign-in to someone with only the code', async () => {
+        const { code } = (await login()).body;
+        await message(loginMessageText(code));
+        expect((await status({ code, pollKey: 'guess' })).body.state).toBe('expired');
+        expect((await status({ code })).statusCode).toBe(400);
+    });
+
+    it('a blocked account can’t sign in this way', async () => {
+        authUsers[PHONE] = 'u-blocked';
+        db.store.set('users/u-blocked', { isBlocked: true });
+        const { code, pollKey } = (await login()).body;
+        await message(loginMessageText(code));
+        expect(replies[0].text).toBe(REPLIES.loginTaken);
+        expect((await status({ code, pollKey })).body).toMatchObject({ state: 'taken' });
+    });
+
+    it('expires after 10 minutes, even once confirmed', async () => {
+        const { code, pollKey } = (await login()).body;
+        await message(loginMessageText(code));
+        clock += 10 * 60 * 1000 + 1;
+        expect((await status({ code, pollKey })).body.state).toBe('expired');
+    });
+
+    it('a sign-in code can’t be read as a verify code, or the other way round', async () => {
+        const { code } = (await login()).body;
+        expect((await call('wa-verify-status', { body: { code } })).body.state).toBe('expired');
+        const verify = await start();
+        expect((await status({ code: verify.code, pollKey: 'x' })).body.state).toBe('expired');
+    });
+
+    it('limits starts per IP', async () => {
+        for (let i = 0; i < 30; i += 1) expect((await login({}, '198.51.100.9')).statusCode).toBe(200);
+        expect((await login({}, '198.51.100.9')).statusCode).toBe(429);
+        expect((await login({}, '198.51.100.10')).statusCode).toBe(200);
+    });
+
+    it('stays off until WHATSAPP_PHONE_VERIFY is on', async () => {
+        process.env.WHATSAPP_PHONE_VERIFY = '';
+        expect((await login()).statusCode).toBe(503);
     });
 });
