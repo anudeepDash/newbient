@@ -32,7 +32,7 @@ const useTimeLeft = (expiresAt) => {
     return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 };
 
-const WhatsAppWait = ({ code, link, expiresAt, signingIn, opened, onOpen, onCancel, error }) => {
+const WhatsAppWait = ({ code, link, expiresAt, signingIn, finishing, opened, onOpen, onCancel, error }) => {
     const t = useT();
     const left = useTimeLeft(expiresAt);
     const lead = signingIn ? 'Sign me in to Newbi:' : 'Verify my number for Newbi:';
@@ -101,9 +101,11 @@ const WhatsAppWait = ({ code, link, expiresAt, signingIn, opened, onOpen, onCanc
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#25D366] opacity-75" />
                         <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#25D366]" />
                     </span>
-                    {t('Waiting for your message')}
+                    {finishing
+                        ? (signingIn ? t('Message received. Signing you in…') : t('Message received. Confirming your number…'))
+                        : t('Waiting for your message')}
                 </span>
-                {left && (
+                {left && !finishing && (
                     <span className="font-mono text-[13px] tabular-nums text-gray-500 dark:text-zinc-400" aria-label={t('Code expires in {time}', { time: left })}>
                         {left}
                     </span>
