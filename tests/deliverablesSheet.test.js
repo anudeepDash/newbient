@@ -111,7 +111,9 @@ describe('readDeliverablesCsv', () => {
 
         const spec = deliverablesSheetSpec(withGuest, orphanSubmitters(withGuest, everyone), helpers);
         const row = Object.fromEntries(spec.columns.map(c => [c.header, c.value(spec.rows.find(r => r.creator.guest))]));
-        expect(row).toMatchObject({ 'Newbi ID': 'Not on Newbi', Name: 'Riya', Instagram: '@riya.s', '2. Reel': 'Done (sheet)' });
+        expect(row).toMatchObject({ Instagram: '@riya.s', '2. Reel': 'Done (sheet)' });
+        expect(row).not.toHaveProperty('Name');
+        expect(row).not.toHaveProperty('Newbi ID');
     });
 
     it('reads sheets people make themselves: Google Forms headers, messy handles, semicolons', () => {
@@ -206,5 +208,16 @@ describe('readDeliverablesCsv', () => {
     it('asks for a handle column, and for the deliverable when the sheet has no columns', () => {
         expect(readDeliverablesCsv('Name,Story\nZoya,done', entries, campaign).error).toMatch(/Instagram/);
         expect(readDeliverablesCsv('Instagram\nzoya.k', entries, campaign).error).toMatch(/Pick which deliverable/);
+    });
+});
+
+describe('screenshot hyperlinks', () => {
+    it('writes the screenshot as a clickable link in the workbook and as the URL in CSV', async () => {
+        const { unzipSync, strFromU8 } = await import('fflate');
+        const { buildCsv } = await import('../src/lib/xlsx');
+        const spec = deliverablesSheetSpec(campaign, applicantsFor(campaign, creators), helpers);
+        const xml = strFromU8(unzipSync(buildXlsx(spec))['xl/worksheets/sheet1.xml']);
+        expect(xml).toContain('HYPERLINK("https://cdn.test/p.png","Open screenshot")');
+        expect(buildCsv(spec)).toContain('https://cdn.test/p.png');
     });
 });

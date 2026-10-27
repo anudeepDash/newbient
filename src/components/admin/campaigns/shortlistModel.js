@@ -48,6 +48,9 @@ const DELIVERABLE_STATUS = { approved: 'Done', submitted: 'To review', rejected:
 
 const deliverableLink = (sub) => [sub?.contentLink, sub?.proofUrl, sub?.screenshotUrl].find(l => /^https?:\/\//i.test(String(l || ''))) || '';
 
+// The screenshot the creator uploaded, not the link to their story or post.
+const deliverableScreenshot = (sub) => [sub?.proofUrl, sub?.screenshotUrl].find(l => /^https?:\/\//i.test(String(l || ''))) || '';
+
 // Done work says where it came from: the app, an uploaded sheet, or both.
 const deliverableStatus = (item, sheet) => {
     if (item.status !== 'approved') return DELIVERABLE_STATUS[item.status] || 'Not started';
@@ -83,8 +86,6 @@ export const deliverablesSheetSpec = (campaign, entries, { fileDate, exportSubti
         rows,
         totals: { done: true },
         columns: [
-            { header: 'Newbi ID', value: a => (a.creator.guest ? 'Not on Newbi' : a.orphan ? '' : newbiIdOf(a.creator)) },
-            { header: 'Name', width: 24, value: a => (a.creator.guest ? a.creator.name || '' : a.orphan ? 'No creator profile linked' : a.creator.name || '') },
             { header: 'Instagram', value: a => (creatorHandle(a.creator) ? `@${creatorHandle(a.creator)}` : '') },
             { header: 'Instagram link', width: 32, value: a => instagramUrl(a.creator) },
             { header: 'Followers', type: 'number', value: a => a.criteria?.followers ?? null },
@@ -96,7 +97,7 @@ export const deliverablesSheetSpec = (campaign, entries, { fileDate, exportSubti
                 const name = `${idx + 1}. ${task.title || `Deliverable ${idx + 1}`}`;
                 return [
                     { header: name, width: 18, value: a => deliverableStatus(item(a, idx), sheetMarkOf(task, a)) },
-                    { header: `${name} · link`, width: 36, value: a => deliverableLink(item(a, idx).sub) || sheetMarkOf(task, a)?.link || '' },
+                    { header: `${name} · link`, width: 18, type: 'link', label: 'Open screenshot', value: a => deliverableScreenshot(item(a, idx).sub) },
                     { header: `${name} · sent on`, type: 'date', value: a => item(a, idx).sub?.submittedAt || null },
                 ];
             }),
