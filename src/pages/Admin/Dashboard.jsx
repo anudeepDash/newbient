@@ -40,7 +40,7 @@ import { buildAttention, attentionNeeds } from '../../components/admin/dashboard
 import { useStore } from '../../lib/store';
 import { cn } from '../../lib/utils';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { useConsolidatedMembers } from '../../hooks/useConsolidatedMembers';
+import { useMemberCounts } from '../../hooks/useConsolidatedMembers';
 import { FINANCE_ROLES, FULL_ACCESS_ROLES } from '../../constants/roles';
 import { getAdminNav, getQuickActions } from '../../constants/adminNavigation';
 import { Card, Button, Badge } from '../../components/admin/ui';
@@ -170,9 +170,9 @@ const SectionTitle = ({ children, action }) => (
     </div>
 );
 
-// Mounted only when a members metric is visible: the hook opens eight listeners.
+// Mounted only when a members metric is visible: server-side counts, no listeners.
 const MemberCounts = ({ onChange }) => {
-    const { totalCount, activeCount, suspendedCount } = useConsolidatedMembers();
+    const { totalCount, activeCount, suspendedCount } = useMemberCounts();
     useEffect(() => { onChange({ total: totalCount, active: activeCount, suspended: suspendedCount }); }, [totalCount, activeCount, suspendedCount, onChange]);
     return null;
 };
