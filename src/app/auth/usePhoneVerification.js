@@ -35,11 +35,17 @@ import { t } from '../../i18n';
  *
  * messageUs()
  *   Verify, or sign in, by sending us one WhatsApp message instead of typing a
- *   code (api/_lib/waVerify.js). It costs nothing to send, unlike an SMS. Status
- *   becomes 'awaiting' with `waMessage` = { code, link }: the caller shows link
- *   as an "Open WhatsApp" button. The hook polls until the message arrives; the
- *   number confirmed is the one they messaged from. Signed out, that signs them
- *   in to the account with that number. Works without any approved template.
+ *   code (api/_lib/waVerify.js). It costs nothing to send, unlike an SMS. The
+ *   code is fetched as soon as the hook mounts, so `waLink` is ready and the
+ *   caller's button can be a plain link: one tap opens WhatsApp with the
+ *   message typed (a link opened after an await gets blocked on iPhone). Tapping
+ *   it calls messageUs(), status becomes 'awaiting' with `waMessage` = { code,
+ *   link }, and the hook polls until the message arrives, at once when they come
+ *   back to the tab. The number confirmed is the one they messaged from; signed
+ *   out, that signs them in to the account with that number. A ready code is
+ *   kept for the page (one per account, or one for signing in) and reused until
+ *   it's used or near expiry, so opening the sheet again doesn't start another.
+ *   Works without any approved template.
  *   `smsFailed` says the last SMS code couldn't be sent, so the caller can point
  *   to this instead.
  *
@@ -79,6 +85,12 @@ const friendlyError = (err) => {
 // not on WhatsApp, a server or network error, falls back to an SMS code.
 const NO_SMS_FALLBACK = new Set(['rate_limited', 'cooldown', 'invalid_phone']);
 
+// A code fetched ahead of the tap, shared by every field on the page: { key, data }.
+let readyMessage = null;
+const READY_FOR_MS = 7 * 60 * 1000; // sign-in codes live 10 minutes, verify codes 15
+const fresh = (data) => Boolean(data && Date.now() - data.startedAt < READY_FOR_MS);
+const messageOn = () => import.meta.env.VITE_WHATSAPP_PHONE_VERIFY === 'on';
+
 const isTestMode = () => import.meta.env.DEV && import.meta.env.VITE_PHONE_TEST_MODE === 'true';
 
 export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified } = {}) {
@@ -90,6 +102,8 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
     const [channel, setChannel] = useState(null); // 'whatsapp' | 'sms' | 'message': what carries the check in flight
     const [waMessage, setWaMessage] = useState(null); // { code, link, startedAt }: verifying by messaging us
     const [smsFailed, setSmsFailed] = useState(false); // the last SMS code couldn't be sent (quota, security check…)
+    const [waReady, setWaReady] = useState(null); // a messageUs() code fetched ahead of the tap
+    const [waUnavailable, setWaUnavailable] = useState(false); // the server has messaging us switched off
 
     const verifierRef = useRef(null);
     const containerRef = useRef(null);
@@ -290,27 +304,67 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         }
     }, [phone, finish]);
 
-    /* Verify (signed in) or sign in (signed out) by messaging us on WhatsApp. */
-    const messageUs = useCallback(async () => {
+    const messageKey = useCallback(() => {
         const login = (mode || (auth?.currentUser ? 'link' : 'signIn')) === 'signIn';
-        if (!login && !auth?.currentUser) {
-            setError(t('Sign in first.'));
-            return false;
-        }
-        setError('');
-        setStatus('sending');
+        return { login, key: login ? 'login' : auth?.currentUser ? `link:${auth.currentUser.uid}` : null };
+    }, [mode]);
+
+    /* Asks the server for a code (or reuses the page's) → the code, or null with the reason in `failed`. */
+    const fetchMessage = useCallback(async () => {
+        const { login, key } = messageKey();
+        if (!key) return { failed: { error: t('Sign in first.') } };
+        if (readyMessage?.key === key && fresh(readyMessage.data)) return { data: readyMessage.data };
         const started = await callCreatorApi(login ? 'wa-login-start' : 'wa-verify-start', {});
-        if (!started.ok) {
-            setStatus('idle');
-            setError(started.code === 'whatsapp_unavailable' ? t('WhatsApp verification isn’t available right now. Get a code by SMS instead.') : started.error);
-            return false;
-        }
+        if (!started.ok) return { failed: started };
         const { code, link, pollKey } = started.data;
-        setWaMessage({ code, link, pollKey, login, startedAt: Date.now() });
+        const data = { code, link, pollKey, login, startedAt: Date.now() };
+        readyMessage = { key, data };
+        return { data };
+    }, [messageKey]);
+
+    // Fetch it ahead of the tap, so the button can open WhatsApp at once.
+    const preparing = useRef(false);
+    useEffect(() => {
+        if (!messageOn() || waUnavailable || preparing.current || status !== 'idle' || fresh(waReady)) return;
+        preparing.current = true;
+        fetchMessage().then(({ data, failed }) => {
+            if (data) setWaReady(data);
+            if (failed?.code === 'whatsapp_unavailable') setWaUnavailable(true);
+        }).finally(() => { preparing.current = false; });
+    }, [status, waReady, waUnavailable, fetchMessage]);
+
+    const awaitMessage = useCallback((data) => {
+        setError('');
+        setWaMessage(data);
         setChannel('message');
         setStatus('awaiting');
-        return true;
-    }, [mode]);
+    }, []);
+
+    /*
+     * Verify (signed in) or sign in (signed out) by messaging us on WhatsApp.
+     * With the code ready this is synchronous, so it can run in the link's own
+     * click; otherwise it fetches one and the caller shows an "Open WhatsApp" button.
+     */
+    const messageUs = useCallback(() => {
+        if (fresh(waReady)) {
+            awaitMessage(waReady);
+            return true;
+        }
+        return (async () => {
+            setError('');
+            setStatus('sending');
+            const { data, failed } = await fetchMessage();
+            if (!data) {
+                setStatus('idle');
+                if (failed?.code === 'whatsapp_unavailable') setWaUnavailable(true);
+                setError(failed?.code === 'whatsapp_unavailable' ? t('WhatsApp verification isn’t available right now. Get a code by SMS instead.') : failed?.error);
+                return false;
+            }
+            setWaReady(data);
+            awaitMessage(data);
+            return true;
+        })();
+    }, [waReady, fetchMessage, awaitMessage]);
 
     // While awaiting their message: ask the server every few seconds, and at once when they come back to the tab.
     const polling = useRef(false);
@@ -322,6 +376,8 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
             if (Date.now() - waMessage.startedAt > POLL_FOR_MS) {
                 setStatus('idle');
                 setWaMessage(null);
+                if (readyMessage?.data?.code === waMessage.code) readyMessage = null;
+                setWaReady(null);
                 setError(t('That code expired. Tap the WhatsApp button again.'));
                 return;
             }
@@ -336,6 +392,9 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
             if (state === 'waiting') return;
             stopped = true;
             setWaMessage(null);
+            // That code is spent: the next tap gets a new one.
+            if (readyMessage?.data?.code === waMessage.code) readyMessage = null;
+            setWaReady(null);
             if (state === 'verified' && waMessage.login) {
                 setPhone(confirmed);
                 try {
@@ -418,7 +477,8 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         waMessage: status === 'awaiting' ? waMessage : null,
         smsFailed: smsFailed && status === 'idle',
         // Verifying or signing in by messaging us. Off until VITE_WHATSAPP_PHONE_VERIFY=on (api/_lib/waVerify.js).
-        canMessageUs: import.meta.env.VITE_WHATSAPP_PHONE_VERIFY === 'on',
+        canMessageUs: messageOn() && !waUnavailable,
+        waLink: fresh(waReady) ? waReady.link : null,
         signingIn: (mode || (auth?.currentUser ? 'link' : 'signIn')) === 'signIn',
         verified: status === 'verified',
         conflict: status === 'conflict' ? conflict : null,
