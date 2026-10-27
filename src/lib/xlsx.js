@@ -13,6 +13,7 @@
  *               { header: 'Total', key: 'total', type: 'money' }],
  *     rows: [{ client: 'Red Bull', total: 250000 }],
  *     totals: { total: true },      // optional: sum these columns in a final row
+ *   A column with type 'link' (and optional label) becomes a clickable link; its CSV cell stays the URL.
  *   });
  */
 import { zipSync, strToU8 } from 'fflate';
@@ -47,6 +48,7 @@ const toDate = (v) => {
  * 4 text · 5 number · 6 money · 7 date · 8 datetime · 9 percent   (white rows)
  * 10-15 the same six on the zebra fill
  * 16 totals label · 17 totals money · 18 totals number
+ * 19 link · 20 link on the zebra fill
  */
 const BODY = { text: 4, number: 5, money: 6, date: 7, datetime: 8, percent: 9 };
 const ZEBRA_OFFSET = 6;
@@ -59,12 +61,13 @@ const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <numFmt numFmtId="166" formatCode="dd mmm yyyy, hh:mm"/>
 <numFmt numFmtId="167" formatCode="#,##0"/>
 </numFmts>
-<fonts count="5">
+<fonts count="6">
 <font><sz val="11"/><color rgb="FF1F2937"/><name val="Calibri"/><family val="2"/></font>
 <font><b/><sz val="16"/><color rgb="FF111827"/><name val="Calibri"/><family val="2"/></font>
 <font><sz val="10"/><color rgb="FF6B7280"/><name val="Calibri"/><family val="2"/></font>
 <font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/><family val="2"/></font>
 <font><b/><sz val="11"/><color rgb="FF111827"/><name val="Calibri"/><family val="2"/></font>
+<font><u/><sz val="11"/><color rgb="FF0563C1"/><name val="Calibri"/><family val="2"/></font>
 </fonts>
 <fills count="5">
 <fill><patternFill patternType="none"/></fill>
@@ -79,7 +82,7 @@ const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <border><left/><right/><top style="medium"><color rgb="FF111827"/></top><bottom/><diagonal/></border>
 </borders>
 <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-<cellXfs count="19">
+<cellXfs count="21">
 <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
 <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
 <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
@@ -99,12 +102,22 @@ const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <xf numFmtId="0" fontId="4" fillId="4" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
 <xf numFmtId="164" fontId="4" fillId="4" borderId="2" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1"/>
 <xf numFmtId="167" fontId="4" fillId="4" borderId="2" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="5" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment vertical="top"/></xf>
+<xf numFmtId="0" fontId="5" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="top"/></xf>
 </cellXfs>
 <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>`;
 
-const cell = (ref, value, type, style) => {
+const cell = (ref, value, type, style, label) => {
     if (value === null || value === undefined || value === '') return `<c r="${ref}" s="${style}"/>`;
+    if (type === 'link') {
+        const url = String(value);
+        // A real clickable link; HYPERLINK() works in Excel and Google Sheets. Odd or very long URLs stay plain text.
+        if (/^https?:\/\/[^\s"]{1,240}$/i.test(url)) {
+            return `<c r="${ref}" s="${style}" t="str"><f>HYPERLINK("${esc(url)}","${esc(label || url)}")</f><v>${esc(label || url)}</v></c>`;
+        }
+        return `<c r="${ref}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${esc(value)}</t></is></c>`;
+    }
     if (type === 'number' || type === 'money' || type === 'percent') {
         const n = Number(value);
         if (Number.isFinite(n)) return `<c r="${ref}" s="${style}"><v>${n}</v></c>`;
@@ -119,6 +132,7 @@ const cell = (ref, value, type, style) => {
 const displayLength = (value, type) => {
     if (value === null || value === undefined) return 0;
     if (type === 'money') return String(Math.round(Number(value) || 0)).length + 6;
+    if (type === 'link') return 16;
     if (type === 'date') return 11;
     if (type === 'datetime') return 18;
     return Math.max(...String(value).split('\n').map(l => l.length));
@@ -148,7 +162,7 @@ export const buildXlsx = ({ sheetName = 'Sheet1', title, subtitle, columns, rows
 
     values.forEach((vals, idx) => {
         const zebra = idx % 2 === 1 ? ZEBRA_OFFSET : 0;
-        out.push(`<row r="${r}">${vals.map((v, i) => cell(`${colName(i)}${r}`, v, columns[i].type || 'text', BODY[columns[i].type || 'text'] + zebra)).join('')}</row>`);
+        out.push(`<row r="${r}">${vals.map((v, i) => cell(`${colName(i)}${r}`, v, columns[i].type || 'text', columns[i].type === 'link' ? 19 + (zebra ? 1 : 0) : BODY[columns[i].type || 'text'] + zebra, columns[i].label)).join('')}</row>`);
         r++;
     });
 
