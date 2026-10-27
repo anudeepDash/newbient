@@ -39,7 +39,7 @@ import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
 import { buildAttention, attentionNeeds } from '../../components/admin/dashboard/attention';
 import { useStore } from '../../lib/store';
 import { cn } from '../../lib/utils';
-import { useStoreSubscription } from '../../hooks/useStoreSubscription';
+import { useStoreSnapshot } from '../../hooks/useStoreSubscription';
 import { useMemberCounts } from '../../hooks/useConsolidatedMembers';
 import { FINANCE_ROLES, FULL_ACCESS_ROLES } from '../../constants/roles';
 import { getAdminNav, getQuickActions } from '../../constants/adminNavigation';
@@ -381,7 +381,7 @@ const Dashboard = () => {
     }, [pickerOpen, registry, widgetKeys]);
 
     const subscriptions = useMemo(() => [...new Set([...baseNeeds, ...widgetNeeds])].sort(), [baseNeeds, widgetNeeds]);
-    useStoreSubscription(subscriptions);
+    useStoreSnapshot(subscriptions);
 
     const showMemberCounts = pickerOpen || widgetKeys.some(k => MEMBER_METRICS.has(k));
 

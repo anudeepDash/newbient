@@ -25,3 +25,12 @@ export function useStoreSubscription(keys) {
         };
     }, [JSON.stringify(keys)]);
 }
+
+// For summary pages: loads each collection once (cache first, refreshed every few
+// minutes) instead of keeping a live listener open.
+export function useStoreSnapshot(keys) {
+    useEffect(() => {
+        if (!keys || keys.length === 0) return;
+        useStore.getState().subscribeOnce(keys);
+    }, [JSON.stringify(keys)]);
+}
