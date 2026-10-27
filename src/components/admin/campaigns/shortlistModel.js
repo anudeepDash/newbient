@@ -48,8 +48,10 @@ const DELIVERABLE_STATUS = { approved: 'Done', submitted: 'To review', rejected:
 
 const deliverableLink = (sub) => [sub?.contentLink, sub?.proofUrl, sub?.screenshotUrl].find(l => /^https?:\/\//i.test(String(l || ''))) || '';
 
-// The screenshot the creator uploaded, not the link to their story or post.
 const deliverableScreenshot = (sub) => [sub?.proofUrl, sub?.screenshotUrl].find(l => /^https?:\/\//i.test(String(l || ''))) || '';
+
+// Stories vanish after a day, so they go by the screenshot; reels and posts go by the link the creator sent.
+const sheetLink = (task, sub) => (task?.type === 'story' ? deliverableScreenshot(sub) : deliverableLink(sub));
 
 // Done work says where it came from: the app, an uploaded sheet, or both.
 const deliverableStatus = (item, sheet) => {
@@ -97,7 +99,7 @@ export const deliverablesSheetSpec = (campaign, entries, { fileDate, exportSubti
                 const name = `${idx + 1}. ${task.title || `Deliverable ${idx + 1}`}`;
                 return [
                     { header: name, width: 18, value: a => deliverableStatus(item(a, idx), sheetMarkOf(task, a)) },
-                    { header: `${name} · link`, width: 18, type: 'link', label: 'Open screenshot', value: a => deliverableScreenshot(item(a, idx).sub) },
+                    { header: `${name} · link`, width: 18, type: 'link', label: task.type === 'story' ? 'Open screenshot' : 'Open link', value: a => sheetLink(task, item(a, idx).sub) },
                     { header: `${name} · sent on`, type: 'date', value: a => item(a, idx).sub?.submittedAt || null },
                 ];
             }),
