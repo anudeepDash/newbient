@@ -14,17 +14,17 @@ import { useT } from '../../i18n';
  * A number that already has its own Newbi account is merged into this one
  * (MergeConfirm), so one number never means two accounts.
  *
- * Adding a number to an account (signed in) offers two equal ways: "Verify on
- * WhatsApp" (they send us one prefilled message and the number they sent it
- * from is confirmed) or a code by SMS to the number typed. When an SMS can't be
- * sent, WhatsApp becomes the main button. Signing in can't use WhatsApp, so
- * there `onOtherWay` offers the sheet's other sign-in options instead.
+ * When messaging us is on, a WhatsApp-green button sits under "Send code", for
+ * adding a number and for signing in: they send us one prefilled message and the
+ * number they sent it from is confirmed. Neither is the default; only the one
+ * they tap goes out. Without it, a failed SMS while signing in offers the
+ * sheet's other options through `onOtherWay`.
  */
 const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile number', mode, sendLabel = 'Send code', onOtherWay, otherWayLabel = 'Use Google or email instead' }) => {
     const t = useT();
     const [number, setNumber] = useState(initialPhone || '');
     const [code, setCode] = useState('');
-    const [starting, setStarting] = useState(false); // "Verify on WhatsApp" is asking the server
+    const [starting, setStarting] = useState(false); // the WhatsApp button is asking the server
     const phone = usePhoneVerification({ mode, onVerified });
 
     if (phone.verified) {
@@ -54,7 +54,9 @@ const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile numbe
             <div className="space-y-3 rounded-2xl border border-black/[0.08] p-4 dark:border-white/[0.1]">
                 <p className="text-[15px] font-bold">{t('Send us the message on WhatsApp')}</p>
                 <p className="text-[13px] text-gray-600 dark:text-zinc-400">
-                    {t('It’s already typed, with your code {code}. Send it from the WhatsApp number you want on your account.', { code })}
+                    {phone.signingIn
+                        ? t('It’s already typed, with your code {code}. Send it from your WhatsApp number to sign in.', { code })
+                        : t('It’s already typed, with your code {code}. Send it from the WhatsApp number you want on your account.', { code })}
                 </p>
                 <Button className="w-full" icon={WhatsAppLogo} href={link} target="_blank" rel="noopener noreferrer">{t('Open WhatsApp')}</Button>
                 <p role="status" className="flex items-center gap-2 text-[13px] font-semibold text-gray-600 dark:text-zinc-400">
@@ -88,34 +90,31 @@ const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile numbe
                     className="flex-1"
                     disabled={phone.codeSent}
                 />
-                {!phone.codeSent && !phone.canMessageUs && (
-                    <Button variant="secondary" onClick={() => phone.send(number)} loading={phone.isSending} disabled={!number.trim()}>
+                {!phone.codeSent && (
+                    <Button
+                        variant="secondary"
+                        // With WhatsApp offered beside it, this is the SMS choice.
+                        onClick={() => phone.send(number, phone.canMessageUs ? { via: 'sms' } : undefined)}
+                        loading={phone.isSending && !starting}
+                        disabled={!number.trim() || starting}
+                    >
                         {t(sendLabel)}
                     </Button>
                 )}
             </div>
 
-            {/* Adding a number: two equal ways to prove it's theirs. */}
+            {/* The other way, never the default: one WhatsApp message to us, no code to type. */}
             {phone.canMessageUs && !phone.codeSent && (
                 <div className="space-y-2">
-                    <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
-                        <Button variant={phone.smsFailed ? 'primary' : 'secondary'} icon={WhatsAppLogo} onClick={async () => { setStarting(true); await phone.messageUs(); setStarting(false); }} loading={starting} disabled={phone.isSending}>
-                            {t('Verify on WhatsApp')}
-                        </Button>
-                        <Button variant="secondary" onClick={() => phone.send(number, { via: 'sms' })} loading={phone.isSending && !starting} disabled={!number.trim() || starting}>
-                            {t('Get a code by SMS')}
-                        </Button>
-                    </div>
+                    <Button className="w-full bg-[#25D366]" icon={WhatsAppLogo} onClick={async () => { setStarting(true); await phone.messageUs(); setStarting(false); }} loading={starting} disabled={phone.isSending}>
+                        {phone.signingIn ? t('Sign in with WhatsApp') : t('Verify with WhatsApp')}
+                    </Button>
                     <p className="text-[12px] text-gray-500 dark:text-zinc-400">
                         {phone.smsFailed
-                            ? t('Texts aren’t getting through right now. Verify on WhatsApp instead: send us one message, no code to type.')
-                            : t('WhatsApp: send us one message, no code to type. SMS: we text a code to the number above.')}
+                            ? t('Texts aren’t getting through right now. Use WhatsApp: send us one message, no code to type.')
+                            : t('With WhatsApp you send us one message. No code to type.')}
                     </p>
                 </div>
-            )}
-
-            {phone.smsFailed && !phone.canMessageUs && onOtherWay && (
-                <Button variant="secondary" className="w-full" onClick={onOtherWay}>{t(otherWayLabel)}</Button>
             )}
 
             {phone.codeSent && (
