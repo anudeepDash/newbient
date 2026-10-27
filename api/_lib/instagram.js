@@ -130,15 +130,37 @@ const fetchJson = async (url, init = {}) => {
  * subcode 2207013 ("cannot be found"). Token, permission and rate-limit errors
  * are our problem, not the creator's, so they count as "unavailable".
  */
+/*
+ * Meta's error body, for integration_log. Graph answers { error: { message,
+ * type, code, error_subcode, fbtrace_id } }; api.instagram.com's token
+ * endpoint answers flat { error_type, code, error_message }. Only these
+ * fields are kept, so a token in the body never reaches the log.
+ */
+const metaErrorOf = (result) => {
+    const json = result?.json && typeof result.json === 'object' ? result.json : {};
+    const err = json.error && typeof json.error === 'object' ? json.error : json;
+    const pick = (v) => (v === undefined || v === null || v === '' ? null : String(v).slice(0, 500));
+    return {
+        status: Number(result?.status) || 0,
+        message: pick(err.message || err.error_message || err.error_description || (typeof json.error === 'string' ? json.error : null)),
+        type: pick(err.type || err.error_type),
+        code: pick(err.code),
+        subcode: pick(err.error_subcode),
+        userTitle: pick(err.error_user_title),
+        userMessage: pick(err.error_user_msg),
+        fbtraceId: pick(err.fbtrace_id),
+    };
+};
+
 const classifyGraphError = (result) => {
-    const err = result?.json?.error || {};
-    if (result.network) return { reason: 'unavailable', detail: result.timeout ? 'timeout' : (result.error || 'network') };
-    const code = Number(err.code);
-    const sub = Number(err.error_subcode);
-    if (sub === 2207013 || code === 110 || /cannot be found|does not exist|invalid user id/i.test(err.message || '')) {
-        return { reason: 'not_professional', detail: err.message || 'not found' };
+    if (result.network) return { reason: 'unavailable', detail: result.timeout ? 'timeout' : (result.error || 'network'), meta: { status: 0, network: true } };
+    const meta = metaErrorOf(result);
+    const code = Number(meta.code);
+    const sub = Number(meta.subcode);
+    if (sub === 2207013 || code === 110 || /cannot be found|does not exist|invalid user id/i.test(meta.message || '')) {
+        return { reason: 'not_professional', detail: meta.message || 'not found', meta };
     }
-    return { reason: 'unavailable', detail: err.message || `HTTP ${result.status}`, code };
+    return { reason: 'unavailable', detail: meta.message || `HTTP ${result.status}`, code, meta };
 };
 
 const cacheRef = (db, key) => db.collection('instagram_profiles').doc(key);
@@ -354,9 +376,9 @@ export const lookupInstagram = async (rawHandle, { force = false, db = getDb(), 
     const result = await fetchJson(url);
     const bd = result.ok ? result.json?.business_discovery : null;
     if (!bd?.id) {
-        const { reason, detail, code } = result.ok ? { reason: 'not_professional', detail: 'no business_discovery' } : classifyGraphError(result);
+        const { reason, detail, code, meta } = result.ok ? { reason: 'not_professional', detail: 'no business_discovery' } : classifyGraphError(result);
         if (reason === 'unavailable') {
-            await logIntegration({ op: 'business_discovery', handle, error: detail, code: code || null }, db);
+            await logIntegration({ op: 'business_discovery', handle, error: detail, code: code || null, meta: meta || null }, db);
             return publicLookup(db, handle); // Meta is down: estimate from the public profile meanwhile
         }
         return {
@@ -438,7 +460,8 @@ export const exchangeCode = async (code) => {
     const long = await fetchJson(`https://graph.instagram.com/access_token?${params.toString()}`);
     // A short-lived token (1 hour) still lets us read the profile now; the cron can't refresh it later.
     if (!long.ok || !long.json?.access_token) {
-        return { ok: true, token: shortToken, expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(), longLived: false };
+        const { detail, meta } = classifyGraphError(long);
+        return { ok: true, token: shortToken, expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(), longLived: false, longLivedError: { detail, meta } };
     }
     const expiresIn = Number(long.json.expires_in) || 60 * 24 * 60 * 60;
     return { ok: true, token: long.json.access_token, expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(), longLived: true };
