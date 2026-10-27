@@ -9,7 +9,7 @@ import LegalDoc, { P, UL, H3, Rows, A } from './legal/LegalDoc';
  * Meta as the app's data-deletion instructions.
  */
 
-const UPDATED = '23 October 2026';
+const UPDATED = '27 October 2026';
 const PRIVACY = <A href="mailto:privacy@newbi.live">privacy@newbi.live</A>;
 
 const sections = [
@@ -38,7 +38,7 @@ const sections = [
                 <P>We only collect what a feature needs. What that is depends on what you use:</P>
                 <H3>Your account</H3>
                 <UL items={[
-                    'How you sign in: Google, email and password, or your phone number. For phone sign-in and phone verification we send a one-time code by SMS.',
+                    'How you sign in: Google, email and password, or your phone number. For phone sign-in and phone verification we send a one-time code by SMS. To add a number to your account you can instead send us a WhatsApp message with a code we show you; the number you send it from is the one we confirm.',
                     'Your profile: name, photo, email, phone number (and whether it’s verified), city, college, whether you’re a student, occupation, gender and interests if you choose to share them, and your notification preferences.',
                     'If two accounts turn out to share a phone number or email, we merge them into one at your request, so one person has one account.',
                 ]} />
@@ -101,7 +101,7 @@ const sections = [
             <>
                 <P>
                     We send WhatsApp messages from our business number through Meta’s WhatsApp Business Platform:
-                    tickets and passes, order and guestlist updates, and, if you’re a creator who opted in, campaign updates (shortlists,
+                    a short reply confirming your number when you verify it by messaging us, tickets and passes, order and guestlist updates, and, if you’re a creator who opted in, campaign updates (shortlists,
                     group invites, reminders, deliverable requests, payouts and a feedback request after the campaign). Meta processes these messages under its own terms
                     and policies.
                 </P>
@@ -192,7 +192,7 @@ const sections = [
         body: (
             <>
                 <UL items={[
-                    'Sign-in and verification codes: only a scrambled (hashed) version is stored, for 10 minutes, and each code works once.',
+                    'Sign-in and verification codes: only a scrambled (hashed) version is stored, for 10 minutes (15 for the code you send us on WhatsApp), and each code works once.',
                     'WhatsApp messages in our inbox: 12 months, then deleted automatically.',
                     'Your account, profile, tickets, passes and applications: for as long as your account is open, then deleted or anonymised as described below.',
                     'Instagram access tokens: until you delete your creator profile or disconnect; Instagram tokens also expire after 60 days unless refreshed.',

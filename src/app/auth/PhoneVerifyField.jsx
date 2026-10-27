@@ -16,9 +16,11 @@ import { useT } from '../../i18n';
  *
  * Adding a number to an account (signed in) offers two equal ways: "Verify on
  * WhatsApp" (they send us one prefilled message and the number they sent it
- * from is confirmed) or a code by SMS to the number typed.
+ * from is confirmed) or a code by SMS to the number typed. When an SMS can't be
+ * sent, WhatsApp becomes the main button. Signing in can't use WhatsApp, so
+ * there `onOtherWay` offers the sheet's other sign-in options instead.
  */
-const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile number', mode, sendLabel = 'Send code' }) => {
+const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile number', mode, sendLabel = 'Send code', onOtherWay, otherWayLabel = 'Use Google or email instead' }) => {
     const t = useT();
     const [number, setNumber] = useState(initialPhone || '');
     const [code, setCode] = useState('');
@@ -97,7 +99,7 @@ const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile numbe
             {phone.canMessageUs && !phone.codeSent && (
                 <div className="space-y-2">
                     <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
-                        <Button variant="secondary" icon={WhatsAppLogo} onClick={async () => { setStarting(true); await phone.messageUs(); setStarting(false); }} loading={starting} disabled={phone.isSending}>
+                        <Button variant={phone.smsFailed ? 'primary' : 'secondary'} icon={WhatsAppLogo} onClick={async () => { setStarting(true); await phone.messageUs(); setStarting(false); }} loading={starting} disabled={phone.isSending}>
                             {t('Verify on WhatsApp')}
                         </Button>
                         <Button variant="secondary" onClick={() => phone.send(number, { via: 'sms' })} loading={phone.isSending && !starting} disabled={!number.trim() || starting}>
@@ -105,9 +107,15 @@ const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile numbe
                         </Button>
                     </div>
                     <p className="text-[12px] text-gray-500 dark:text-zinc-400">
-                        {t('WhatsApp: send us one message, no code to type. SMS: we text a code to the number above.')}
+                        {phone.smsFailed
+                            ? t('Texts aren’t getting through right now. Verify on WhatsApp instead: send us one message, no code to type.')
+                            : t('WhatsApp: send us one message, no code to type. SMS: we text a code to the number above.')}
                     </p>
                 </div>
+            )}
+
+            {phone.smsFailed && !phone.canMessageUs && onOtherWay && (
+                <Button variant="secondary" className="w-full" onClick={onOtherWay}>{t(otherWayLabel)}</Button>
             )}
 
             {phone.codeSent && (
