@@ -59,8 +59,8 @@ const friendly = (err) => {
 };
 
 /* How each field reads in "This needs …". */
-// Signing in by messaging us on WhatsApp (api/_lib/waVerify.js) is on.
-const WHATSAPP_SIGN_IN = import.meta.env.VITE_WHATSAPP_PHONE_VERIFY === 'on';
+// Codes can go on WhatsApp as well as by SMS (usePhoneVerification's canWhatsAppCode).
+const WHATSAPP_CODES = import.meta.env.VITE_WHATSAPP_OTP === 'on';
 
 const NEEDS = { name: 'your name', email: 'an email', phone: 'a phone number', phoneVerified: 'a verified phone number', city: 'your city', college: 'your college', photo: 'a profile photo', instagram: 'your Instagram', instagramVerified: 'a verified Instagram' };
 const listOf = (items) => (items.length <= 1 ? items[0] || tNow('a few details') : tNow('{list} and {last}', { list: items.slice(0, -1).join(', '), last: items[items.length - 1] }));
@@ -169,7 +169,7 @@ const SignInSheet = () => {
 
     const titles = {
         start: [t('Sign in to Newbi'), t('One account for passes, giveaways and creator campaigns.')],
-        phone: [t('Sign in with phone'), WHATSAPP_SIGN_IN ? t('Get a code by SMS, or sign in with WhatsApp.') : t('We’ll text you a 6-digit code.')],
+        phone: [t('Sign in with phone'), WHATSAPP_CODES ? t('We’ll send you a 6-digit code by SMS or on WhatsApp.') : t('We’ll text you a 6-digit code.')],
         email: emailMode === 'signUp' ? [t('Create your account'), t('Use your email and a password.')]
             : emailMode === 'forgot' ? [t('Reset your password'), t('We’ll email you a link.')]
                 : [t('Sign in with email'), t('Welcome back.')],
