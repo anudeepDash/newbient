@@ -104,6 +104,7 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
     const [smsFailed, setSmsFailed] = useState(false); // the last SMS code couldn't be sent (quota, security check…)
     const [waReady, setWaReady] = useState(null); // a messageUs() code fetched ahead of the tap
     const [waUnavailable, setWaUnavailable] = useState(false); // the server has messaging us switched off
+    const [waFinishing, setWaFinishing] = useState(false); // their message arrived; signing in / saving the number
 
     const verifierRef = useRef(null);
     const containerRef = useRef(null);
@@ -336,6 +337,7 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
 
     const awaitMessage = useCallback((data) => {
         setError('');
+        setWaFinishing(false);
         setWaMessage(data);
         setChannel('message');
         setStatus('awaiting');
@@ -392,14 +394,25 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
             const { state, phone: confirmed, proofToken, token } = res.data || {};
             if (state === 'waiting') return;
             stopped = true;
-            setWaMessage(null);
+            // Keep waMessage (and the wait screen) until the status below moves on: clearing it
+            // first left a render with status 'awaiting' and no message, which crashed the page.
+            setWaFinishing(true);
             // That code is spent: the next tap gets a new one.
             if (readyMessage?.data?.code === waMessage.code) readyMessage = null;
             setWaReady(null);
             if (state === 'verified' && waMessage.login) {
                 setPhone(confirmed);
                 try {
-                    const result = await signInWithCustomToken(auth, token);
+                    // Coming back from WhatsApp, the connection can take a moment to return.
+                    let result;
+                    for (let attempt = 0; !result; attempt += 1) {
+                        try {
+                            result = await signInWithCustomToken(auth, token);
+                        } catch (err) {
+                            if (attempt >= 2 || err?.code !== 'auth/network-request-failed') throw err;
+                            await new Promise((r) => setTimeout(r, 1500));
+                        }
+                    }
                     await finish(confirmed, { user: result.user });
                 } catch (err) {
                     setStatus('idle');
@@ -459,6 +472,7 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         setConflict(null);
         setChannel(null);
         setWaMessage(null);
+        setWaFinishing(false);
         setSmsFailed(false);
     }, []);
 
@@ -474,8 +488,9 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         isSending: status === 'sending',
         isVerifying: status === 'verifying',
         codeSent: status === 'sent' || status === 'verifying',
-        awaitingMessage: status === 'awaiting',
+        awaitingMessage: status === 'awaiting' && Boolean(waMessage),
         waMessage: status === 'awaiting' ? waMessage : null,
+        waFinishing: status === 'awaiting' && waFinishing,
         smsFailed: smsFailed && status === 'idle',
         // Verifying or signing in by messaging us. Off until VITE_WHATSAPP_PHONE_VERIFY=on (api/_lib/waVerify.js).
         canMessageUs: messageOn() && !waUnavailable,

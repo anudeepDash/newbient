@@ -464,6 +464,8 @@ export default {
     "Come back here. You’re signed in automatically.": "Yahan wapas aao. Tum apne aap sign in ho jaoge.",
     "Come back here. Your number is confirmed automatically.": "Yahan wapas aao. Tumhara number apne aap confirm ho jayega.",
     "Waiting for your message": "Tumhare message ka wait kar rahe hain",
+    "Message received. Signing you in…": "Message mil gaya. Tumhe sign in kar rahe hain…",
+    "Message received. Confirming your number…": "Message mil gaya. Tumhara number confirm kar rahe hain…",
     "Code expires in {time}": "Code {time} mein expire hoga",
     "We only use this message to confirm your number.": "Is message ko hum sirf tumhara number confirm karne ke liye use karte hain.",
     "Use SMS instead": "Iski jagah SMS use karo",

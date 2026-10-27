@@ -57,6 +57,7 @@ const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile numbe
             <WhatsAppWait
                 {...phone.waMessage}
                 signingIn={phone.signingIn}
+                finishing={phone.waFinishing}
                 opened={opened}
                 onOpen={() => setOpened(true)}
                 onCancel={() => { setOpened(false); phone.reset(); }}
