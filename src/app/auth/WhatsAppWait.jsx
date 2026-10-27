@@ -9,7 +9,8 @@ import { useT } from '../../i18n';
 /*
  * The wait after "Sign in with WhatsApp" / "Verify with WhatsApp": a small
  * WhatsApp chat with the message sitting in the compose box and the send
- * button pulsing, so it's obvious what to do there. Under it, a live status
+ * button pulsing under a "Tap send" label, then the three steps spelled out
+ * (not everyone reads "tap send" the same way). Under them, a live status
  * with the time left on the code, one green button back to WhatsApp, and SMS
  * as the quiet way out. usePhoneVerification finishes by itself when the
  * message arrives.
@@ -58,18 +59,40 @@ const WhatsAppWait = ({ code, link, expiresAt, signingIn, opened, onOpen, onCanc
                         <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#00A884] text-white">
                             <span className="absolute inset-0 animate-ping rounded-full bg-[#00A884]/40" />
                             <SendHorizontal size={19} className="relative" />
+                            {/* Points at the button they need to press. */}
+                            <span className="absolute -top-7 right-0 whitespace-nowrap rounded-full bg-[#111B21] px-2.5 py-1 text-[11px] font-bold text-white shadow-sm dark:bg-white dark:text-[#111B21]">
+                                {t('Tap send')} ↓
+                            </span>
                         </span>
                     </div>
                 </div>
             </div>
 
-            <div className="px-2 text-center">
-                <h3 className="text-[20px] font-black tracking-tight">{t('Tap send in WhatsApp')}</h3>
-                <p className="mt-1.5 text-[14px] leading-relaxed text-gray-500 dark:text-zinc-400">
-                    {signingIn
-                        ? t('Your message is ready. Send it, then come back here and you’ll be signed in automatically.')
-                        : t('Your message is ready. Send it, then come back here and your number is confirmed automatically.')}
-                </p>
+            <div className="space-y-3 px-1">
+                <h3 className="text-[19px] font-black tracking-tight">{t('Send us the message in WhatsApp')}</h3>
+                <ol className="space-y-2.5">
+                    {[
+                        t('WhatsApp opens a chat with Newbi Live, with the message already typed.'),
+                        (
+                            <>
+                                {t('Tap the green send button')}
+                                <span className="ml-1.5 inline-flex h-6 w-6 translate-y-[3px] items-center justify-center rounded-full bg-[#00A884] text-white" aria-hidden="true">
+                                    <SendHorizontal size={12} />
+                                </span>
+                            </>
+                        ),
+                        signingIn
+                            ? t('Come back here. You’re signed in automatically.')
+                            : t('Come back here. Your number is confirmed automatically.'),
+                    ].map((step, i) => (
+                        <li key={i} className="flex items-start gap-3 text-[14px] leading-snug text-gray-700 dark:text-zinc-300">
+                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#25D366]/15 text-[12px] font-bold text-[#128C7E] dark:text-[#25D366]">
+                                {i + 1}
+                            </span>
+                            <span className="pt-0.5">{step}</span>
+                        </li>
+                    ))}
+                </ol>
             </div>
 
             <div role="status" className="flex items-center justify-between gap-3 rounded-2xl bg-black/[0.04] px-4 py-3 text-[13px] dark:bg-white/[0.05]">

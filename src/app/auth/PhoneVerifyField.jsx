@@ -108,7 +108,7 @@ const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile numbe
                     <p className="text-[12px] text-gray-500 dark:text-zinc-400">
                         {phone.smsFailed
                             ? t('Texts aren’t getting through right now. Use WhatsApp: send us one message, no code to type.')
-                            : t('With WhatsApp you send us one message. No code to type.')}
+                            : t('Opens WhatsApp with a message already typed to us. Just tap send, then come back here.')}
                     </p>
                 </div>
             )}
