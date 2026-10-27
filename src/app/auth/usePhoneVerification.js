@@ -38,7 +38,8 @@ import { t } from '../../i18n';
  *   (api/_lib/waVerify.js). Status becomes 'awaiting' with `waMessage` =
  *   { code, link }: the caller shows link as an "Open WhatsApp" button. The
  *   hook polls until the message arrives; the number confirmed is the one
- *   they messaged from. Works without any approved template.
+ *   they messaged from. Works without any approved template. `smsFailed` says
+ *   the last SMS code couldn't be sent, so the caller can point to this instead.
  *
  * The invisible reCAPTCHA lives in one off-screen container per hook that is
  * never removed mid-flow (iOS Safari loses the token if it is), and is torn
@@ -58,7 +59,7 @@ const friendlyError = (err) => {
     if (code.includes('invalid-phone-number')) return t('That phone number doesn’t look right. Check the digits and try again.');
     if (code.includes('too-many-requests')) return t('Too many attempts. Wait a few minutes and try again.');
     if (code.includes('quota-exceeded')) return t('We can’t send more codes today. Please try again later.');
-    if (code.includes('captcha')) return t('The security check didn’t finish. Tap “Send code” again.');
+    if (code.includes('captcha') || code.includes('app-credential')) return t('The security check didn’t finish. Tap “Send code” again.');
     if (code.includes('network-request-failed')) return t('No connection. Check your internet and try again.');
     if (code.includes('invalid-verification-code')) return t('That code isn’t right. Check it and try again.');
     if (code.includes('code-expired')) return t('That code has expired. Send a new one.');
@@ -67,6 +68,8 @@ const friendlyError = (err) => {
     }
     if (code.includes('requires-recent-login')) return t('For your security, sign out and back in, then verify your number.');
     if (code.includes('unauthorized-domain') || code.includes('operation-not-allowed')) return t('Phone verification isn’t available on this site right now.');
+    // Show Firebase's own code (auth/…) so a screenshot of this message tells us what failed.
+    if (err?.code) return t('We couldn’t verify your number right now. Please try again. (Error: {code})', { code: err.code });
     return t('We couldn’t verify your number right now. Please try again.');
 };
 
@@ -84,6 +87,7 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
     const [conflict, setConflict] = useState(null); // { proof, preview }: the number signs in to another account
     const [channel, setChannel] = useState(null); // 'whatsapp' | 'sms' | 'message': what carries the check in flight
     const [waMessage, setWaMessage] = useState(null); // { code, link, startedAt }: verifying by messaging us
+    const [smsFailed, setSmsFailed] = useState(false); // the last SMS code couldn't be sent (quota, security check…)
 
     const verifierRef = useRef(null);
     const containerRef = useRef(null);
@@ -183,12 +187,14 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
             }
             setChannel('sms');
             setStatus('sent');
+            setSmsFailed(false);
             setCooldown(COOLDOWN_SECONDS);
             return true;
         } catch (err) {
             console.warn('[phone] send failed:', err?.code || err);
             resetVerifier();
             setStatus('idle');
+            setSmsFailed(true);
             setError(friendlyError(err));
             return false;
         }
@@ -373,6 +379,7 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         setConflict(null);
         setChannel(null);
         setWaMessage(null);
+        setSmsFailed(false);
     }, []);
 
     /* "Get the code by SMS instead". */
@@ -389,6 +396,7 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         codeSent: status === 'sent' || status === 'verifying',
         awaitingMessage: status === 'awaiting',
         waMessage: status === 'awaiting' ? waMessage : null,
+        smsFailed: smsFailed && status === 'idle',
         // Messaging us adds a number to an account; it can't sign anyone in. Off until VITE_WHATSAPP_PHONE_VERIFY=on (api/_lib/waVerify.js).
         canMessageUs: import.meta.env.VITE_WHATSAPP_PHONE_VERIFY === 'on' && (mode || (auth?.currentUser ? 'link' : 'signIn')) !== 'signIn',
         verified: status === 'verified',

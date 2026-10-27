@@ -224,6 +224,7 @@ const SignInSheet = () => {
                         mode="signIn"
                         sendLabel={t('Get code')}
                         onVerified={() => signedIn()}
+                        onOtherWay={() => { setStep('start'); setError(''); }}
                     />
                 )}
 
