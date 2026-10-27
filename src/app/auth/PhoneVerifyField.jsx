@@ -4,31 +4,26 @@ import { Button, TextInput } from '../../components/app/controls';
 import WhatsAppLogo from '../../components/app/WhatsAppLogo';
 import { usePhoneVerification } from './usePhoneVerification';
 import MergeConfirm from './MergeConfirm';
-import WhatsAppWait from './WhatsAppWait';
 import { useT } from '../../i18n';
 
 /*
  * Phone number + OTP in one block, on top of usePhoneVerification.
- * The code goes on WhatsApp first (with a "Copy code" button), SMS when
- * WhatsApp can't carry it or the person asks. The code field uses
- * one-time-code autofill, so iOS offers an SMS code.
+ * The code field uses one-time-code autofill, so iOS offers an SMS code.
  * A number that already has its own Newbi account is merged into this one
  * (MergeConfirm), so one number never means two accounts.
  *
- * When messaging us is on, a WhatsApp-green button sits under "Send code", for
- * adding a number and for signing in: they send us one prefilled message and the
- * number they sent it from is confirmed. Neither is the default; only the one
- * they tap goes out. The code is ready before the tap, so that button is a link
- * that opens WhatsApp at once; then WhatsAppWait shows the message waiting in
- * their WhatsApp and finishes by itself when they come back. Without it, a failed SMS while
- * signing in offers the sheet's other options through `onOtherWay`.
+ * With WhatsApp codes on (canWhatsAppCode), two ways to get the same 6-digit
+ * code sit side by side: "Send code" by SMS and a WhatsApp-green "Get code on
+ * WhatsApp" (a WhatsApp message with a Copy code button). Neither is the
+ * default and only the one they tap goes out, so we never pay for both. Without
+ * it, "Send code" alone sends it, and a failed SMS while signing in offers the
+ * sheet's other options through `onOtherWay`.
  */
 const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile number', mode, sendLabel = 'Send code', onOtherWay, otherWayLabel = 'Use Google or email instead' }) => {
     const t = useT();
     const [number, setNumber] = useState(initialPhone || '');
     const [code, setCode] = useState('');
-    const [starting, setStarting] = useState(false); // the WhatsApp button is asking the server
-    const [opened, setOpened] = useState(false); // the tap already opened WhatsApp
+    const [via, setVia] = useState(null); // the button that's sending: 'sms' | 'whatsapp'
     const phone = usePhoneVerification({ mode, onVerified });
 
     if (phone.verified) {
@@ -52,19 +47,13 @@ const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile numbe
         );
     }
 
-    if (phone.awaitingMessage) {
-        return (
-            <WhatsAppWait
-                {...phone.waMessage}
-                signingIn={phone.signingIn}
-                finishing={phone.waFinishing}
-                opened={opened}
-                onOpen={() => setOpened(true)}
-                onCancel={() => { setOpened(false); phone.reset(); }}
-                error={phone.error}
-            />
-        );
-    }
+    // With WhatsApp offered, each button sends only its own way; alone, "Send code" lets the server pick.
+    const sendBy = async (how, to = number) => {
+        setVia(how);
+        setCode('');
+        await phone.send(to, phone.canWhatsAppCode ? { via: how } : undefined);
+        setVia(null);
+    };
 
     return (
         <div className="space-y-3">
@@ -81,37 +70,27 @@ const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile numbe
                     disabled={phone.codeSent}
                 />
                 {!phone.codeSent && (
-                    <Button
-                        variant="secondary"
-                        // With WhatsApp offered beside it, this is the SMS choice.
-                        onClick={() => phone.send(number, phone.canMessageUs ? { via: 'sms' } : undefined)}
-                        loading={phone.isSending && !starting}
-                        disabled={!number.trim() || starting}
-                    >
+                    <Button variant="secondary" onClick={() => sendBy('sms')} loading={phone.isSending && via !== 'whatsapp'} disabled={!number.trim() || via === 'whatsapp'}>
                         {t(sendLabel)}
                     </Button>
                 )}
             </div>
 
-            {/* The other way, never the default: one WhatsApp message to us, no code to type. */}
-            {phone.canMessageUs && !phone.codeSent && (
+            {phone.canWhatsAppCode && !phone.codeSent && (
                 <div className="space-y-2">
-                    {phone.waLink ? (
-                        // A real link, so the tap itself opens WhatsApp (iPhone blocks one opened after a wait).
-                        <Button className="w-full bg-[#25D366]" icon={WhatsAppLogo} href={phone.waLink} target="_blank" rel="noopener noreferrer" onClick={() => { setOpened(true); phone.messageUs(); }}>
-                            {phone.signingIn ? t('Sign in with WhatsApp') : t('Verify with WhatsApp')}
-                        </Button>
-                    ) : (
-                        <Button className="w-full bg-[#25D366]" icon={WhatsAppLogo} onClick={async () => { setStarting(true); setOpened(false); await phone.messageUs(); setStarting(false); }} loading={starting} disabled={phone.isSending}>
-                            {phone.signingIn ? t('Sign in with WhatsApp') : t('Verify with WhatsApp')}
-                        </Button>
-                    )}
+                    <Button className="w-full bg-[#25D366]" icon={WhatsAppLogo} onClick={() => sendBy('whatsapp')} loading={phone.isSending && via === 'whatsapp'} disabled={!number.trim() || via === 'sms'}>
+                        {t('Get code on WhatsApp')}
+                    </Button>
                     <p className="text-[12px] text-gray-500 dark:text-zinc-400">
                         {phone.smsFailed
-                            ? t('Texts aren’t getting through right now. Use WhatsApp: send us one message, no code to type.')
-                            : t('Opens WhatsApp with a message already typed to us. Just tap send, then come back here.')}
+                            ? t('Texts aren’t getting through right now. Get the code on WhatsApp instead.')
+                            : t('Same 6-digit code, sent to your WhatsApp instead of by SMS.')}
                     </p>
                 </div>
+            )}
+
+            {phone.smsFailed && !phone.canWhatsAppCode && onOtherWay && (
+                <Button variant="secondary" className="w-full" onClick={onOtherWay}>{t(otherWayLabel)}</Button>
             )}
 
             {phone.codeSent && (
@@ -148,7 +127,7 @@ const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile numbe
                     <button
                         type="button"
                         disabled={phone.cooldown > 0 || phone.isSending}
-                        onClick={() => phone.send(phone.phone)}
+                        onClick={() => sendBy(phone.channel || 'sms', phone.phone)}
                         className="text-[13px] font-semibold text-gray-500 disabled:opacity-60 dark:text-zinc-400"
                     >
                         {phone.cooldown > 0 ? t('Resend code in {seconds}s', { seconds: phone.cooldown }) : t('Resend code')}
@@ -161,6 +140,16 @@ const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile numbe
                             className="block text-[13px] font-semibold text-gray-500 underline-offset-2 hover:underline disabled:opacity-60 dark:text-zinc-400"
                         >
                             {t('No WhatsApp? Get the code by SMS')}
+                        </button>
+                    )}
+                    {phone.channel === 'sms' && phone.canWhatsAppCode && (
+                        <button
+                            type="button"
+                            disabled={phone.isSending}
+                            onClick={() => sendBy('whatsapp', phone.phone)}
+                            className="block text-[13px] font-semibold text-gray-500 underline-offset-2 hover:underline disabled:opacity-60 dark:text-zinc-400"
+                        >
+                            {t('No SMS? Get the code on WhatsApp')}
                         </button>
                     )}
                 </div>
