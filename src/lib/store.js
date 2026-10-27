@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { db, storage, auth } from './firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, arrayRemove, collectionGroup, serverTimestamp, limit, getCountFromServer, startAfter, writeBatch, runTransaction, FieldPath, deleteField } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, getDocsFromCache, where, setDoc, getDoc, increment, arrayUnion, arrayRemove, collectionGroup, serverTimestamp, limit, getCountFromServer, startAfter, writeBatch, runTransaction, FieldPath, deleteField } from 'firebase/firestore';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { notifyEvent, subscribeToNewsletter } from './mailApi';
 import { normalizePhoneNumber } from './utils';
@@ -295,6 +295,19 @@ const mergeLiveTaskProgress = (formTasks, liveTasks) => {
 const initialUser = getCachedSession();
 
 const activeListeners = {};
+
+// Summary pages (the admin Dashboard) read each collection once instead of holding
+// a live listener: from the local cache while the last full load is recent, from the
+// server otherwise. A reload inside the window then bills no reads at all.
+let readOnceMode = false;
+const ONCE_TTL = 10 * 60 * 1000;
+const onceKey = (stateKey) => `nb_once_${stateKey}`;
+const onceLoadedAt = (stateKey) => {
+    try { return Number(localStorage.getItem(onceKey(stateKey))) || 0; } catch (e) { return 0; }
+};
+const markOnceLoaded = (stateKey) => {
+    try { localStorage.setItem(onceKey(stateKey), String(Date.now())); } catch (e) { /* private mode */ }
+};
 
 // Pinned first, then open before closed, then newest.
 const sortCampaigns = (data) => {
@@ -883,6 +896,11 @@ export const useStore = create((set, get) => ({
     // Real-time Subscription Init
     // Reference-counted subscription helper
     subscribeToKey: (stateKey, colName, sortFn = null) => {
+        if (readOnceMode) {
+            // A live listener elsewhere already keeps this key fresh.
+            if (!activeListeners[stateKey]) get().loadKeyOnce(stateKey, colName, sortFn);
+            return () => {};
+        }
         if (!activeListeners[stateKey]) {
             console.log(`[Store] Opening Firestore listener for: ${stateKey} (${colName})`);
             const q = query(collection(db, colName));
@@ -958,6 +976,46 @@ export const useStore = create((set, get) => ({
                 }
             }
         };
+    },
+
+    loadKeyOnce: async (stateKey, colName, sortFn = null) => {
+        const loaded = get().subscriptionsLoaded?.[stateKey];
+        const age = Date.now() - onceLoadedAt(stateKey);
+        if (loaded && age < ONCE_TTL) return;
+        const q = query(collection(db, colName));
+        const apply = (snapshot) => {
+            let data = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
+            if (sortFn) data = sortFn(data);
+            set((state) => ({
+                [stateKey]: data,
+                subscriptionsLoaded: { ...(state.subscriptionsLoaded || {}), [stateKey]: true }
+            }));
+        };
+        try {
+            if (age < ONCE_TTL) {
+                const cached = await getDocsFromCache(q).catch(() => null);
+                if (cached && !cached.empty) { apply(cached); return; }
+            }
+            apply(await getDocs(q));
+            markOnceLoaded(stateKey);
+        } catch (error) {
+            console.warn(`[Store] Could not load ${stateKey}:`, error?.code || error);
+            set((state) => ({ subscriptionsLoaded: { ...(state.subscriptionsLoaded || {}), [stateKey]: true } }));
+        }
+    },
+
+    // Same keys as useStoreSubscription, but read once (see readOnceMode above).
+    subscribeOnce: (keys) => {
+        const store = get();
+        readOnceMode = true;
+        try {
+            keys.forEach(key => {
+                const fn = store[`subscribeTo${key.charAt(0).toUpperCase()}${key.slice(1)}`];
+                if (typeof fn === 'function') fn();
+            });
+        } finally {
+            readOnceMode = false;
+        }
     },
 
     // Public On-Demand Subscriptions
@@ -1036,7 +1094,7 @@ export const useStore = create((set, get) => ({
     }),
     subscribeToCampaigns: () => {
         // Staff also get the app's submissions (one collection-group listener for the session).
-        if (!appSubmissionsUnsub && ADMIN_ROLES.includes(get().user?.role)) {
+        if (!readOnceMode && !appSubmissionsUnsub && ADMIN_ROLES.includes(get().user?.role)) {
             appSubmissionsUnsub = onSnapshot(collectionGroup(db, 'submissions'), (snap) => {
                 appSubmissionIndex = indexAppSubmissions(snap.docs
                     .filter(d => d.ref.parent.parent?.parent?.id === 'campaigns')
