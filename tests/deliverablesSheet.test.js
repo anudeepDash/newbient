@@ -217,7 +217,22 @@ describe('screenshot hyperlinks', () => {
         const { buildCsv } = await import('../src/lib/xlsx');
         const spec = deliverablesSheetSpec(campaign, applicantsFor(campaign, creators), helpers);
         const xml = strFromU8(unzipSync(buildXlsx(spec))['xl/worksheets/sheet1.xml']);
-        expect(xml).toContain('HYPERLINK("https://cdn.test/p.png","Open screenshot")');
+        expect(xml).toContain('HYPERLINK("https://cdn.test/p.png","Open link")');
         expect(buildCsv(spec)).toContain('https://cdn.test/p.png');
+    });
+});
+
+describe('story vs reel links', () => {
+    it('uses the screenshot for stories and the posted link for reels', () => {
+        const both = { contentLink: 'https://instagram.com/x/1', proofUrl: 'https://cdn.test/s.png', status: 'approved' };
+        const c = { ...campaign, tasks: [
+            { id: 't1', title: 'Story', type: 'story', submissions: { a: both } },
+            { id: 't2', title: 'Reel', type: 'reel', submissions: { a: both } },
+        ] };
+        const spec = deliverablesSheetSpec(c, applicantsFor(c, creators), helpers);
+        const asha = spec.rows.find(r => r.creator.name === 'Asha');
+        const cell = (h) => spec.columns.find(col => col.header === h).value(asha);
+        expect(cell('1. Story · link')).toBe('https://cdn.test/s.png');
+        expect(cell('2. Reel · link')).toBe('https://instagram.com/x/1');
     });
 });
