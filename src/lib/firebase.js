@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getMessaging, isSupported } from "firebase/messaging";
@@ -23,7 +23,16 @@ try {
 }
 
 // Initialize Cloud Firestore and get a reference to the service
-const db = app ? getFirestore(app) : null;
+// A persistent local cache lets a reload or a reconnect resume listeners with only
+// the changed documents, instead of billing a read for every document again.
+const openFirestore = () => {
+    try {
+        return initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+    } catch (error) {
+        return getFirestore(app);
+    }
+};
+const db = app ? openFirestore() : null;
 const storage = app ? getStorage(app) : null;
 const auth = app ? getAuth(app) : null;
 

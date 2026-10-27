@@ -1,4 +1,6 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { collection, getCountFromServer, query, where } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { useStore } from '../lib/store';
 import { useStoreSubscription } from './useStoreSubscription';
 
@@ -193,4 +195,40 @@ export function useConsolidatedMembers() {
         creators,
         artists
     };
+}
+
+// Dashboard only needs three numbers, so it counts on the server (about one read
+// per thousand accounts) instead of listening to eight whole collections.
+let blockedCache = { at: 0, count: 0 };
+const BLOCKED_TTL = 5 * 60 * 1000;
+
+export function useMemberCounts() {
+    const uid = useStore(s => s.user?.uid);
+    const totalAuthUsers = useStore(s => s.totalAuthUsers);
+    const [suspended, setSuspended] = useState(blockedCache.count);
+
+    useEffect(() => {
+        if (!uid) return undefined;
+        refreshCount();
+        const timer = setInterval(refreshCount, COUNT_TTL + 1000);
+        const onVisible = () => { if (document.visibilityState === 'visible') refreshCount(); };
+        document.addEventListener('visibilitychange', onVisible);
+        return () => { clearInterval(timer); document.removeEventListener('visibilitychange', onVisible); };
+    }, [uid]);
+
+    useEffect(() => {
+        if (!uid || !db) return;
+        if (Date.now() - blockedCache.at < BLOCKED_TTL) { setSuspended(blockedCache.count); return; }
+        let alive = true;
+        getCountFromServer(query(collection(db, 'users'), where('isBlocked', '==', true)))
+            .then(snap => {
+                blockedCache = { at: Date.now(), count: snap.data().count };
+                if (alive) setSuspended(blockedCache.count);
+            })
+            .catch(() => { /* keep the last known number */ });
+        return () => { alive = false; };
+    }, [uid]);
+
+    const totalCount = totalAuthUsers || 0;
+    return { totalCount, suspendedCount: suspended, activeCount: Math.max(0, totalCount - suspended) };
 }
