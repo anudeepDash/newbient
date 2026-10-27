@@ -316,8 +316,9 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         if (readyMessage?.key === key && fresh(readyMessage.data)) return { data: readyMessage.data };
         const started = await callCreatorApi(login ? 'wa-login-start' : 'wa-verify-start', {});
         if (!started.ok) return { failed: started };
-        const { code, link, pollKey } = started.data;
-        const data = { code, link, pollKey, login, startedAt: Date.now() };
+        const { code, link, pollKey, expiresIn } = started.data;
+        const at = Date.now();
+        const data = { code, link, pollKey, login, startedAt: at, expiresAt: at + (Number(expiresIn) || 600) * 1000 };
         readyMessage = { key, data };
         return { data };
     }, [messageKey]);

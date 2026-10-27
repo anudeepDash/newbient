@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/circle-check';
-import Loader2 from 'lucide-react/dist/esm/icons/loader-circle';
 import { Button, TextInput } from '../../components/app/controls';
 import WhatsAppLogo from '../../components/app/WhatsAppLogo';
 import { usePhoneVerification } from './usePhoneVerification';
 import MergeConfirm from './MergeConfirm';
+import WhatsAppWait from './WhatsAppWait';
 import { useT } from '../../i18n';
 
 /*
@@ -19,8 +19,8 @@ import { useT } from '../../i18n';
  * adding a number and for signing in: they send us one prefilled message and the
  * number they sent it from is confirmed. Neither is the default; only the one
  * they tap goes out. The code is ready before the tap, so that button is a link
- * that opens WhatsApp at once; then a "Finish in WhatsApp" card waits and
- * finishes by itself when they come back. Without it, a failed SMS while
+ * that opens WhatsApp at once; then WhatsAppWait shows the message waiting in
+ * their WhatsApp and finishes by itself when they come back. Without it, a failed SMS while
  * signing in offers the sheet's other options through `onOtherWay`.
  */
 const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile number', mode, sendLabel = 'Send code', onOtherWay, otherWayLabel = 'Use Google or email instead' }) => {
@@ -53,43 +53,15 @@ const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile numbe
     }
 
     if (phone.awaitingMessage) {
-        const { code, link } = phone.waMessage;
-        const linkClass = 'inline-flex h-10 items-center text-[13px] font-semibold text-gray-600 underline-offset-2 hover:underline dark:text-zinc-300';
         return (
-            <div className="space-y-4 rounded-3xl bg-[#25D366]/[0.08] p-4 ring-1 ring-inset ring-[#25D366]/30">
-                <div className="flex items-start gap-3">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-black" aria-hidden="true">
-                        <WhatsAppLogo size={22} />
-                    </span>
-                    <div className="min-w-0">
-                        <p className="text-[16px] font-bold">{t('Finish in WhatsApp')}</p>
-                        <p className="mt-0.5 text-[13px] text-gray-600 dark:text-zinc-400">
-                            {phone.signingIn
-                                ? t('Tap send on the message we typed for you. You’ll be signed in here.')
-                                : t('Tap send on the message we typed for you. Your number is confirmed here.')}
-                        </p>
-                    </div>
-                </div>
-                {!opened && (
-                    <Button className="w-full bg-[#25D366]" icon={WhatsAppLogo} href={link} target="_blank" rel="noopener noreferrer" onClick={() => setOpened(true)}>
-                        {t('Open WhatsApp')}
-                    </Button>
-                )}
-                <p role="status" className="flex items-center gap-2 text-[13px] font-semibold text-[#128C7E] dark:text-[#25D366]">
-                    <Loader2 size={15} className="animate-spin" aria-hidden="true" />
-                    {t('Waiting for your message…')}
-                </p>
-                <div className="flex flex-wrap items-center justify-between gap-x-4">
-                    {opened && <a href={link} target="_blank" rel="noopener noreferrer" className={linkClass}>{t('Open WhatsApp again')}</a>}
-                    <button type="button" onClick={() => { setOpened(false); phone.reset(); }} className={linkClass}>
-                        {t('Use SMS instead')}
-                    </button>
-                </div>
-                <p className="text-[12px] text-gray-500 dark:text-zinc-500">
-                    {t('Message not typed in? Send us this code on WhatsApp: {code}', { code })}
-                </p>
-                {phone.error && <p role="alert" className="text-[13px] font-medium text-red-600 dark:text-red-400">{phone.error}</p>}
-            </div>
+            <WhatsAppWait
+                {...phone.waMessage}
+                signingIn={phone.signingIn}
+                opened={opened}
+                onOpen={() => setOpened(true)}
+                onCancel={() => { setOpened(false); phone.reset(); }}
+                error={phone.error}
+            />
         );
     }
 
