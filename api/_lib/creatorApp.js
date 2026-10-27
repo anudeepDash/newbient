@@ -266,17 +266,26 @@ export const handleCallback = async (req, res, { db }) => {
     const back = (params) => redirect(res, withParams(origin, state?.returnTo || '/creator/apply', params));
 
     if (!state?.uid) return back({ ig: 'error', reason: 'expired' });
-    if (q.error) return back({ ig: 'error', reason: q.error_reason === 'user_denied' ? 'denied' : 'failed' });
+    if (q.error) {
+        if (q.error_reason !== 'user_denied') {
+            await logIntegration({ op: 'oauth_authorize', uid: state.uid, error: str(q.error_description || q.error, 500), meta: { error: str(q.error, 100), reason: str(q.error_reason, 100) } }, db);
+        }
+        return back({ ig: 'error', reason: q.error_reason === 'user_denied' ? 'denied' : 'failed' });
+    }
     if (!q.code) return back({ ig: 'error', reason: 'failed' });
 
     const exchanged = await exchangeCode(q.code);
     if (!exchanged.ok) {
-        await logIntegration({ op: 'oauth_exchange', uid: state.uid, error: exchanged.detail || exchanged.reason }, db);
+        await logIntegration({ op: 'oauth_exchange', uid: state.uid, error: exchanged.detail || exchanged.reason, meta: exchanged.meta || null }, db);
         return back({ ig: 'error', reason: 'unavailable' });
+    }
+    // Not fatal (the short-lived token still reads the profile), but it's often the first sign of an app-access problem.
+    if (exchanged.longLivedError) {
+        await logIntegration({ op: 'oauth_long_lived', uid: state.uid, error: exchanged.longLivedError.detail, meta: exchanged.longLivedError.meta || null }, db);
     }
     const meRes = await fetchMe(exchanged.token);
     if (!meRes.ok) {
-        await logIntegration({ op: 'oauth_me', uid: state.uid, error: meRes.detail || meRes.reason }, db);
+        await logIntegration({ op: 'oauth_me', uid: state.uid, error: meRes.detail || meRes.reason, meta: meRes.meta || null, longLived: exchanged.longLived !== false }, db);
         return back({ ig: 'error', reason: 'unavailable' });
     }
     const me = meRes.me;
