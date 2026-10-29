@@ -425,14 +425,10 @@ const Invoice = () => {
             <PanelCard theme={docTheme('invoice')} icon={CheckCircle2} title="Paid — thank you"
                 subtitle={displayInvoice.paidAt ? `Settled on ${fmtDate(displayInvoice.paidAt)}.` : 'This invoice is settled.'} />
         );
-    } else if (isVerifying && !isAdmin) {
-        payPanel = (
-            <PanelCard theme={docTheme('invoice')} icon={Clock} title="We’re checking your payment"
-                subtitle="We’ll email you once it’s confirmed." />
-        );
     } else if (!isAdmin) {
         payPanel = (
-            <PanelCard theme={docTheme('invoice')} icon={Wallet} title="Pay this invoice" subtitle={dueLine}>
+            <PanelCard theme={docTheme('invoice')} icon={isVerifying ? Clock : Wallet} title={isVerifying ? 'We’re checking your payment' : 'Pay this invoice'}
+                subtitle={isVerifying ? 'We’ll email you once it’s confirmed. You can also pay the balance below.' : dueLine}>
                 <div className="space-y-2.5">
                     <button type="button" onClick={handlePayOnline} disabled={paying || toBePaid <= 0}
                         className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#00D1FF] text-[15px] font-bold text-black transition-transform active:scale-[0.98] disabled:opacity-60">
@@ -491,6 +487,8 @@ const Invoice = () => {
                 pdfBlobUrl={pdfBlobUrl}
                 actionPanel={<>{payPanel}{attachmentsPanel}</>}
                 actionLabel={isAdmin ? 'Mark as paid' : `Pay ${fmtMoney(toBePaid)}`}
+                onAction={!isAdmin && !isPaid && toBePaid > 0 ? handlePayOnline : undefined}
+                actionBusy={paying}
                 summary={{ amount: isPaid ? totalAmount : toBePaid }}
                 onStageWidth={fitToStage}
                 onOpenAttachments={attachments.length ? openAttachments : null}
