@@ -166,7 +166,7 @@ const AmountBlock = ({ label, value }) => (
  * `paymentsReceived` = money recorded after it was issued, `balanceDue` is
  * what's left after the advance and those payments.
  */
-export const InvoicePage = ({ data, columns = [], pageItems, pageIndex, pageCount, amounts, balanceDue, paymentsReceived = 0, forCapture = false }) => {
+export const InvoicePage = ({ data, columns = [], pageItems, pageIndex, pageCount, amounts, balanceDue, paymentsReceived = 0, forCapture = false, onPay }) => {
     const brand = brandOf(data.selectedLogo);
     const sender = data.senderName || brand.label;
     const isFirst = pageIndex === 0;
@@ -306,15 +306,15 @@ export const InvoicePage = ({ data, columns = [], pageItems, pageIndex, pageCoun
                                 <AmountBlock label="Total" value={money(amounts.total)} />
                             )}
                             {amounts.total > 0 && <p className="mt-2 text-right text-[9px] leading-snug text-gray-500">{amountInWords(amounts.total)}</p>}
-                            {balanceDue > 0 && (payUrl ? (
-                                <a href={payUrl} target="_blank" rel="noopener noreferrer" className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-full border-2 border-gray-950 text-[9px] font-bold uppercase tracking-[0.22em] text-gray-950">
-                                    <Zap size={12} className="fill-current" /> Pay online
-                                </a>
-                            ) : (
-                                <p className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-full border-2 border-gray-950 text-[9px] font-bold uppercase tracking-[0.22em] text-gray-950">
-                                    <Zap size={12} className="fill-current" /> Pay online
-                                </p>
-                            ))}
+                            {balanceDue > 0 && (() => {
+                                const cls = 'mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-full border-2 border-gray-950 text-[9px] font-bold uppercase tracking-[0.22em] text-gray-950';
+                                const label = <><Zap size={12} className="fill-current" /> Pay online</>;
+                                // On the public page the button starts the Razorpay payment itself.
+                                if (onPay) return <button type="button" onClick={onPay} className={cn(cls, 'cursor-pointer')}>{label}</button>;
+                                return payUrl
+                                    ? <a href={payUrl} target="_blank" rel="noopener noreferrer" className={cls}>{label}</a>
+                                    : <p className={cls}>{label}</p>;
+                            })()}
                         </div>
                     </div>
                 )}
