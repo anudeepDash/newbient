@@ -84,7 +84,7 @@ const TicketsPage = () => {
 
     return (
         <PageBody>
-            <PageHeader eyebrow={t('Tickets')} title={t('Get your')} highlight={t('tickets.')} subtitle={t('Pick a show, pay in your UPI app, and your ticket shows up here.')} />
+            <PageHeader eyebrow={t('Tickets')} title={t('Get your')} highlight={t('tickets.')} subtitle={t('Pick a show, pay online, and your ticket shows up here.')} />
 
             {mine.length > 0 && (
                 <section className="space-y-3">

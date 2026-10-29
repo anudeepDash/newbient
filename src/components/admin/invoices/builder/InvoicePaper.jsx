@@ -102,10 +102,8 @@ export const paginateInvoice = (items, data) => {
     let weight = 0;
     if (data.showGst) weight += 1; // tax rows and the amount in words
     if (data.showAdvance && data.advancePaid > 0) weight += 0.5;
-    if (data.paymentLink) weight += 0.5;
-    if (data.upiId && data.showUPI) weight += 1.5;
+    weight += 0.5; // the "Pay online" button
     if (data.showSeal || data.showSignatures) weight += 2;
-    if (data.showPaymentDetails && data.paymentDetails) weight += 1.5;
     if (data.showNotes && !isBlankText(data.note)) weight += 1;
 
     const firstWithTotals = weight >= 4 ? 3 : (weight >= 2 ? 4 : 6);
@@ -131,9 +129,7 @@ export const paperDataFrom = (invoice = {}) => ({
     ...invoice,
     invoiceDate: invoice.invoiceDate || invoice.issueDate || invoice.createdAt || '',
     showNotes: invoice.showNotes !== false,
-    showPaymentDetails: invoice.showPaymentDetails !== false,
     showFooter: invoice.showFooter !== false,
-    showUPI: invoice.showUPI === undefined ? Boolean(invoice.upiId) : Boolean(invoice.showUPI),
     advancePaid: Number(invoice.advancePaid) || 0,
     gstPercentage: Number(invoice.gstPercentage) || 0,
 });
@@ -175,7 +171,8 @@ export const InvoicePage = ({ data, columns = [], pageItems, pageIndex, pageCoun
     const sender = data.senderName || brand.label;
     const isFirst = pageIndex === 0;
     const isLast = pageIndex === pageCount - 1;
-    const upiLink = `upi://pay?pa=${data.upiId}&pn=NEWBI&am=${balanceDue}&cu=INR`;
+    // Razorpay is the only way to pay: the button opens the invoice page, which takes the payment.
+    const payUrl = data.id && typeof window !== 'undefined' ? `${window.location.origin}/invoice/${data.id}` : '';
     const tax = invoiceTaxLines(data, amounts.gstAmount);
     const supply = placeOfSupply(data);
     const sellerPan = panOfGstin(data.senderGst);
@@ -287,12 +284,6 @@ export const InvoicePage = ({ data, columns = [], pageItems, pageIndex, pageCoun
                 {isLast && (
                     <div className="mt-7 flex w-full items-start gap-10">
                         <div className="flex-1 space-y-5">
-                            {data.showPaymentDetails && !isBlankText(data.paymentDetails) && (
-                                <div>
-                                    <Label>Payment details</Label>
-                                    <div className="mt-2.5 rounded-2xl border border-gray-200 bg-[#F4F2EC]/60 p-4 text-[10px] leading-relaxed text-gray-700">{renderContent(data.paymentDetails)}</div>
-                                </div>
-                            )}
                             {data.showNotes && !isBlankText(data.note) && (
                                 <div>
                                     <Label>Note</Label>
@@ -315,37 +306,21 @@ export const InvoicePage = ({ data, columns = [], pageItems, pageIndex, pageCoun
                                 <AmountBlock label="Total" value={money(amounts.total)} />
                             )}
                             {amounts.total > 0 && <p className="mt-2 text-right text-[9px] leading-snug text-gray-500">{amountInWords(amounts.total)}</p>}
-                            {data.paymentLink && (
-                                <a href={data.paymentLink} target="_blank" rel="noopener noreferrer" className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-full border-2 border-gray-950 text-[9px] font-bold uppercase tracking-[0.22em] text-gray-950">
+                            {balanceDue > 0 && (payUrl ? (
+                                <a href={payUrl} target="_blank" rel="noopener noreferrer" className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-full border-2 border-gray-950 text-[9px] font-bold uppercase tracking-[0.22em] text-gray-950">
                                     <Zap size={12} className="fill-current" /> Pay online
                                 </a>
-                            )}
+                            ) : (
+                                <p className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-full border-2 border-gray-950 text-[9px] font-bold uppercase tracking-[0.22em] text-gray-950">
+                                    <Zap size={12} className="fill-current" /> Pay online
+                                </p>
+                            ))}
                         </div>
                     </div>
                 )}
 
-                {isLast && ((data.showUPI && data.upiId) || data.showSeal || data.showSignatures) && (
-                    <div className="mt-auto flex w-full items-end justify-between border-t border-gray-200 pt-5">
-                        {data.showUPI && data.upiId ? (
-                            <div className="flex items-center gap-3">
-                                <div className="rounded-xl border border-gray-200 bg-white p-1.5">
-                                    <img
-                                        src={data.qrType === 'custom' && data.customQrImage
-                                            ? data.customQrImage
-                                            : `/api/qr?size=200&margin=1&text=${encodeURIComponent(upiLink)}`}
-                                        alt="Payment QR"
-                                        className="h-[72px] w-[72px]"
-                                        crossOrigin="anonymous"
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label>Scan to pay</Label>
-                                    <p className="text-[10px] text-gray-600">Any UPI app · <span className="font-semibold text-gray-950">{data.upiId}</span></p>
-                                    <a href={upiLink} className="inline-block text-[9px] font-bold uppercase tracking-[0.2em] text-gray-950 underline decoration-2 underline-offset-4" style={{ textDecorationColor: GREEN }} data-html2canvas-ignore="true">Pay via UPI</a>
-                                </div>
-                            </div>
-                        ) : <span />}
-
+                {isLast && (data.showSeal || data.showSignatures) && (
+                    <div className="mt-auto flex w-full items-end justify-end border-t border-gray-200 pt-5">
                         {(data.showSeal || data.showSignatures) && (
                             <div className="relative flex items-end pb-1">
                                 {data.showSeal && ( // a plain image, not the animated DocumentSeal: the PDF capture must never catch it mid-fade

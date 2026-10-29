@@ -33,10 +33,8 @@ import X from 'lucide-react/dist/esm/icons/x';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import Landmark from 'lucide-react/dist/esm/icons/landmark';
-import QrCode from 'lucide-react/dist/esm/icons/qr-code';
 import Stamp from 'lucide-react/dist/esm/icons/stamp';
 import Bookmark from 'lucide-react/dist/esm/icons/bookmark';
-import ImageIcon from 'lucide-react/dist/esm/icons/image';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { cn } from '../../lib/utils';
@@ -44,15 +42,15 @@ import { copyToClipboard } from '../../lib/clipboard';
 import { nextInvoiceNumber, todayKey, invoiceAmounts, invoiceLineAmount, invoiceReceived } from '../../lib/invoicing';
 import { Button, Menu, MenuItem, EmptyState } from '../../components/admin/ui';
 import Sheet from '../../components/admin/Sheet';
-import { fieldCls, areaCls, Field, Toggle, Choice, SignatureField, UploadProgress, formatBytes } from '../../components/admin/uploads/UploadKit';
+import { fieldCls, areaCls, Field, Toggle, SignatureField, UploadProgress, formatBytes } from '../../components/admin/uploads/UploadKit';
 import { BuilderCard } from '../../components/admin/events/EditorParts';
 import RichEditor from '../../components/admin/RichEditor';
 import DocumentSeal from '../../components/ui/DocumentSeal';
 import { accent, useAccent } from '../../components/admin/theme';
 import { InvoicePage, BRANDS, paginateInvoice, isBlankText } from '../../components/admin/invoices/builder/InvoicePaper';
 import {
-    GST_RATES, GST_STATES, cleanGstin, gstinProblem, stateOfGstin, invoiceTaxLines, placeOfSupply, isUpiId, isIfsc, isHttpsUrl, isEmail,
-    amountInWords, BANK_FIELDS, parseBankDetails, composeBankDetails,
+    GST_RATES, GST_STATES, cleanGstin, gstinProblem, stateOfGstin, invoiceTaxLines, placeOfSupply, isHttpsUrl, isEmail,
+    amountInWords,
 } from '../../components/admin/invoices/builder/gst';
 import ThemedSelect from '../../components/admin/ThemedSelect';
 import '../../lib/documentFonts';
@@ -217,7 +215,6 @@ const InvoiceGenerator = () => {
     const [busy, setBusy] = useState(null); // save | leave | pdf | share
     const [capturing, setCapturing] = useState(false);
     const [dialog, setDialog] = useState(null); // { kind: 'issues' | 'number' | 'leave', purpose }
-    const [bankAsText, setBankAsText] = useState(false);
     const [newColumn, setNewColumn] = useState('');
     const [upload, setUpload] = useState(null); // { name, percent }
     const [linkDraft, setLinkDraft] = useState({ open: false, name: '', url: '' });
@@ -317,7 +314,6 @@ const InvoiceGenerator = () => {
         });
         setItems(Array.isArray(invoice.items) && invoice.items.length ? invoice.items : [newItem()]);
         setCustomColumns(Array.isArray(invoice.customColumns) ? invoice.customColumns : []);
-        setBankAsText(parseBankDetails(invoice.paymentDetails) === null);
         // Invoices made from a proposal have no seller details yet: fill the gaps (and save them).
         setTimeout(() => {
             initialDataLoadedRef.current = true;
@@ -344,7 +340,6 @@ const InvoiceGenerator = () => {
                     note: isBlankText(next.note) && profile.terms ? profile.terms : next.note,
                 };
             });
-            setBankAsText(parseBankDetails(values.paymentDetails) === null);
         }
         // Until it's saved or typed over, follow the series (a colleague may have just used this number).
         if (numberAutoRef.current && !idRef.current && !createPromiseRef.current) {
@@ -388,7 +383,11 @@ const InvoiceGenerator = () => {
             clientGst: cleanGstin(formData.clientGst),
             advancePaid: advance,
             gstPercentage: Number(formData.gstPercentage) || 0,
-            paymentLink: formData.showPaymentButton ? String(formData.paymentLink || '').trim() : '',
+            // Razorpay is the only way to pay: no bank details, UPI QR or other payment link on invoices.
+            showUPI: false,
+            showPaymentDetails: false,
+            showPaymentButton: false,
+            paymentLink: '',
             items: items.map(it => ({
                 ...it,
                 qty: it.qty === '' || it.qty === null || it.qty === undefined ? 1 : Number(it.qty) || 0,
@@ -472,7 +471,6 @@ const InvoiceGenerator = () => {
     const numberClash = Boolean(norm(formData.invoiceNumber)) && !(createPromiseRef.current && !idRef.current) && invoices.some(inv => inv.id !== idRef.current && norm(inv.invoiceNumber) === norm(formData.invoiceNumber));
     const nextFreeNumber = useMemo(() => nextInvoiceNumber(invoices), [invoices]);
     const hasHsn = customColumns.some(c => c.id === HSN_COLUMN.id);
-    const bank = bankAsText ? null : parseBankDetails(formData.paymentDetails);
 
     const issues = useMemo(() => {
         const list = [];
@@ -510,17 +508,11 @@ const InvoiceGenerator = () => {
         // Payment
         if (formData.showGst && !GST_RATES.includes(Number(formData.gstPercentage))) add('payment', 'warn', `${formData.gstPercentage || 0}% isn't a standard GST rate.`);
         if (formData.showAdvance && advance > amounts.total && amounts.total > 0) add('payment', 'error', 'The advance is more than the invoice total.');
-        if (formData.showPaymentDetails && !String(formData.paymentDetails || '').trim()) add('payment', 'warn', 'Bank details are switched on but empty.');
-        if (formData.showPaymentDetails && PLACEHOLDER.test(formData.paymentDetails || '')) add('payment', 'error', 'The bank details still have placeholder text.');
-        if (formData.showPaymentDetails && bank?.ifsc && !isIfsc(bank.ifsc)) add('payment', 'warn', "The IFSC doesn't look right. It has 11 characters, like SBIN0001234.");
-        if (formData.showUPI && !isUpiId(formData.upiId)) add('payment', 'error', 'Add a valid UPI ID (like name@bank), or turn the QR code off.');
-        if (formData.showUPI && formData.qrType === 'custom' && !formData.customQrImage) add('payment', 'error', 'Upload the QR image, or make the QR from the UPI ID.');
-        if (formData.showPaymentButton && !isHttpsUrl(formData.paymentLink)) add('payment', 'error', 'Add the payment page link (starting with https://), or turn the button off.');
         // Sign
         if (formData.showSignatures && !formData.providerSignature) add('sign', 'warn', 'The signature box is empty. Add the authorised signature.');
         if (!formData.showSignatures && !formData.showSeal) add('sign', 'warn', 'No signature or seal. Tax invoices are normally signed.');
         return list;
-    }, [formData, items, amounts.total, advance, numberClash, hasHsn, bank]);
+    }, [formData, items, amounts.total, advance, numberClash, hasHsn]);
 
     const errors = issues.filter(i => i.level === 'error');
     const stepErrors = (stepId) => issues.filter(i => i.step === stepId && i.level === 'error').length;
@@ -530,7 +522,9 @@ const InvoiceGenerator = () => {
         ...formData,
         advancePaid: advance,
         gstPercentage: Number(formData.gstPercentage) || 0,
-        paymentLink: formData.showPaymentButton ? formData.paymentLink : '',
+        showUPI: false,
+        showPaymentDetails: false,
+        paymentLink: '',
     };
     const pages = paginateInvoice(items, paperData);
     const pageCount = pages.length;
@@ -699,20 +693,8 @@ const InvoiceGenerator = () => {
     };
 
     // ── Bank ──
-    const setBankField = (key, value) => set({ paymentDetails: composeBankDetails({ ...(bank || {}), [key]: value }) });
 
     // ── Images kept inside the invoice record ──
-    const readImage = (file, onDone) => {
-        if (!file) return;
-        if (!file.type.startsWith('image/')) { addToast('Choose an image file, like a PNG or JPG.', 'warning'); return; }
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            const data = String(ev.target.result || '');
-            if (data.length > MAX_INLINE_IMAGE) { addToast('Use an image under 500 KB.', 'warning', { title: 'That image is too large' }); return; }
-            onDone(data);
-        };
-        reader.readAsDataURL(file);
-    };
     const setSignature = (data) => {
         if (data && String(data).length > MAX_INLINE_IMAGE) { addToast('Draw the signature instead, or use a smaller image.', 'warning', { title: 'That signature image is too large' }); return; }
         set({ providerSignature: data || '' });
@@ -1129,71 +1111,10 @@ const InvoiceGenerator = () => {
                                     <div className="mt-3"><Toggle label="Show the advance and balance on the invoice" hint="Off: the client sees the full total" checked={Boolean(formData.showAdvance)} onChange={v => set({ showAdvance: v })} /></div>
                                 </BuilderCard>
 
-                                <BuilderCard title="Bank details" hint='Printed under "Payment details"' action={<span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', accent('teal').chip)}><Landmark size={16} /></span>}>
-                                    <Toggle label="Show bank details" checked={formData.showPaymentDetails !== false} onChange={v => set({ showPaymentDetails: v })} />
-                                    {formData.showPaymentDetails !== false && (
-                                        <div className="mt-3 space-y-3">
-                                            {bank ? (
-                                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                                    {BANK_FIELDS.filter(f => !['upi', 'contact', 'accountType'].includes(f.key) || bank[f.key]).map(f => (
-                                                        <Field key={f.key} label={f.label} hint={f.key === 'ifsc' && bank.ifsc && !isIfsc(bank.ifsc) ? '11 characters, like SBIN0001234' : undefined}>
-                                                            <input
-                                                                className={fieldCls}
-                                                                value={bank[f.key] || ''}
-                                                                inputMode={f.key === 'accountNumber' ? 'numeric' : undefined}
-                                                                autoCapitalize={f.key === 'ifsc' ? 'characters' : undefined}
-                                                                onChange={e => setBankField(f.key, f.key === 'ifsc' ? e.target.value.toUpperCase() : e.target.value)}
-                                                            />
-                                                        </Field>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <textarea className={cn(areaCls, 'font-mono text-[13px]')} rows={6} value={formData.paymentDetails} onChange={e => set({ paymentDetails: e.target.value })} placeholder="Account name, number, IFSC, branch" />
-                                            )}
-                                            <div className="flex flex-wrap items-center gap-1">
-                                                {bank ? (
-                                                    <button type="button" onClick={() => setBankAsText(true)} className="h-10 px-2 text-[12.5px] font-semibold text-gray-500 hover:text-gray-900 dark:hover:text-white">Write it as text instead</button>
-                                                ) : (
-                                                    <button type="button" onClick={() => { if (parseBankDetails(formData.paymentDetails)) setBankAsText(false); else addToast('Keep it as text, or clear it to use the form.', 'info', { title: "The form can't read some of these lines" }); }} className="h-10 px-2 text-[12.5px] font-semibold text-gray-500 hover:text-gray-900 dark:hover:text-white">Use the form</button>
-                                                )}
-                                                <SaveDefaultButton onClick={() => saveDefaults({ paymentDetails: formData.paymentDetails, upiId: formData.upiId })} />
-                                            </div>
-                                        </div>
-                                    )}
-                                </BuilderCard>
-
-                                <BuilderCard title="UPI QR code" hint="Clients scan it to pay the balance" action={<span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', accent('violet').chip)}><QrCode size={16} /></span>}>
-                                    <Toggle label="Show a QR code" checked={Boolean(formData.showUPI)} onChange={v => set({ showUPI: v })} />
-                                    {formData.showUPI && (
-                                        <div className="mt-3 space-y-3">
-                                            <Field label="UPI ID" hint={formData.upiId && !isUpiId(formData.upiId) ? 'Like name@bank' : 'The amount is filled in for the client'}>
-                                                <input className={fieldCls} value={formData.upiId} onChange={e => set({ upiId: e.target.value.trim() })} placeholder="name@bank" autoCapitalize="off" autoCorrect="off" />
-                                            </Field>
-                                            <Choice value={formData.qrType || 'auto'} onChange={v => set({ qrType: v })} options={[
-                                                { value: 'auto', label: 'Make it from the UPI ID', hint: 'Recommended' },
-                                                { value: 'custom', label: 'Upload a QR image', hint: 'From your bank app' },
-                                            ]} />
-                                            {formData.qrType === 'custom' && (
-                                                <div className="flex items-center gap-3">
-                                                    {formData.customQrImage && <img src={formData.customQrImage} alt="Your QR code" className="h-20 w-20 rounded-lg border border-black/10 bg-white object-contain p-1" />}
-                                                    <label className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-black/10 px-4 text-[13px] font-semibold dark:border-white/10">
-                                                        <ImageIcon size={15} /> {formData.customQrImage ? 'Replace image' : 'Choose image'}
-                                                        <input type="file" accept="image/*" className="hidden" onChange={e => { readImage(e.target.files?.[0], (data) => set({ customQrImage: data })); e.target.value = ''; }} />
-                                                    </label>
-                                                </div>
-                                            )}
-                                            {formData.qrType === 'custom' && <p className="text-[12px] text-gray-500">The client's invoice page makes its QR from the UPI ID, so keep the ID filled in too.</p>}
-                                        </div>
-                                    )}
-                                </BuilderCard>
-
-                                <BuilderCard title="Online payment link" hint="A Razorpay, PayU or other payment page">
-                                    <Toggle label='Add a "Pay now" button' checked={Boolean(formData.showPaymentButton)} onChange={v => set({ showPaymentButton: v })} />
-                                    {formData.showPaymentButton && (
-                                        <div className="mt-3">
-                                            <Field label="Payment link"><input type="url" inputMode="url" className={fieldCls} value={formData.paymentLink || ''} onChange={e => set({ paymentLink: e.target.value.trim() })} placeholder="https://" autoCapitalize="off" /></Field>
-                                        </div>
-                                    )}
+                                <BuilderCard title="Online payment" hint="Razorpay takes every payment" action={<span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', accent('teal').chip)}><Landmark size={16} /></span>}>
+                                    <p className="text-[13px] leading-relaxed text-gray-600 dark:text-zinc-300">
+                                        Clients pay the balance on the invoice link with Razorpay (UPI, cards or netbanking). The printed invoice carries a “Pay online” button, and the invoice is marked paid as soon as the payment goes through.
+                                    </p>
                                 </BuilderCard>
 
                                 <BuilderCard title="Notes and terms" hint='Printed under "Additional note"'>

@@ -17,7 +17,7 @@ import { PassQr } from '../passes/passParts';
 
 /*
  * Booking done. A free or card-paid order has its pass at /p/{ref} already;
- * a UPI order waits for the team to check the UTR ("on verification"), then
+ * an order whose payment isn't confirmed yet waits ("on verification"), then
  * the pass appears there and is sent by email and WhatsApp.
  */
 
@@ -67,11 +67,11 @@ const TicketDone = ({ result, event }) => {
                     : 'flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400'}>
                     <Icon size={30} />
                 </span>
-                <h3 className="mt-3 font-heading text-[26px] font-black tracking-tight">{confirmed ? t('You’re in!') : t('Payment under verification')}</h3>
+                <h3 className="mt-3 font-heading text-[26px] font-black tracking-tight">{confirmed ? t('You’re in!') : t('Confirming your payment')}</h3>
                 <p className="mt-1 max-w-sm text-[15px] text-gray-600 dark:text-zinc-400">
                     {confirmed
                         ? (result.emailed && result.email ? t('Your pass is ready. We’ve also emailed it to {email}.', { email: result.email }) : t('Your pass is ready.'))
-                        : t('We’re checking your UPI payment. Your ticket comes to the app, email and WhatsApp as soon as it’s verified.')}
+                        : t('We’re confirming your payment. Your ticket comes to the app, email and WhatsApp as soon as it’s done.')}
                 </p>
             </div>
 
@@ -97,7 +97,7 @@ const TicketDone = ({ result, event }) => {
                 <section className="rounded-3xl border border-black/[0.07] p-4 dark:border-white/[0.08]">
                     <Timeline steps={[
                         { label: t('Booking placed'), done: true },
-                        { label: t('Payment check'), now: true, hint: result.utr ? t('UTR {utr}. Usually within a few hours.', { utr: result.utr }) : t('Usually within a few hours.') },
+                        { label: t('Payment check'), now: true, hint: t('Usually within a few minutes.') },
                         { label: t('Ticket issued'), hint: t('Your QR pass, in the app') },
                     ]} />
                 </section>

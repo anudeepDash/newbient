@@ -9,7 +9,7 @@ import LegalDoc, { P, UL, H3, Rows, A } from './legal/LegalDoc';
  * Meta as the app's data-deletion instructions.
  */
 
-const UPDATED = '27 October 2026';
+const UPDATED = '29 October 2026';
 const PRIVACY = <A href="mailto:privacy@newbi.live">privacy@newbi.live</A>;
 
 const sections = [
@@ -44,7 +44,7 @@ const sections = [
                 ]} />
                 <H3>Tickets, passes and guestlists</H3>
                 <UL items={[
-                    'Your name, email and phone number, what you booked, the amount, any coupon, and the UPI transaction reference (UTR) you enter so we can match your payment. If you choose to add a screenshot of the payment, we keep it with the order so the team can check it.',
+                    'Your name, email and phone number, what you booked, the amount, any coupon, and the Razorpay payment reference for your payment.',
                     'Your passes and their QR codes, and for some lists the task you submit (a link, a file or a short answer) and how many guests you bring.',
                 ]} />
                 <H3>Creators</H3>
@@ -80,7 +80,7 @@ const sections = [
             <>
                 <UL items={[
                     'To run your account, sign you in and verify your phone number.',
-                    'To issue and deliver tickets, passes and guestlist entries, check payments against UTRs, and check people in at the door.',
+                    'To issue and deliver tickets, passes and guestlist entries, confirm payments, and check people in at the door.',
                     'To review creator applications, match creators to campaigns, run those campaigns with brands, review deliverables and pay creators.',
                     'To send you messages about what you signed up for: by email, WhatsApp, push notification and in the app. Marketing emails only go out if you haven’t unsubscribed.',
                     'To prevent fraud and abuse: duplicate accounts, fake payment references, referral manipulation and spam. This includes rate limits on codes and forms.',
@@ -161,7 +161,7 @@ const sections = [
                     ['Meta', 'WhatsApp messages and codes (WhatsApp Business Platform) and Instagram connection and lookups.'],
                     ['Google Workspace', 'Sending and receiving our email, and the spreadsheets our team exports to Google Sheets to work on.'],
                     ['Cloudinary', 'Storing images and files you upload, such as profile photos, post screenshots and payment screenshots.'],
-                    ['Razorpay', 'Card, netbanking and UPI payments, only for shows that offer them and only if you choose that option. Razorpay handles your payment details; we receive only whether it was paid.'],
+                    ['Razorpay', 'All payments for tickets and invoices, by UPI, card or netbanking. Razorpay handles your payment details; we receive only whether it was paid and its payment reference.'],
                     ['Apify and RapidAPI', 'Backup lookups of public Instagram profiles by handle.'],
                     ['Google Gemini and OpenRouter', 'AI tools our team uses to write content, and translating our public listings into Hinglish. Your account data isn’t sent to them.'],
                     ['YouTube, Vimeo and Instagram', 'Videos embedded on some event and ConcertZone pages. They load only if you allow embedded videos, and these services may then set their own cookies.'],
@@ -178,11 +178,9 @@ const sections = [
         title: 'Payments',
         body: (
             <P>
-                Ticket payments are made by UPI from your own banking app; we never see your bank or card details. You give us the
-                UPI transaction reference (UTR) and our team checks it against the payment before confirming your booking. To find
-                payments faster, the team may compare UTRs with our own bank statement; that statement stays on the team’s device.
-                If a show offers card or netbanking, that payment is made in Razorpay’s checkout, and Razorpay’s terms and privacy
-                policy apply to it. Creator payouts are sent by UPI to the UPI ID you give us.
+                Everything you pay us, for tickets and invoices, is paid in Razorpay’s checkout by UPI, card or netbanking. We never
+                see your bank or card details, only whether the payment went through and its Razorpay reference. Razorpay’s terms and
+                privacy policy apply to the payment. Creator payouts are sent by UPI to the UPI ID you give us.
             </P>
         ),
     },

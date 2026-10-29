@@ -13,6 +13,10 @@
  *                 "I've paid" on an invoice: status 'Verification Pending' + paymentClaim; tells finance
  *   POST gateway-claim {id, txid?}
  *                 a payment gateway redirected back with ?status=success (not proof: also a claim)
+ *   POST razorpay-start {id}
+ *                 opens a Razorpay order for the invoice's balance (Razorpay is the only way to pay)
+ *   POST razorpay-confirm {id, razorpay_order_id, razorpay_payment_id, razorpay_signature}
+ *                 checks Razorpay's signature, logs the payment and marks the invoice paid when nothing is left
  *   POST respond  {id, response: Accepted|Rejected, signedBy?, email?, clientSignature?, reason?, device?, footprint?}
  *                 a client accepts (signs) or declines a proposal, once, before it expires
  *   POST sign     {id, signedBy, email, clientSignature?}
@@ -26,6 +30,9 @@ import { getDb, nowIso } from './db.js';
 import { verifyToken } from './auth.js';
 import { isProposalClosed, isProposalExpired, PROPOSAL_STATUS } from '../../src/lib/proposals.js';
 import { CONTRACT_STATUS } from '../../src/lib/contracts.js';
+import { INVOICE_STATUS, invoiceAmounts, invoiceTotal, invoiceReceived } from '../../src/lib/invoicing.js';
+import { FieldValue } from 'firebase-admin/firestore';
+import { razorpay, razorpayConfigured, razorpayKeyId, gatewaySignatureOk, paidPaymentFor } from './razorpay.js';
 
 class DocError extends Error {
     constructor(code, message, status = 400) {
@@ -158,6 +165,103 @@ const gatewayClaim = async (db, body, ctx) => {
     return { success: true, duplicate };
 };
 
+/* ---------- invoices: Razorpay ---------- */
+
+const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+
+/** What the public invoice page shows as due: the same maths, server side. */
+const invoiceDue = (inv) => {
+    if (inv.status === INVOICE_STATUS.PAID) return 0;
+    const total = Array.isArray(inv.items) && inv.items.length ? invoiceAmounts(inv).total : invoiceTotal(inv);
+    const advance = inv.showAdvance ? Number(inv.advancePaid) || 0 : 0;
+    return Math.max(0, round2(total - advance - invoiceReceived(inv)));
+};
+
+const razorpayStart = async (db, body) => {
+    if (!razorpayConfigured()) throw new DocError('GATEWAY', 'Online payment isn’t set up yet. Please contact us.', 503);
+    const ref = docRef(db, 'invoice', str(body.id, 128));
+    const snap = await ref.get();
+    if (!snap.exists) throw new DocError('NOT_FOUND', 'This invoice no longer exists.', 404);
+    const inv = snap.data();
+    if (inv.status === INVOICE_STATUS.PAID) throw new DocError('CLOSED', 'This invoice is already paid.', 409);
+    const due = invoiceDue(inv);
+    if (due <= 0) throw new DocError('CLOSED', 'Nothing is due on this invoice.', 409);
+    let gw;
+    try {
+        gw = await razorpay('/orders', {
+            method: 'POST',
+            body: {
+                amount: Math.round(due * 100),
+                currency: 'INR',
+                receipt: `inv-${str(inv.invoiceNumber || ref.id, 30)}`.slice(0, 40),
+                notes: { kind: 'invoice', invoiceId: ref.id, invoiceNumber: str(inv.invoiceNumber, 40) },
+            },
+        });
+    } catch (err) {
+        console.error('[SHARED-DOC] razorpay order failed:', err.message);
+        throw new DocError('GATEWAY', 'Online payment isn’t working right now. Please try again in a moment.', 503);
+    }
+    await ref.update({ razorpayOrderIds: FieldValue.arrayUnion(gw.id) });
+    return {
+        success: true,
+        keyId: razorpayKeyId(),
+        gatewayOrderId: gw.id,
+        amount: gw.amount,
+        currency: gw.currency || 'INR',
+        name: 'Newbi Entertainment',
+        description: `Invoice ${str(inv.invoiceNumber || ref.id, 40)}`,
+        prefill: { name: str(inv.clientName, 120), email: str(inv.clientEmail, 200), contact: str(inv.clientPhone, 20) },
+    };
+};
+
+/** Logs a Razorpay payment on the invoice (once per payment id) and marks it paid when nothing is left. */
+export const settleInvoicePayment = async (db, invoiceId, { orderId, paymentId, amount }, now = nowIso()) => {
+    const ref = docRef(db, 'invoice', invoiceId);
+    const out = await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) throw new DocError('NOT_FOUND', 'This invoice no longer exists.', 404);
+        const inv = snap.data();
+        if (!(inv.razorpayOrderIds || []).includes(orderId)) throw new DocError('VALIDATION', 'That payment isn’t for this invoice.');
+        const logs = Array.isArray(inv.paymentLogs) ? inv.paymentLogs : [];
+        if (logs.some(l => l.transactionId === paymentId)) return { inv, duplicate: true, paid: inv.status === INVOICE_STATUS.PAID };
+        const entry = {
+            kind: 'payment', type: 'Razorpay', amount: round2(amount), transactionId: paymentId,
+            note: `Razorpay order ${orderId}`, timestamp: now, recordedAt: now, verifiedBy: 'Razorpay (automatic)',
+        };
+        const next = { ...inv, paymentLogs: [...logs, entry], status: INVOICE_STATUS.PENDING };
+        const paid = invoiceDue(next) <= 0;
+        const updates = { paymentLogs: next.paymentLogs, updatedAt: now };
+        if (paid) {
+            updates.status = INVOICE_STATUS.PAID;
+            updates.paidAt = now;
+        }
+        if (inv.paymentClaim?.status === 'pending' && paid) updates.paymentClaim = { ...inv.paymentClaim, status: 'approved', reviewedAt: now, reviewedBy: 'Razorpay (automatic)' };
+        tx.update(ref, updates);
+        return { inv, duplicate: false, paid };
+    });
+    if (!out.duplicate) {
+        await notifyFinance(db, 'Invoice payment received',
+            `₹${round2(amount).toLocaleString('en-IN')} paid online for invoice #${out.inv.invoiceNumber || invoiceId}${out.paid ? ' (now fully paid)' : ''}.`)
+            .catch(err => console.warn('[SHARED-DOC] payment notice failed:', err.message));
+    }
+    return out;
+};
+
+const razorpayConfirm = async (db, body) => {
+    if (!razorpayConfigured()) throw new DocError('GATEWAY', 'Online payment isn’t set up.', 503);
+    const id = str(body.id, 128);
+    const orderId = str(body.razorpay_order_id, 80);
+    const paymentId = str(body.razorpay_payment_id, 80);
+    if (!gatewaySignatureOk(orderId, paymentId, str(body.razorpay_signature, 200))) {
+        throw new DocError('SIGNATURE', 'We couldn’t confirm that payment. If money left your account, contact us with your invoice number.');
+    }
+    // The signature proves this payment is for this Razorpay order; the amount comes from Razorpay.
+    const payment = await paidPaymentFor(orderId);
+    if (!payment || payment.id !== paymentId) throw new DocError('NOT_PAID', 'Razorpay hasn’t confirmed this payment yet.', 409);
+    const { paid } = await settleInvoicePayment(db, id, { orderId, paymentId, amount: payment.amount / 100 });
+    return { success: true, paid };
+};
+
 /* ---------- proposals ---------- */
 
 const respond = async (db, body, ctx) => {
@@ -226,7 +330,7 @@ const sign = async (db, body, ctx) => {
     return { success: true, approvalMetadata };
 };
 
-const ACTIONS = { view, claim, 'gateway-claim': gatewayClaim, respond, sign };
+const ACTIONS = { view, claim, 'gateway-claim': gatewayClaim, 'razorpay-start': razorpayStart, 'razorpay-confirm': razorpayConfirm, respond, sign };
 
 export const handleSharedDoc = async (req, res) => {
     const action = str(req.query?.action, 30);

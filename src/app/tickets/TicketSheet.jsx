@@ -11,7 +11,7 @@ import { useT } from '../../i18n';
 import { useTicketCheckout } from './useTicketCheckout';
 import PickTickets from './PickTickets';
 import ReviewOrder from './ReviewOrder';
-import PayByUpi from './PayByUpi';
+import PayOnline from './PayOnline';
 import TicketDone from './TicketDone';
 import { dayLabel, timeRange, venueName } from './eventDetails';
 import { ErrorText, rupees, StepDots } from './ticketParts';
@@ -24,7 +24,7 @@ import { ErrorText, rupees, StepDots } from './ticketParts';
  *   review  → the order, a coupon, who it's for, the terms. Missing profile
  *             fields (name, verified phone) are asked for in CompleteProfileSheet;
  *             the email comes from the account, or is asked for here.
- *   pay     → a UPI app (or the QR), then the UTR; or Razorpay when it's on
+ *   pay     → Razorpay (UPI, card, netbanking)
  *             (skipped when the order is free)
  *   done    → the booking reference; the pass lives at /p/{ref}
  *
@@ -126,18 +126,7 @@ const TicketSheet = ({ event, open, onClose, startTier = null }) => {
                 </div>
             );
         }
-        if (co.step === 'pay') {
-            if (!co.payments.upi) return co.error ? <ErrorText>{co.error}</ErrorText> : null;
-            return (
-                <div className="space-y-2">
-                    <ErrorText>{co.error}</ErrorText>
-                    <Button size="lg" className="w-full" onClick={() => co.placeOrder(customer())} loading={co.busy} disabled={!co.utrValid || co.proofBusy || (co.payments.requireProof && !co.proof)}>
-                        {t('I’ve paid · Confirm booking')}
-                    </Button>
-                    <p className="text-center text-[12px] text-gray-500 dark:text-zinc-500">{t('Tap this only after the payment goes through.')}</p>
-                </div>
-            );
-        }
+        if (co.step === 'pay') return co.error ? <ErrorText>{co.error}</ErrorText> : null;
         if (co.step === 'done' && co.result) {
             const confirmed = co.result.status !== 'pending';
             return (
@@ -200,7 +189,7 @@ const TicketSheet = ({ event, open, onClose, startTier = null }) => {
                         onEditProfile={() => { setEditAll(true); setProfileOpen(true); }}
                     />
                 )}
-                {event && co.step === 'pay' && <PayByUpi co={co} onPayOnline={() => co.payOnline(customer())} />}
+                {event && co.step === 'pay' && <PayOnline co={co} onPayOnline={() => co.payOnline(customer())} />}
                 {co.step === 'done' && co.result && <TicketDone result={co.result} event={event} />}
             </Sheet>
 
