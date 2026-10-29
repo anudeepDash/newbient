@@ -60,7 +60,7 @@ const numOrNull = (v) => (v === null || v === undefined || v === '' || isNaN(Num
  * Every field past id/name/price/capacity is optional and only set when the
  * admin filled it in (older events have none of them).
  */
-export const eventTiers = (event) => {
+const storedTiers = (event) => {
     const cats = Array.isArray(event?.ticketCategories) ? event.ticketCategories : [];
     if (cats.length) {
         return cats.map(c => {
@@ -92,6 +92,18 @@ export const eventTiers = (event) => {
         description: '', originalPrice: null, maxPerOrder: null, minPerOrder: null, admits: 1,
         salesStart: null, salesEnd: null, hidden: false, badge: '',
     }];
+};
+
+/**
+ * Free bookings (payments.free): the admin takes bookings without payment, so
+ * every ticket is priced at 0 for buyers. The stored prices stay on the event,
+ * so turning it off brings them back.
+ */
+export const eventIsFree = (event) => event?.payments?.free === true;
+
+export const eventTiers = (event) => {
+    const tiers = storedTiers(event);
+    return eventIsFree(event) ? tiers.map(t => ({ ...t, price: 0, originalPrice: null })) : tiers;
 };
 
 const capacityOrNull = numOrNull;

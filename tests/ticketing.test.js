@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-    eventTiers, priceCart, cartProblem, eventSaleState, tierSaleState, eventMaxPerOrder, tierMaxPerOrder,
+    eventTiers, priceCart, eventIsFree, cartProblem, eventSaleState, tierSaleState, eventMaxPerOrder, tierMaxPerOrder,
     normalizeUtr, isValidUtr, upiLink, upiQuery, linesAdmit, computeAvailability, orderHoldsSeats, istMoment,
 } from '../src/lib/ticketing.js';
 import { matchStatement, readStatement } from '../src/lib/paymentMatch.js';
@@ -162,5 +162,15 @@ describe('sale settings', () => {
         const form = fromEvent({ payments: { upi: true, requireProof: true } });
         expect(form.payments.requireProof).toBe(true);
         expect(toPayload(form).payments).toMatchObject({ upi: true, requireProof: true });
+    });
+
+    it('free bookings price every ticket at 0 and keep the stored prices', async () => {
+        const { fromEvent, toPayload } = await import('../src/components/admin/ticketing/saleModel.js');
+        const e = { ticketCategories: [{ id: 'a', name: 'GA', price: 500, originalPrice: 700 }], payments: { free: true } };
+        expect(eventIsFree(e)).toBe(true);
+        expect(eventTiers(e)[0]).toMatchObject({ price: 0, originalPrice: null });
+        expect(priceCart(e, { a: 2 }).subtotal).toBe(0);
+        expect(eventTiers({ ...e, payments: {} })[0].price).toBe(500);
+        expect(toPayload(fromEvent({ payments: { free: true } })).payments.free).toBe(true);
     });
 });

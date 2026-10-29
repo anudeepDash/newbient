@@ -22,7 +22,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { sendOrderEmail } from './mail/events.js';
 import {
     computeAvailability, priceCart, applyCoupon, couponProblem, normalizeCouponCode, makeBookingRef,
-    cartProblem, eventSaleState, normalizeUtr, isValidUtr, linesAdmit, AWAITING_PAYMENT, GATEWAY_HOLD_MINUTES,
+    cartProblem, eventIsFree, eventSaleState, normalizeUtr, isValidUtr, linesAdmit, AWAITING_PAYMENT, GATEWAY_HOLD_MINUTES,
 } from '../../src/lib/ticketing.js';
 
 class TicketError extends Error {
@@ -109,7 +109,7 @@ const publicAvailability = (event, availability) => {
         soldOut: availability.total.remaining === 0
             || (Object.values(availability.tiers).length > 0 && Object.values(availability.tiers).every(t => t.remaining === 0)),
         sale: { state: sale.state, opensAt: sale.opensAt?.toISOString?.() || null },
-        payments: { upi: upiOn(event), gateway: gatewayOn(event), requireProof: proofRequired(event) },
+        payments: { upi: upiOn(event), gateway: gatewayOn(event), requireProof: proofRequired(event), free: eventIsFree(event) },
     };
 };
 
