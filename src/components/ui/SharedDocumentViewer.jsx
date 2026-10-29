@@ -106,6 +106,8 @@ export default function SharedDocumentViewer({
     pdfBlobUrl: externalPdfBlobUrl,
     actionPanel,
     actionLabel,
+    onAction,
+    actionBusy = false,
     banner,
     summary = {},
     onStageWidth,
@@ -471,7 +473,7 @@ export default function SharedDocumentViewer({
                                 <Info size={17} /> {!awaitingAction && 'Details'}
                             </DocButton>
                             {awaitingAction ? (
-                                <DocButton theme={theme} onClick={() => setDetailsOpen(true)} className="flex-1">
+                                <DocButton theme={theme} onClick={() => (onAction ? onAction() : setDetailsOpen(true))} busy={actionBusy} className="flex-1">
                                     {actionLabel || 'Review'} <ChevronRight size={16} />
                                 </DocButton>
                             ) : (
