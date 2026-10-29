@@ -181,7 +181,7 @@ const LANDING_PATHS = [
     [/^\/agreement\/([^/]+)$/, 'agreement'],
     [/^\/doc\/([^/]+)$/, 'doc'],
     [/^\/artistant$/, 'artistant'],
-    [/^\/(contact|terms|privacy|verify-creator|verify-payout|register-payment|campus)$/, null],
+    [/^\/(contact|services|refund-policy|terms|privacy|verify-creator|verify-payout|register-payment|campus)$/, null],
 ];
 
 export const routeFromPath = (host, pathname) => {

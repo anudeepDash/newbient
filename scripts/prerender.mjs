@@ -67,6 +67,8 @@ export async function prerender({ root = process.cwd(), log = console.log } = {}
         '/community': ['src/landing/pages/CommunityPage.jsx'],
         '/work': ['src/landing/pages/WorkPage.jsx'],
         '/contact': ['src/pages/Contact.jsx'],
+        '/services': ['src/pages/Services.jsx'],
+        '/refund-policy': ['src/pages/Refunds.jsx'],
         '/terms': ['src/pages/Terms.jsx'],
         '/privacy': ['src/pages/Privacy.jsx'],
     };
