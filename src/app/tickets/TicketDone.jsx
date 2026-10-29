@@ -13,6 +13,7 @@ import { Notice } from '../creator/ui';
 import { useT } from '../../i18n';
 import { directionsUrl, googleCalendarUrl, icsDataUrl, platform } from './eventDetails';
 import { rupees } from './ticketParts';
+import { PassQr } from '../passes/passParts';
 
 /*
  * Booking done. A free or card-paid order has its pass at /p/{ref} already;
@@ -69,10 +70,17 @@ const TicketDone = ({ result, event }) => {
                 <h3 className="mt-3 font-heading text-[26px] font-black tracking-tight">{confirmed ? t('You’re in!') : t('Payment under verification')}</h3>
                 <p className="mt-1 max-w-sm text-[15px] text-gray-600 dark:text-zinc-400">
                     {confirmed
-                        ? (result.emailed && result.email ? t('Your pass is ready. We’ve also emailed it to {email}.', { email: result.email }) : t('Your pass is ready. Show its QR code at the entrance.'))
+                        ? (result.emailed && result.email ? t('Your pass is ready. We’ve also emailed it to {email}.', { email: result.email }) : t('Your pass is ready.'))
                         : t('We’re checking your UPI payment. Your ticket comes to the app, email and WhatsApp as soon as it’s verified.')}
                 </p>
             </div>
+
+            {confirmed && result.bookingRef && (
+                <section className="space-y-2 text-center">
+                    <PassQr value={result.bookingRef} size={208} />
+                    <p className="text-[13px] text-gray-600 dark:text-zinc-400">{t('Show this QR code at the entrance.')}</p>
+                </section>
+            )}
 
             <button type="button" onClick={copy} className="flex w-full items-center justify-between gap-3 rounded-2xl border border-dashed border-black/[0.12] px-4 py-3 text-left dark:border-white/[0.14]">
                 <span className="min-w-0">
