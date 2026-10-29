@@ -46,6 +46,7 @@ export default function LandingFooter() {
                     <p className={heading}>Newbi</p>
                     <Link to="/#about" className={item}>{t('About')}</Link>
                     <Link to="/work" className={item}>{t('Work')}</Link>
+                    <Link to="/services" className={item}>{t('Services')}</Link>
                     <Link to="/#enquire" className={item}>{t('Work with us')}</Link>
                     <Link to="/contact" className={item}>{t('Contact')}</Link>
                 </nav>
@@ -62,6 +63,7 @@ export default function LandingFooter() {
                     <p className={heading}>{t('Legal')}</p>
                     <Link to="/terms" className={item}>{t('Terms')}</Link>
                     <Link to="/privacy" className={item}>{t('Privacy')}</Link>
+                    <Link to="/refund-policy" className={item}>{t('Refunds')}</Link>
                     <button type="button" onClick={openConsentSettings} className={`${item} text-left`}>{t('Cookie settings')}</button>
                 </nav>
             </div>

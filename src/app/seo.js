@@ -158,6 +158,16 @@ export const PAGES = {
         title: "Let's make some noise",
         description: 'Planning a college activation, a live show or a creator campaign? Tell us about it. We reply within a working day.',
     },
+    services: {
+        site: 'landing', path: '/services',
+        title: 'Services and pricing',
+        description: 'Event tickets, live production, brand activations, creator campaigns and campus programmes from Newbi, with pricing and delivery details.',
+    },
+    'refund-policy': {
+        site: 'landing', path: '/refund-policy',
+        title: 'Cancellation and Refund Policy',
+        description: 'When a cancellation or refund applies at Newbi, how to ask for one and how long it takes.',
+    },
     terms: {
         site: 'landing', path: '/terms',
         title: 'Terms of Service',

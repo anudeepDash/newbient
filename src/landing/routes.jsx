@@ -71,6 +71,16 @@ export const LANDING_ROUTES = [
         },
     },
     {
+        path: '/services',
+        Page: lazyPage(() => import('../pages/Services.jsx')),
+        meta: { title: 'Services and pricing | newbi.live', description: 'Event tickets, live production, brand activations, creator campaigns and campus programmes from Newbi, with pricing and delivery details.' },
+    },
+    {
+        path: '/refund-policy',
+        Page: lazyPage(() => import('../pages/Refunds.jsx')),
+        meta: { title: 'Cancellation and Refund Policy | newbi.live', description: 'When a cancellation or refund applies at Newbi, how to ask for one and how long it takes.' },
+    },
+    {
         path: '/terms',
         Page: lazyPage(() => import('../pages/Terms.jsx')),
         meta: { title: 'Terms of Service | newbi.live', description: 'The terms for using newbi.live, app.newbi.live and Newbi services.' },
@@ -89,7 +99,7 @@ export const findRoute = (pathname) => {
 
 export const canonicalUrl = (path) => `${SITE}${path === '/' ? '/' : path}`;
 
-const CRUMBS = { '/work': 'Our work', '/creator': 'Creators', '/contact': 'Contact', '/terms': 'Terms of Service', '/privacy': 'Privacy Policy' };
+const CRUMBS = { '/work': 'Our work', '/creator': 'Creators', '/contact': 'Contact', '/services': 'Services', '/refund-policy': 'Cancellation and Refund Policy', '/terms': 'Terms of Service', '/privacy': 'Privacy Policy' };
 
 const ORGANIZATION = {
     '@type': 'Organization',

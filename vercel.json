@@ -295,7 +295,7 @@
             "permanent": false
         },
         {
-            "source": "/:page(contact|terms|privacy|artistant)",
+            "source": "/:page(contact|services|refund-policy|terms|privacy|artistant)",
             "has": [
                 {
                     "type": "host",
@@ -451,6 +451,16 @@
             "destination": "/_landing/contact/index.html"
         },
         {
+            "source": "/services",
+            "missing": [{ "type": "host", "value": "^(app|admin)\\.newbi\\.live$" }],
+            "destination": "/_landing/services/index.html"
+        },
+        {
+            "source": "/refund-policy",
+            "missing": [{ "type": "host", "value": "^(app|admin)\\.newbi\\.live$" }],
+            "destination": "/_landing/refund-policy/index.html"
+        },
+        {
             "source": "/terms",
             "missing": [{ "type": "host", "value": "^(app|admin)\\.newbi\\.live$" }],
             "destination": "/_landing/terms/index.html"
@@ -507,6 +517,14 @@
         {
             "source": "/contact",
             "destination": "/api/og?route=contact"
+        },
+        {
+            "source": "/services",
+            "destination": "/api/og?route=services"
+        },
+        {
+            "source": "/refund-policy",
+            "destination": "/api/og?route=refund-policy"
         },
         {
             "source": "/terms",
