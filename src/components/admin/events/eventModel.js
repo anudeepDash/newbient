@@ -301,9 +301,5 @@ export const eventProblems = (form, { soldByTier = {} } = {}) => {
 /** Tickets held per tier (for "can't remove a tier that has sales"). */
 export const soldPerTier = (availability) => Object.fromEntries(Object.entries(availability?.tiers || {}).map(([id, t]) => [id, t.held || 0]));
 
-/** Whether the ticketed event can take payments yet (details live in Ticket sales → Settings). */
-// Without these, checkout falls back to the site-wide UPI (site_settings/payment_info).
-export const hasPaymentSetup = (e) => Boolean(e?.upiId || e?.paymentDetails?.upiId || e?.qrCodeUrl || e?.gatewayUrl || e?.payments?.gateway === true);
-
 /** What changed between the stored event and the form, for the leave-without-saving check. */
 export const isSameForm = (a, b) => JSON.stringify(a) === JSON.stringify(b);

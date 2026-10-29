@@ -6,6 +6,7 @@ import { isValidSignature, isOwnHost, isValidUnsubscribeSig, readSignedToken } f
 import { recordWhatsAppStatus } from './_lib/whatsapp.js';
 import { onOutreachStatus, onOutreachInbound } from './_lib/outreachQueue.js';
 import { onVerifyMessage } from './_lib/waVerify.js';
+import { handleRazorpayWebhook } from './_lib/razorpayWebhook.js';
 
 // The WhatsApp webhook signs the exact bytes Meta sent, so this function reads
 // the body itself (see readBody) instead of letting the runtime parse it.
@@ -185,6 +186,9 @@ export default async function handler(req, res) {
 
     if (req.query?.type === 'whatsapp') {
         return handleWhatsAppWebhook(req, res, rawBody, req.body || {});
+    }
+    if (req.query?.type === 'razorpay') {
+        return handleRazorpayWebhook(req, res, rawBody);
     }
 
     const { 

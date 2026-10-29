@@ -26,7 +26,7 @@ import { AmbientColorField, EditorBar, PhoneBar, useConfirm, useImageField, useU
 import { BuilderCard, ImageSlot } from './EditorParts';
 import TicketTiers from './TicketTiers';
 import {
-    appPathFor, eventProblems, formatWhen, fromEvent, hasPaymentSetup, homeCardSource, isDraft,
+    appPathFor, eventProblems, formatWhen, fromEvent, homeCardSource, isDraft,
     isSameForm, soldPerTier, toPayload, todayKey,
 } from './eventModel';
 
@@ -161,8 +161,6 @@ const EventEditor = ({ event, orders = [], categories = [], onDone }) => {
     const previewData = useMemo(() => ({ ...toPayload(form, event), id: event?.id || 'preview' }), [form, event]);
     // Ticket sales' map builder (venueMap) replaces the venue image with drawn boxes.
     const seatMap = Boolean(event?.venueMap?.elements?.length);
-    const paidTickets = form.isTicketed && (form.tiers.length ? form.tiers.some(t => Number(t.price) > 0) : Number(form.basePrice) > 0);
-    const needsPayment = paidTickets && !hasPaymentSetup(event);
 
     const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
@@ -242,12 +240,7 @@ const EventEditor = ({ event, orders = [], categories = [], onDone }) => {
             }
 
             const doneMsg = asDraft ? 'Draft saved. It stays hidden until you publish.' : publishing ? 'Event published.' : 'Event saved.';
-            if (!asDraft && payload.isTicketed && paidTickets && !hasPaymentSetup(event)) {
-                addToast('Checkout uses the site-wide UPI until you set this event’s own.', 'info', {
-                    title: doneMsg,
-                    action: { label: 'Payment details', onClick: () => navigate(`/admin/ticketing?eventId=${encodeURIComponent(id)}&tab=settings`) },
-                });
-            } else {
+            {
                 addToast(doneMsg, 'success');
             }
             savingRef.current = false;
@@ -389,15 +382,6 @@ const EventEditor = ({ event, orders = [], categories = [], onDone }) => {
                                 <Field label="Rules" optional>
                                     <textarea className={areaCls} rows={2} value={form.ticketingRules} onChange={(e) => set({ ticketingRules: e.target.value })} placeholder="ID required, no outside food, no refunds…" />
                                 </Field>
-                                {needsPayment && (
-                                    <div className="flex items-start gap-2.5 rounded-xl bg-amber-500/10 px-3.5 py-3 text-[13px] font-semibold text-amber-800 dark:text-amber-200">
-                                        <AlertTriangle size={16} className="mt-0.5 shrink-0" />
-                                        <span>
-                                            No UPI or payment link for this event yet, so checkout uses the site-wide UPI. Set this event’s own in Ticket sales
-                                            {editing ? <> · <Link to={`/admin/ticketing?eventId=${encodeURIComponent(event.id)}&tab=settings`} className="underline underline-offset-2">open it</Link></> : ' after you save.'}
-                                        </span>
-                                    </div>
-                                )}
                             </div>
                         )}
 

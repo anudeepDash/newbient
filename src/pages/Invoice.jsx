@@ -11,25 +11,25 @@ import Settings from 'lucide-react/dist/esm/icons/settings';
 import LogOut from 'lucide-react/dist/esm/icons/log-out';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import SharedDocumentViewer from '../components/ui/SharedDocumentViewer';
 import Sheet from '../components/admin/Sheet';
 import { PanelCard, DocButton, docTheme, fmtDate, fmtMoney } from '../components/ui/docviewer/DocKit';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import Clock from 'lucide-react/dist/esm/icons/clock';
 import Wallet from 'lucide-react/dist/esm/icons/wallet';
-import Copy from 'lucide-react/dist/esm/icons/copy';
-import Check from 'lucide-react/dist/esm/icons/check';
 import Paperclip from 'lucide-react/dist/esm/icons/paperclip';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useStore } from '../lib/store';
 import useSharedDoc from '../hooks/useSharedDoc';
 import { sharedDocPost } from '../lib/passesApi';
+import { loadRazorpay } from '../lib/razorpayCheckout';
 import { safeLocalStorage } from '../lib/storage';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import NotificationBell from '../components/NotificationBell';
-import MarkAsPaidModal from '../components/invoice/MarkAsPaidModal';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import { getDocumentShareMeta } from '../lib/documentPreviewUtils';
 import { invoiceReceived, invoiceAmounts, daysOverdue } from '../lib/invoicing';
@@ -54,11 +54,11 @@ const Invoice = () => {
     const [scale, setScale] = React.useState(1);
     const [isExporting, setIsExporting] = React.useState(false);
     const [pdfBlobUrl, setPdfBlobUrl] = React.useState('');
-    const [showMarkAsPaid, setShowMarkAsPaid] = React.useState(false);
+    const [paying, setPaying] = React.useState(false);
+    const [payError, setPayError] = React.useState('');
     const [showAttachments, setShowAttachments] = React.useState(false);
     const [confirmPaid, setConfirmPaid] = React.useState(false);
     const [markingPaid, setMarkingPaid] = React.useState(false);
-    const [upiCopied, setUpiCopied] = React.useState(false);
 
     React.useEffect(() => {
         if (invoice?.pdfUrl) {
@@ -123,21 +123,6 @@ const Invoice = () => {
 
         logVisit();
     }, [id, isAdmin, invoice, location.search]);
-
-    React.useEffect(() => {
-        // Automatic Payment Verification Logic
-        const searchParams = new URLSearchParams(location.search);
-        const paymentStatus = searchParams.get('status');
-        const txid = searchParams.get('txid');
-
-        // A redirect URL is not proof of payment (anyone can type ?status=success),
-        // so record it as a claim for an admin to verify instead of marking it paid.
-        const alreadyClaimed = invoice?.paymentClaim?.status === 'pending' || invoice?.status === 'Verification Pending';
-        if (paymentStatus === 'success' && invoice && invoice.status !== 'Paid' && !alreadyClaimed && !isAdmin) {
-            sharedDocPost('gateway-claim', { id, txid: txid || null })
-                .then(res => { if (!res.ok) console.error("Payment claim failed:", res.error); });
-        }
-    }, [id, invoice, location.search, isAdmin]);
 
     const isQuickUpload = invoice?.pdfUrl && (!invoice.items || invoice.items.length === 0);
 
@@ -358,21 +343,44 @@ const Invoice = () => {
         }
     };
 
-    // The server records the claim (status 'Verification Pending') and tells finance.
-    const handlePaymentClaim = async (claimData) => {
-        const res = await sharedDocPost('claim', {
-            id,
-            name: claimData.name,
-            email: claimData.email,
-            method: claimData.method,
-            transactionId: claimData.transactionId,
-            amount: claimData.amount,
-        });
-        if (!res.ok) {
-            console.error('Payment claim failed:', res.error);
-            throw new Error(res.error);
+    // Razorpay is the only way to pay. The server works out the amount, checks Razorpay's
+    // signature and marks the invoice paid (Razorpay's webhook is the backstop).
+    const handlePayOnline = async () => {
+        setPaying(true);
+        setPayError('');
+        try {
+            const [Razorpay, started] = await Promise.all([loadRazorpay().catch(() => null), sharedDocPost('razorpay-start', { id })]);
+            if (!started.ok) { setPayError(started.error || 'Online payment isn’t working right now. Please try again in a moment.'); return; }
+            if (!Razorpay) { setPayError('The payment window didn’t load. Check your connection and try again.'); return; }
+            const s = started.data;
+            await new Promise((resolve) => {
+                const rzp = new Razorpay({
+                    key: s.keyId,
+                    order_id: s.gatewayOrderId,
+                    amount: s.amount,
+                    currency: s.currency,
+                    name: s.name,
+                    description: s.description,
+                    prefill: s.prefill,
+                    theme: { color: '#00A3CC' },
+                    handler: async (resp) => {
+                        const conf = await sharedDocPost('razorpay-confirm', { id, ...resp }, { timeoutMs: 25000 });
+                        if (conf.ok) {
+                            setLocalInvoice(prev => (prev ? (conf.data.paid ? { ...prev, status: 'Paid', paidAt: new Date().toISOString() } : prev) : prev));
+                            if (!conf.data.paid) setPayError('Payment received. A balance is still due on this invoice.');
+                        } else {
+                            setPayError(conf.error || 'Payment received, but we couldn’t confirm it yet. It will show here shortly; no need to pay again.');
+                        }
+                        resolve();
+                    },
+                    modal: { ondismiss: () => resolve() },
+                });
+                rzp.on('payment.failed', (e) => setPayError(e?.error?.description || 'The payment didn’t go through. Please try again.'));
+                rzp.open();
+            });
+        } finally {
+            setPaying(false);
         }
-        setLocalInvoice(prev => (prev ? { ...prev, status: 'Verification Pending', paymentClaim: { ...claimData, status: 'pending' } } : prev));
     };
 
     const handleShareWhatsApp = () => {
@@ -396,7 +404,7 @@ const Invoice = () => {
     const advancePaid = Number(displayInvoice.advancePaid) || 0;
     // Part-payments recorded by the team since the invoice was issued.
     const paymentsReceived = displayInvoice.status === 'Paid' ? 0 : invoiceReceived(displayInvoice);
-    // Rounded to paise: this amount goes into the UPI link and QR.
+    // Rounded to paise.
     const toBePaid = Math.max(0, Math.round((totalAmount - (displayInvoice.showAdvance ? advancePaid : 0) - paymentsReceived) * 100) / 100);
 
     // The same pages, split the same way, as the invoice builder and its PDF.
@@ -406,19 +414,10 @@ const Invoice = () => {
 
     const isPaid = displayInvoice.status === 'Paid';
     const isVerifying = !isPaid && (displayInvoice.status === 'Verification Pending' || displayInvoice.paymentClaim?.status === 'pending');
-    const showUpi = displayInvoice.showUPI !== false && Boolean(displayInvoice.upiId);
-    const upiLink = showUpi ? `upi://pay?pa=${displayInvoice.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR` : null;
-    const upiQr = displayInvoice.qrType === 'custom' && displayInvoice.customQrImage
-        ? displayInvoice.customQrImage
-        : (upiLink ? `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=8&data=${encodeURIComponent(upiLink)}` : null);
     const overdueBy = daysOverdue(displayInvoice);
     const dueLine = displayInvoice.dueDate
         ? (overdueBy > 0 ? `Overdue by ${overdueBy} ${overdueBy === 1 ? 'day' : 'days'}` : `Due ${fmtDate(displayInvoice.dueDate)}`)
         : 'Due on receipt';
-
-    const copyUpi = async () => {
-        try { await navigator.clipboard.writeText(displayInvoice.upiId); setUpiCopied(true); setTimeout(() => setUpiCopied(false), 2000); } catch { /* ignore */ }
-    };
 
     let payPanel = null;
     if (isPaid) {
@@ -429,50 +428,24 @@ const Invoice = () => {
     } else if (isVerifying && !isAdmin) {
         payPanel = (
             <PanelCard theme={docTheme('invoice')} icon={Clock} title="We’re checking your payment"
-                subtitle={`You told us you paid${displayInvoice.paymentClaim?.claimedAt ? ` on ${fmtDate(displayInvoice.paymentClaim.claimedAt)}` : ''}. We’ll email you once it’s confirmed.`} />
+                subtitle="We’ll email you once it’s confirmed." />
         );
     } else if (!isAdmin) {
         payPanel = (
             <PanelCard theme={docTheme('invoice')} icon={Wallet} title="Pay this invoice" subtitle={dueLine}>
                 <div className="space-y-2.5">
-                    {displayInvoice.paymentLink && (
-                        <a href={displayInvoice.paymentLink} target="_blank" rel="noopener noreferrer"
-                            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#00D1FF] text-[15px] font-bold text-black transition-transform active:scale-[0.98]">
-                            Pay {fmtMoney(toBePaid)} online <ExternalLink size={15} />
-                        </a>
-                    )}
-                    {showUpi && (
-                        <div className="rounded-xl border border-black/[0.07] p-3 dark:border-white/[0.08]">
-                            <a href={upiLink} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gray-900 text-[14px] font-semibold text-white dark:bg-white dark:text-black lg:hidden">
-                                Pay with a UPI app
-                            </a>
-                            <div className="hidden items-center gap-3 lg:flex">
-                                {upiQr && <img src={upiQr} alt="UPI QR code" className="h-24 w-24 shrink-0 rounded-lg border border-black/10 bg-white p-1" crossOrigin="anonymous" />}
-                                <p className="text-[13px] leading-snug text-gray-600 dark:text-zinc-300">Scan with any UPI app — GPay, PhonePe, Paytm — to pay <span className="font-semibold text-gray-900 dark:text-white">{fmtMoney(toBePaid)}</span>.</p>
-                            </div>
-                            <button type="button" onClick={copyUpi} className="mt-2.5 flex w-full items-center justify-between gap-2 rounded-lg bg-black/[0.03] px-3 py-2 text-left dark:bg-white/[0.05]">
-                                <span className="min-w-0">
-                                    <span className="block text-[11.5px] text-gray-500 dark:text-zinc-400">UPI ID</span>
-                                    <span className="block truncate font-mono text-[13px] text-gray-900 dark:text-white">{displayInvoice.upiId}</span>
-                                </span>
-                                <span className="flex shrink-0 items-center gap-1 text-[12.5px] font-semibold text-sky-600 dark:text-[#00D1FF]">
-                                    {upiCopied ? <Check size={14} /> : <Copy size={14} />} {upiCopied ? 'Copied' : 'Copy'}
-                                </span>
-                            </button>
-                        </div>
-                    )}
-                    {!displayInvoice.paymentLink && !showUpi && (
-                        <p className="text-[13px] text-gray-600 dark:text-zinc-300">Bank and payment details are on the invoice.</p>
-                    )}
-                    <DocButton variant="secondary" onClick={() => setShowMarkAsPaid(true)} className="w-full">
-                        <CheckCircle2 size={16} /> I’ve already paid
-                    </DocButton>
+                    <button type="button" onClick={handlePayOnline} disabled={paying || toBePaid <= 0}
+                        className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#00D1FF] text-[15px] font-bold text-black transition-transform active:scale-[0.98] disabled:opacity-60">
+                        <CreditCard size={16} /> {paying ? 'Opening payment…' : `Pay ${fmtMoney(toBePaid)}`}
+                    </button>
+                    {payError && <p role="alert" className="text-[13px] font-medium text-red-600 dark:text-red-400">{payError}</p>}
+                    <p className="flex items-center gap-1.5 text-[12px] text-gray-500 dark:text-zinc-400"><ShieldCheck size={13} /> UPI, cards and netbanking through Razorpay. Payment details never reach Newbi.</p>
                 </div>
             </PanelCard>
         );
     } else {
         payPanel = (
-            <PanelCard theme={docTheme('invoice')} icon={Wallet} title={isVerifying ? 'Client says they’ve paid' : 'Payment'} subtitle={isVerifying ? 'Check the claim in Invoices before confirming.' : `${dueLine}. Clients see the pay options here.`}>
+            <PanelCard theme={docTheme('invoice')} icon={Wallet} title={isVerifying ? 'Client says they’ve paid' : 'Payment'} subtitle={isVerifying ? 'Check the claim in Invoices before confirming.' : `${dueLine}. Clients pay online through Razorpay.`}>
                 <div className="grid gap-2">
                     {isVerifying && <Link to="/admin/invoices" className="flex h-11 items-center justify-center rounded-xl border border-black/10 text-[14px] font-semibold text-gray-800 dark:border-white/10 dark:text-zinc-100">Review the claim</Link>}
                     <DocButton theme={docTheme('invoice')} onClick={handleMarkPaid}><CheckCircle2 size={16} /> Mark as paid</DocButton>
@@ -554,14 +527,6 @@ const Invoice = () => {
                 )}
             </SharedDocumentViewer>
             
-            <MarkAsPaidModal
-                isOpen={showMarkAsPaid}
-                onClose={() => setShowMarkAsPaid(false)}
-                invoice={displayInvoice}
-                amountDue={toBePaid}
-                onSubmit={handlePaymentClaim}
-            />
-
             <Sheet open={confirmPaid} onClose={() => !markingPaid && setConfirmPaid(false)} variant="dialog" size="sm" zIndex={1000}
                 title="Mark this invoice paid?"
                 subtitle={`${displayInvoice.invoiceNumber || 'Invoice'} · ${fmtMoney(toBePaid)} still due. The client will see it as paid.`}

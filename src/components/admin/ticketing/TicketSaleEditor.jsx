@@ -22,7 +22,7 @@ import { APP_ORIGIN } from '../../../app/host';
 import VenueMapBuilder from './VenueMapBuilder';
 import { AmbientColorField } from '../forms/kit';
 import {
-    AGE_LIMITS, SEATING, TIER_BADGES, VENUE_TYPES, EMPTY_SALE, blankTier, fromEvent, newRowId, saleProblems, toPayload, usesSiteUpi,
+    AGE_LIMITS, SEATING, TIER_BADGES, VENUE_TYPES, EMPTY_SALE, blankTier, fromEvent, newRowId, saleProblems, toPayload,
 } from './saleModel';
 
 /*
@@ -208,8 +208,8 @@ const TicketSaleEditor = ({ open, onClose, event, onSaved, initialSection }) => 
     const setList = (key, fn) => setForm(f => ({ ...f, [key]: fn(f[key]) }));
 
     const problems = saleProblems(form, { soldByTier });
-    if (!form.payments.free && form.payments.gateway && !form.payments.upi && gatewayReady === false && form.tiers.some(t => Number(t.price) > 0)) {
-        problems.push({ section: 'payments', message: 'Razorpay isn’t set up yet, so keep UPI on or buyers can’t pay.' });
+    if (!form.payments.free && gatewayReady === false && form.tiers.some(t => Number(t.price) > 0)) {
+        problems.push({ section: 'payments', message: 'Razorpay isn’t set up yet, so buyers can’t pay. Add the Razorpay keys in Vercel first.' });
     }
     const problemsBy = problems.reduce((m, p) => ({ ...m, [p.section]: (m[p.section] || 0) + 1 }), {});
 
@@ -482,51 +482,16 @@ const TicketSaleEditor = ({ open, onClose, event, onSaved, initialSection }) => 
                         {form.showVenueMap && <VenueMapBuilder value={form.venueMap} onChange={(m) => set({ venueMap: m })} tiers={form.tiers} />}
                     </Card>
 
-                    <Card id="payments" title="Payments" hint="How buyers pay. Paid orders wait for your check before the ticket is issued.">
+                    <Card id="payments" title="Payments" hint="Razorpay takes every payment: UPI, cards and netbanking. Tickets are issued the moment a payment goes through.">
                         <Toggle label="Take bookings without payment" hint="Every ticket becomes free: buyers skip payment and get their pass straight away. Your ticket prices are kept, so turning this off brings them back."
                             checked={form.payments.free} onChange={(v) => set({ payments: { ...form.payments, free: v } })} />
-                        {!form.payments.free && <>
-                        <Toggle label="UPI (any UPI app)" hint="Buyers pay in GPay, PhonePe, Paytm or BHIM, then type the 12-digit UTR. You verify it in Orders."
-                            checked={form.payments.upi} onChange={(v) => set({ payments: { ...form.payments, upi: v } })} />
-                        {form.payments.upi && (
-                            <div className="space-y-3 rounded-2xl bg-black/[0.02] p-3 dark:bg-white/[0.02]">
-                                <div className="grid gap-3 sm:grid-cols-2">
-                                    <Field label="UPI ID" hint={usesSiteUpi(form) ? 'Blank: the site-wide UPI ID is used' : undefined}>
-                                        <input className={fieldCls} value={form.upiId} onChange={(e) => set({ upiId: e.target.value })} placeholder="newbi@okaxis" autoCapitalize="off" autoCorrect="off" spellCheck={false} />
-                                    </Field>
-                                    <Field label="Name buyers see" optional hint="As your bank shows it">
-                                        <input className={fieldCls} value={form.upiName} onChange={(e) => set({ upiName: e.target.value })} placeholder="Newbi Entertainment" />
-                                    </Field>
-                                </div>
-                                <Toggle label="This is a business (merchant) UPI ID" hint="Turn on for a PhonePe Business, Paytm for Business or bank merchant ID. Google Pay and PhonePe often block app payments to personal UPI IDs."
-                                    checked={form.upiMerchant} onChange={(v) => set({ upiMerchant: v })} />
-                                {form.upiMerchant && (
-                                    <Field label="Merchant category code" optional hint="4 digits, from your merchant account (e.g. 7929)">
-                                        <input className={cn(fieldCls, 'max-w-[160px]')} inputMode="numeric" maxLength={4} value={form.upiMerchantCode} onChange={(e) => set({ upiMerchantCode: e.target.value.replace(/\D/g, '') })} placeholder="7929" />
-                                    </Field>
-                                )}
-                                <Toggle label="Require a payment screenshot" hint="Buyers can't confirm until they add a screenshot of the payment, as well as the UTR."
-                                    checked={form.payments.requireProof} onChange={(v) => set({ payments: { ...form.payments, requireProof: v } })} />
-                                <Field label="QR image" optional hint="Your bank's QR. Blank: we make one for the exact amount.">
-                                    <div className="flex items-center gap-2">
-                                        <input className={fieldCls} type="url" inputMode="url" autoCapitalize="off" value={form.qrCodeUrl} onChange={(e) => set({ qrCodeUrl: e.target.value })} placeholder="https://…" />
-                                        <Button as="label" variant="secondary" className="h-12 shrink-0 cursor-pointer">
-                                            <Upload size={14} /> {uploading === 'qr' ? '…' : 'Upload'}
-                                            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) upload(f, 'qr', (url) => set({ qrCodeUrl: url })); }} />
-                                        </Button>
-                                    </div>
-                                </Field>
-                            </div>
+                        {!form.payments.free && (
+                            <p className="flex flex-wrap items-center gap-2 text-[13px] text-gray-600 dark:text-zinc-400">
+                                <span className="font-semibold text-gray-900 dark:text-white">Razorpay</span>
+                                {gatewayReady === false ? <Badge tone="amber">Not set up</Badge> : gatewayReady ? <Badge tone="green">Ready</Badge> : null}
+                                <span>{gatewayReady === false ? 'Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Vercel. Razorpay charges its fee on each payment.' : 'Razorpay charges its fee on each payment.'}</span>
+                            </p>
                         )}
-                        <Toggle
-                            label={<span className="inline-flex items-center gap-2">Card, netbanking and UPI via Razorpay {gatewayReady === false && <Badge tone="gray">Not set up</Badge>}</span>}
-                            hint={gatewayReady
-                                ? 'Confirmed automatically. Razorpay charges its fee on each payment.'
-                                : 'Turns on once RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET are added in Vercel. Until then buyers only see UPI.'}
-                            checked={form.payments.gateway}
-                            onChange={(v) => set({ payments: { ...form.payments, gateway: v } })}
-                        />
-                        </>}
                         {form.payments.free
                             ? <p className="text-[12px] font-semibold text-amber-700 dark:text-amber-400">Payments are off: every ticket is free for buyers.</p>
                             : !paidTiers && <p className="text-[12px] text-gray-500">Every ticket type is free right now, so nobody pays.</p>}

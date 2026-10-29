@@ -5,24 +5,24 @@
  * event — which buyers' browsers cannot — and enforce capacity, sale windows,
  * per-order limits and coupons.
  *
- *   ticket-availability   seats left, the sale state, which payment methods are on
+ *   ticket-config         is Razorpay set up on the server
+ *   ticket-availability   seats left, the sale state, whether the sale is free
  *   ticket-coupon         validate a code
- *   ticket-check          the cart again, the amount, and a booking reference to
- *                         put in the UPI payment note (so the payment can be found)
- *   ticket-order          UPI: saves the order with the UTR → "pending" until the
- *                         team verifies it; free orders are confirmed at once
- *   ticket-gateway-start  card/UPI gateway (Razorpay): holds the seats for 15 min
- *                         and opens a gateway order. Off until RAZORPAY_KEY_ID and
- *                         RAZORPAY_KEY_SECRET are set and the event turns it on.
- *   ticket-gateway-confirm  checks the gateway's signature (or, for staff, asks
- *                         the gateway) and confirms the order
+ *   ticket-check          the cart again, the amount, and a booking reference
+ *   ticket-order          free orders only: confirmed at once
+ *   ticket-gateway-start  Razorpay is the only way to pay: holds the seats for 15 min
+ *                         and opens a Razorpay order (needs RAZORPAY_KEY_ID and
+ *                         RAZORPAY_KEY_SECRET in the server env)
+ *   ticket-gateway-confirm  checks Razorpay's signature (or, for staff, asks Razorpay,
+ *                         or Razorpay's webhook) and confirms the order
  */
 import crypto from 'node:crypto';
 import { FieldValue } from 'firebase-admin/firestore';
 import { sendOrderEmail } from './mail/events.js';
+import { razorpay, razorpayConfigured, razorpayKeyId, gatewaySignatureOk, paidPaymentFor } from './razorpay.js';
 import {
     computeAvailability, priceCart, applyCoupon, couponProblem, normalizeCouponCode, makeBookingRef,
-    cartProblem, eventIsFree, eventSaleState, normalizeUtr, isValidUtr, linesAdmit, AWAITING_PAYMENT, GATEWAY_HOLD_MINUTES,
+    cartProblem, eventIsFree, eventSaleState, linesAdmit, AWAITING_PAYMENT, GATEWAY_HOLD_MINUTES,
 } from '../../src/lib/ticketing.js';
 
 class TicketError extends Error {
@@ -60,43 +60,10 @@ const findCoupon = async (db, code, eventId) => {
         || null;
 };
 
-// ── the payment gateway (dormant until configured) ──────────────────────────
+// ── the payment gateway: Razorpay, for every paid booking ──────────────────
 
-const gatewayKeys = () => ({
-    id: String(process.env.RAZORPAY_KEY_ID || '').trim(),
-    secret: String(process.env.RAZORPAY_KEY_SECRET || '').trim(),
-});
-export const gatewayConfigured = () => {
-    const { id, secret } = gatewayKeys();
-    return Boolean(id && secret);
-};
-const gatewayOn = (event) => gatewayConfigured() && event?.payments?.gateway === true;
-const upiOn = (event) => event?.payments?.upi !== false;
-const proofRequired = (event) => upiOn(event) && event?.payments?.requireProof === true;
-
-const razorpay = async (path, { method = 'GET', body } = {}) => {
-    const { id, secret } = gatewayKeys();
-    const res = await fetch(`https://api.razorpay.com/v1${path}`, {
-        method,
-        headers: {
-            Authorization: `Basic ${Buffer.from(`${id}:${secret}`).toString('base64')}`,
-            ...(body ? { 'Content-Type': 'application/json' } : {}),
-        },
-        body: body ? JSON.stringify(body) : undefined,
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data?.error?.description || `Razorpay ${res.status}`);
-    return data;
-};
-
-/** Razorpay's checkout signature: HMAC-SHA256 of "order_id|payment_id" with the key secret. */
-export const gatewaySignatureOk = (gatewayOrderId, paymentId, signature, secret = gatewayKeys().secret) => {
-    if (!secret || !gatewayOrderId || !paymentId || typeof signature !== 'string') return false;
-    const expected = crypto.createHmac('sha256', secret).update(`${gatewayOrderId}|${paymentId}`).digest('hex');
-    const a = Buffer.from(expected);
-    const b = Buffer.from(signature);
-    return a.length === b.length && crypto.timingSafeEqual(a, b);
-};
+export const gatewayConfigured = razorpayConfigured;
+export { gatewaySignatureOk };
 
 // ── shared checks ───────────────────────────────────────────────────────────
 
@@ -109,7 +76,7 @@ const publicAvailability = (event, availability) => {
         soldOut: availability.total.remaining === 0
             || (Object.values(availability.tiers).length > 0 && Object.values(availability.tiers).every(t => t.remaining === 0)),
         sale: { state: sale.state, opensAt: sale.opensAt?.toISOString?.() || null },
-        payments: { upi: upiOn(event), gateway: gatewayOn(event), requireProof: proofRequired(event), free: eventIsFree(event) },
+        payments: { gateway: razorpayConfigured(), free: eventIsFree(event) },
     };
 };
 
@@ -178,15 +145,9 @@ const freeBookingRef = async (db, wanted, tx) => {
     throw new TicketError('SERVER', 'Please try again.', 503);
 };
 
-// Payment screenshots are uploaded to the site's Cloudinary account; nothing else is stored.
-const proofUrl = (value) => {
-    const s = String(value || '').trim();
-    return /^https:\/\/res\.cloudinary\.com\/[\w-]+\/image\/upload\/\S+$/i.test(s) && s.length < 500 ? s : null;
-};
-
 const sendFirstEmail = async (result, orderId, event) => {
-    // Free tickets get their pass straight away; paid UPI orders get "order received"
-    // until the team verifies the payment. Awaited, but never fails the order.
+    // The pass goes out as soon as the order is confirmed (free, or paid on Razorpay).
+    // Awaited, but never fails the order.
     try {
         const sent = await sendOrderEmail(orderId, { event });
         result.emailed = Boolean(sent?.delivery?.email?.status === 'sent' || sent?.duplicate);
@@ -238,16 +199,13 @@ const checkAction = async (db, body) => {
 
 /**
  * Saves an order in one transaction (capacity, the coupon count, a unique
- * reference). method 'upi' needs a UTR; 'gateway' holds seats until paid.
+ * reference). method 'gateway' (Razorpay) holds the seats until paid; 'free'
+ * is for orders that cost nothing.
  */
 const placeOrder = async (db, body, decodedToken, method) => {
     const customer = readCustomer(body.customer);
     const { event, lines, subtotal } = await readCart(db, body);
-    if (method === 'gateway' && !gatewayOn(event)) throw new TicketError('VALIDATION', 'Card payment isn’t available for this event.');
-
-    const rawUtr = String(body.paymentRef || '').trim();
-    const utr = normalizeUtr(rawUtr);
-    const proof = proofUrl(body.paymentProof);
+    if (method === 'gateway' && !razorpayConfigured()) throw new TicketError('GATEWAY', 'Online payment isn’t set up yet. Please try again later.', 503);
 
     // Coupon documents are looked up by code outside the transaction, then
     // re-read inside it so the usage count is checked and bumped atomically.
@@ -262,14 +220,11 @@ const placeOrder = async (db, body, decodedToken, method) => {
     const wantedRef = typeof body.bookingRef === 'string' ? body.bookingRef.toUpperCase() : null;
 
     return db.runTransaction(async (tx) => {
-        const [eventSnap, lockSnap, orders, couponSnap, duplicateSnap] = await Promise.all([
+        const [eventSnap, lockSnap, orders, couponSnap] = await Promise.all([
             tx.get(eventRef),
             tx.get(lockRef),
             eventOrders(db, event.id, tx),
             couponCandidate ? tx.get(couponCandidate.ref) : Promise.resolve(null),
-            method === 'upi' && isValidUtr(utr)
-                ? tx.get(db.collection('ticket_orders').where('paymentRef', '==', utr).limit(1))
-                : Promise.resolve(null),
         ]);
         void lockSnap;
         const freshEvent = { id: eventSnap.id, ...eventSnap.data() };
@@ -279,27 +234,18 @@ const placeOrder = async (db, body, decodedToken, method) => {
         const { discount, total } = applyCoupon(subtotal, couponIssue ? null : coupon);
         const isPaid = total > 0;
 
-        if (method === 'upi' && isPaid && !upiOn(freshEvent)) throw new TicketError('VALIDATION', 'UPI payment isn’t available for this event.');
         if (method === 'gateway' && !isPaid) throw new TicketError('VALIDATION', 'These tickets are free. No payment needed.');
-        if (method === 'upi' && isPaid) {
-            if (!rawUtr) throw new TicketError('UTR_REQUIRED', 'Enter the 12-digit UTR from your UPI app.');
-            if (!isValidUtr(utr)) throw new TicketError('UTR_INVALID', 'A UTR is 12 digits. Copy it from the payment in your UPI app.');
-            if (!proof && proofRequired(freshEvent)) throw new TicketError('PROOF_REQUIRED', 'Add a screenshot of the payment to confirm your booking.');
-            if (duplicateSnap && !duplicateSnap.empty) {
-                throw new TicketError('DUPLICATE_PAYMENT', 'This UTR has already been used for a booking. Check the number in your UPI app.', 409);
-            }
-        }
+        if (method === 'free' && isPaid) throw new TicketError('VALIDATION', 'These tickets need to be paid for online.');
 
         const shortage = shortageMessage(freshEvent, availability, lines);
-        // A free booking or a gateway hold can simply be refused. A UPI buyer has
-        // usually paid already, so keep the order and flag it for the team.
-        if (shortage && (!isPaid || method === 'gateway')) throw new TicketError('SOLD_OUT', shortage, 409);
-        if (couponIssue && couponCandidate && (!isPaid || method === 'gateway')) throw new TicketError('COUPON_INVALID', couponIssue);
+        // Nothing is paid yet, so a sold-out event or a bad coupon simply refuses the order.
+        if (shortage) throw new TicketError('SOLD_OUT', shortage, 409);
+        if (couponIssue && couponCandidate) throw new TicketError('COUPON_INVALID', couponIssue);
 
         const bookingRef = await freeBookingRef(db, wantedRef, tx);
         const now = new Date();
         const nowIso = now.toISOString();
-        const status = !isPaid ? 'confirmed' : method === 'gateway' ? AWAITING_PAYMENT : 'pending';
+        const status = !isPaid ? 'confirmed' : AWAITING_PAYMENT;
         const order = {
             eventId: event.id,
             eventTitle: freshEvent.title || '',
@@ -313,9 +259,7 @@ const placeOrder = async (db, body, decodedToken, method) => {
             discount,
             totalAmount: total,
             paymentMethod: !isPaid ? 'free' : method,
-            paymentRef: !isPaid ? 'FREE' : method === 'upi' ? utr : '',
-            ...(method === 'upi' && isPaid && proof ? { paymentProof: proof } : {}),
-            ...(method === 'upi' && isPaid ? { paidTo: String(freshEvent.upiId || '').slice(0, 120) || null } : {}),
+            paymentRef: !isPaid ? 'FREE' : '',
             ...(status === AWAITING_PAYMENT ? { holdUntil: new Date(now.getTime() + GATEWAY_HOLD_MINUTES * 60000).toISOString() } : {}),
             bookingRef,
             appliedCoupon: coupon && !couponIssue
@@ -348,7 +292,7 @@ const placeOrder = async (db, body, decodedToken, method) => {
 };
 
 const orderAction = async (db, body, decodedToken) => {
-    const { event, result } = await placeOrder(db, body, decodedToken, 'upi');
+    const { event, result } = await placeOrder(db, body, decodedToken, 'free');
     return sendFirstEmail(result, result.orderId, event);
 };
 
@@ -370,7 +314,7 @@ const gatewayStartAction = async (db, body, decodedToken) => {
             success: true,
             orderId: result.orderId,
             bookingRef: result.bookingRef,
-            keyId: gatewayKeys().id,
+            keyId: razorpayKeyId(),
             gatewayOrderId: gw.id,
             amount: gw.amount,
             currency: gw.currency || 'INR',
@@ -381,37 +325,14 @@ const gatewayStartAction = async (db, body, decodedToken) => {
         // Couldn't open the payment: give the seats straight back.
         await orderRef.update({ status: 'rejected', rejectedAt: new Date().toISOString(), rejectReason: 'gateway_unavailable', holdUntil: null }).catch(() => {});
         console.error('[API/TICKETS] gateway order failed:', err.message);
-        throw new TicketError('GATEWAY', 'Card payment isn’t working right now. Please pay by UPI instead.', 503);
+        throw new TicketError('GATEWAY', 'Online payment isn’t working right now. Please try again in a moment.', 503);
     }
 };
 
-const gatewayConfirmAction = async (db, body, decodedToken, { isStaff } = {}) => {
-    if (!gatewayConfigured()) throw new TicketError('GATEWAY', 'Card payment isn’t set up.', 503);
-    const orderId = String(body.orderId || '');
-    if (!orderId || orderId.length > 64) throw new TicketError('VALIDATION', 'Missing order.');
-    const orderRef = db.collection('ticket_orders').doc(orderId);
-    const snap = await orderRef.get();
-    if (!snap.exists) throw new TicketError('NOT_FOUND', 'Order not found.', 404);
-    const order = snap.data();
-    if (!order.gatewayOrderId) throw new TicketError('VALIDATION', 'This order wasn’t paid online.');
-
-    let paymentId = null;
-    if (body.sync) {
-        // Staff "check with Razorpay": ask the gateway whether it was paid.
-        if (!(await isStaff?.())) throw new TicketError('FORBIDDEN', 'Forbidden', 403);
-        const payments = await razorpay(`/orders/${encodeURIComponent(order.gatewayOrderId)}/payments`);
-        const paid = (payments?.items || []).find(p => p.status === 'captured' || p.status === 'authorized');
-        if (!paid) return { success: true, paid: false, status: order.status };
-        paymentId = paid.id;
-    } else {
-        if (body.razorpay_order_id !== order.gatewayOrderId || !gatewaySignatureOk(order.gatewayOrderId, body.razorpay_payment_id, body.razorpay_signature)) {
-            throw new TicketError('SIGNATURE', 'We couldn’t confirm that payment. If money left your account, contact us with your booking reference.', 400);
-        }
-        paymentId = String(body.razorpay_payment_id);
-    }
-
+/** Marks a Razorpay-paid order confirmed and sends the pass. Safe to call twice (checkout and webhook both do). */
+const settleOrder = async (db, orderRef, order, paymentId) => {
     if (order.status !== AWAITING_PAYMENT && order.paymentRef === paymentId) {
-        return { success: true, paid: true, status: order.status, bookingRef: order.bookingRef };
+        return { success: true, paid: true, status: order.status, bookingRef: order.bookingRef, orderId: orderRef.id };
     }
     const now = new Date().toISOString();
     // Paid after the hold ran out: they keep the order, the team sees the flag.
@@ -424,12 +345,48 @@ const gatewayConfirmAction = async (db, body, decodedToken, { isStaff } = {}) =>
         holdUntil: null,
         ...(late ? { overCapacity: true, overCapacityNote: 'Paid online after the seat hold expired. Check capacity.' } : {}),
     });
-    const result = { success: true, paid: true, status: 'dispatched', bookingRef: order.bookingRef, orderId };
-    return sendFirstEmail(result, orderId, null);
+    const result = { success: true, paid: true, status: 'dispatched', bookingRef: order.bookingRef, orderId: orderRef.id };
+    return sendFirstEmail(result, orderRef.id, null);
+};
+
+/** Razorpay's webhook says this gateway order was paid. Returns true when it was one of our ticket orders. */
+export const settleTicketByGatewayOrder = async (db, gatewayOrderId, paymentId) => {
+    const q = await db.collection('ticket_orders').where('gatewayOrderId', '==', gatewayOrderId).limit(1).get();
+    if (q.empty) return false;
+    const doc = q.docs[0];
+    await settleOrder(db, doc.ref, doc.data(), String(paymentId));
+    return true;
+};
+
+const gatewayConfirmAction = async (db, body, decodedToken, { isStaff } = {}) => {
+    if (!razorpayConfigured()) throw new TicketError('GATEWAY', 'Online payment isn’t set up.', 503);
+    const orderId = String(body.orderId || '');
+    if (!orderId || orderId.length > 64) throw new TicketError('VALIDATION', 'Missing order.');
+    const orderRef = db.collection('ticket_orders').doc(orderId);
+    const snap = await orderRef.get();
+    if (!snap.exists) throw new TicketError('NOT_FOUND', 'Order not found.', 404);
+    const order = snap.data();
+    if (!order.gatewayOrderId) throw new TicketError('VALIDATION', 'This order wasn’t paid online.');
+
+    let paymentId = null;
+    if (body.sync) {
+        // Staff "check with Razorpay": ask the gateway whether it was paid.
+        if (!(await isStaff?.())) throw new TicketError('FORBIDDEN', 'Forbidden', 403);
+        const paid = await paidPaymentFor(order.gatewayOrderId);
+        if (!paid) return { success: true, paid: false, status: order.status };
+        paymentId = paid.id;
+    } else {
+        if (body.razorpay_order_id !== order.gatewayOrderId || !gatewaySignatureOk(order.gatewayOrderId, body.razorpay_payment_id, body.razorpay_signature)) {
+            throw new TicketError('SIGNATURE', 'We couldn’t confirm that payment. If money left your account, contact us with your booking reference.', 400);
+        }
+        paymentId = String(body.razorpay_payment_id);
+    }
+
+    return settleOrder(db, orderRef, order, paymentId);
 };
 
 // What the admin's payment settings need to know: is the gateway set up on the server?
-const configAction = async () => ({ success: true, gatewayReady: gatewayConfigured() });
+const configAction = async () => ({ success: true, gatewayReady: razorpayConfigured() });
 
 const ACTIONS = {
     'ticket-config': configAction,

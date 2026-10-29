@@ -2,12 +2,12 @@ import React from 'react';
 import LegalDoc, { P, UL, H3, A } from './legal/LegalDoc';
 
 /*
- * newbi.live/terms. Keep it in step with how the product works (manual UPI
- * checkout with a UTR, creator campaigns and payouts, guestlists, giveaways),
+ * newbi.live/terms. Keep it in step with how the product works (Razorpay
+ * checkout, creator campaigns and payouts, guestlists, giveaways),
  * and update UPDATED with every change.
  */
 
-const UPDATED = '21 October 2026';
+const UPDATED = '29 October 2026';
 const LEGAL = <A href="mailto:legal@newbi.live">legal@newbi.live</A>;
 const SUPPORT = <A href="mailto:support@newbi.live">support@newbi.live</A>;
 
@@ -50,9 +50,8 @@ const sections = [
                 <H3>Buying tickets</H3>
                 <UL items={[
                     'Prices are shown in Indian rupees before you pay and include any fee we charge, unless the listing says otherwise.',
-                    'You pay by UPI from your own app, then enter the UPI transaction reference (UTR). Your booking stays pending until our team matches the UTR to the payment, then your passes appear in your account.',
-                    'Each UTR can be used once. A false, reused or someone else’s UTR is fraud: we cancel the booking without a refund and may close the account.',
-                    'If an event uses an outside payment page, that provider’s terms apply to the payment itself.',
+                    'You pay online in Razorpay’s checkout, by UPI, card or netbanking. Your booking is confirmed as soon as the payment goes through, and your passes appear in your account.',
+                    'Razorpay’s terms apply to the payment itself. Faking or disputing a payment you made in bad faith is fraud: we cancel the booking without a refund and may close the account.',
                 ]} />
                 <H3>Passes and entry</H3>
                 <UL items={[

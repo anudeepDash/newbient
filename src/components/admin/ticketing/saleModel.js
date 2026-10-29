@@ -1,4 +1,4 @@
-import { isValidUpiId, MAX_PER_ORDER_CAP } from '../../../lib/ticketing';
+import { MAX_PER_ORDER_CAP } from '../../../lib/ticketing';
 import { normalizeVenueMap } from '../../../lib/venueMap';
 import { cleanAmbient } from '../../../lib/ambientColor';
 
@@ -205,17 +205,9 @@ export const saleProblems = (form, { soldByTier = {} } = {}) => {
         if (intOrNull(t.minPerOrder) > 1 && intOrNull(t.maxPerOrder) && intOrNull(t.minPerOrder) > intOrNull(t.maxPerOrder)) add('tickets', `${label}: the minimum per order is above the maximum.`);
     });
     if (form.salesStart && form.salesEnd && form.salesStart > form.salesEnd) add('tickets', 'Sales end before they start.');
-    const paid = tiers.some(t => t.price > 0) && !form.payments.free;
-    if (form.upiId.trim() && !isValidUpiId(form.upiId)) add('payments', 'That UPI ID looks wrong. It should look like name@bank.');
-    if (form.qrCodeUrl.trim() && !/^https:\/\/\S+$/i.test(form.qrCodeUrl.trim())) add('payments', 'The QR image link should start with https://');
-    if (paid && !form.payments.upi && !form.payments.gateway) add('payments', 'Turn on at least one way to pay.');
-    if (form.upiMerchant && form.upiMerchantCode && !/^\d{4}$/.test(form.upiMerchantCode)) add('payments', 'A merchant category code is 4 digits.');
     form.faqs.forEach((f, i) => { if (!f.q.trim() && f.a.trim()) add('faqs', `Question ${i + 1} has an answer but no question.`); });
     return out;
 };
-
-/** Paid tickets but no UPI ID here: checkout falls back to the site-wide UPI details (Payments → site settings). */
-export const usesSiteUpi = (form) => form.payments.upi && !form.upiId.trim();
 
 /** The fields to save. */
 export const toPayload = (form) => {

@@ -1,13 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
-import { useStore as useLegacyStore } from '../../lib/store.js';
 import { callTicketApi } from '../../lib/ticketApi';
+import { loadRazorpay } from '../../lib/razorpayCheckout';
 import {
-    applyCoupon, cartProblem, eventMaxPerOrder, eventSaleState, eventTiers, isValidUtr, linesAdmit,
-    normalizeCouponCode, normalizeUtr, priceCart, tierMaxPerOrder, tierMinPerOrder, tierSaleState,
+    applyCoupon, cartProblem, eventMaxPerOrder, eventSaleState, eventTiers, linesAdmit,
+    normalizeCouponCode, priceCart, tierMaxPerOrder, tierMinPerOrder, tierSaleState,
 } from '../../lib/ticketing';
-import { uploadProof } from '../creator/api';
 
 /*
  * The ticket checkout for one event, without any UI.
@@ -15,22 +12,17 @@ import { uploadProof } from '../creator/api';
  *   tickets  pick ticket types (list or venue map), within each type's
  *            limits, the order limit, seats left and sale windows
  *   review   the order, a coupon, the buyer's details, the terms
- *   pay      UPI: open a UPI app (or scan the QR) for the exact amount, then
- *            enter the 12-digit UTR (and a screenshot: optional unless the
- *            sale requires one). The order
- *            is then "pending" until the team checks the payment.
- *            Razorpay (when the event has it on): pay in their checkout and
- *            the order confirms itself.
+ *   pay      Razorpay is the only way to pay: its checkout takes UPI, cards
+ *            and netbanking, and the order confirms itself. Free orders skip
+ *            this step and are confirmed at once.
  *   done     the booking reference; the pass lives at /p/{ref}
  *
  * Server calls (api/_lib/tickets.js): ticket-availability, ticket-coupon,
- * ticket-check (seats, coupon and the amount, plus a booking reference that
- * goes in the UPI note so the payment can be found), ticket-order,
- * ticket-gateway-start / -confirm.
+ * ticket-check (seats, coupon and the amount, plus a booking reference),
+ * ticket-order (free orders), ticket-gateway-start / -confirm.
  *
- * The draft (cart, coupon, step, reference, UTR) is kept in sessionStorage per
- * event, so a phone that reloads the page after switching to the UPI app
- * comes back to the payment screen.
+ * The draft (cart, coupon, step, reference) is kept in sessionStorage per
+ * event, so a reload comes back to the payment screen.
  */
 
 const DRAFT_KEY = (id) => `newbi:tickets:${id}`;
@@ -42,37 +34,6 @@ const writeDraft = (id, draft) => {
         if (draft) window.sessionStorage.setItem(DRAFT_KEY(id), JSON.stringify(draft));
         else window.sessionStorage.removeItem(DRAFT_KEY(id));
     } catch { /* private mode: no draft */ }
-};
-
-/* The UPI details: the event's own, else the site's (site_settings/payment_info). */
-let paymentInfo = null;
-const loadPaymentInfo = () => {
-    if (!paymentInfo) {
-        const legacy = useLegacyStore.getState().paymentDetails;
-        paymentInfo = legacy?.upiId || legacy?.qrCodeUrl || !db
-            ? Promise.resolve(legacy || {})
-            : getDoc(doc(db, 'site_settings', 'payment_info'))
-                .then(s => (s.exists() ? s.data() : {}))
-                .catch(() => ({}));
-    }
-    return paymentInfo;
-};
-
-/* Razorpay's checkout script, loaded only when someone picks card payment. */
-let razorpayScript = null;
-const loadRazorpay = () => {
-    if (window.Razorpay) return Promise.resolve(window.Razorpay);
-    if (!razorpayScript) {
-        razorpayScript = new Promise((resolve, reject) => {
-            const s = document.createElement('script');
-            s.src = 'https://checkout.razorpay.com/v1/checkout.js';
-            s.async = true;
-            s.onload = () => (window.Razorpay ? resolve(window.Razorpay) : reject(new Error('no Razorpay')));
-            s.onerror = () => { razorpayScript = null; reject(new Error('script failed')); };
-            document.head.appendChild(s);
-        });
-    }
-    return razorpayScript;
 };
 
 const UNREACHABLE = 'We couldn’t reach the ticket service. Check your connection and try again.';
@@ -92,15 +53,10 @@ export function useTicketCheckout(event, { open }) {
     const [couponError, setCouponError] = useState('');
     const [amountDue, setAmountDue] = useState(0);
     const [bookingRef, setBookingRef] = useState('');
-    const [utr, setUtrRaw] = useState('');
-    const [proof, setProof] = useState('');
-    const [proofBusy, setProofBusy] = useState(false);
-    const [launched, setLaunched] = useState(false);
     const [agreed, setAgreed] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
     const [result, setResult] = useState(null);
-    const [payment, setPayment] = useState({});
     const [now, setNow] = useState(() => new Date());
 
     // A fresh checkout each time the sheet opens on an event, picking up a saved draft.
@@ -118,9 +74,6 @@ export function useTicketCheckout(event, { open }) {
         setCouponError('');
         setAmountDue(draft?.amountDue || 0);
         setBookingRef(draft?.bookingRef || '');
-        setUtrRaw(draft?.utr || '');
-        setProof(draft?.proof || '');
-        setLaunched(Boolean(draft?.launched));
         setAgreed(Boolean(draft?.agreed));
         setStep(draftStep === 'pay' && draft?.amountDue > 0 ? 'pay' : draftStep === 'review' ? 'review' : 'tickets');
         setResult(null);
@@ -131,8 +84,8 @@ export function useTicketCheckout(event, { open }) {
     useEffect(() => {
         if (!open || !eventId || initFor.current !== eventId) return;
         if (step === 'done') { writeDraft(eventId, null); return; }
-        writeDraft(eventId, { cart, coupon, step, amountDue, bookingRef, utr, proof, launched, agreed });
-    }, [open, eventId, cart, coupon, step, amountDue, bookingRef, utr, proof, launched, agreed]);
+        writeDraft(eventId, { cart, coupon, step, amountDue, bookingRef, agreed });
+    }, [open, eventId, cart, coupon, step, amountDue, bookingRef, agreed]);
 
     const refreshAvailability = useCallback(async () => {
         if (!eventId || !event?.isTicketed) return null;
@@ -145,7 +98,6 @@ export function useTicketCheckout(event, { open }) {
         if (!open || !eventId) return undefined;
         setAvailability(null);
         refreshAvailability();
-        loadPaymentInfo().then(setPayment);
         // Sale windows open and close while the page is open.
         const timer = setInterval(() => setNow(new Date()), 30000);
         return () => clearInterval(timer);
@@ -172,11 +124,10 @@ export function useTicketCheckout(event, { open }) {
     const people = linesAdmit(lines);
     const orderMax = event ? eventMaxPerOrder(event) : 10;
 
-    /* How this sale takes money: the server's word once availability loads, else the event's. */
+    /* How this sale takes money: the server's word once availability loads. Razorpay is the only way to pay. */
     const payments = {
-        upi: availability?.payments ? availability.payments.upi : event?.payments?.upi !== false,
         gateway: Boolean(availability?.payments?.gateway),
-        requireProof: availability?.payments ? Boolean(availability.payments.requireProof) : event?.payments?.requireProof === true,
+        free: Boolean(availability?.payments?.free),
     };
 
     /* The most of this tier the cart can hold right now. */
@@ -299,7 +250,7 @@ export function useTicketCheckout(event, { open }) {
             setAvailability(res.data.availability);
             setBookingRef(res.data.bookingRef || '');
             setAmountDue(res.data.total);
-            if (res.data.total <= 0) return placeOrder(customer, { free: true, ref: res.data.bookingRef });
+            if (res.data.total <= 0) return placeOrder(customer, { ref: res.data.bookingRef });
             setStep('pay');
             return true;
         } finally {
@@ -318,19 +269,12 @@ export function useTicketCheckout(event, { open }) {
             email: customer.email,
             emailed: done.emailed,
             flagged: Boolean(done.overCapacity || done.couponRejected),
-            utr: done.status === 'pending' ? normalizeUtr(utr) : '',
         });
         setStep('done');
     };
 
-    /* Places the order. customer: { name, email, phone } from the profile. */
-    const placeOrder = async (customer, { free = false, ref = null } = {}) => {
-        const clean = normalizeUtr(utr);
-        if (!free) {
-            if (!clean) { setError('Enter the 12-digit UTR from your UPI app.'); return false; }
-            if (!isValidUtr(clean)) { setError('A UTR is 12 digits. Copy it from the payment in your UPI app.'); return false; }
-            if (payments.requireProof && !proof) { setError('Add a screenshot of the payment to confirm your booking.'); return false; }
-        }
+    /* Places a free order (nothing to pay). customer: { name, email, phone } from the profile. */
+    const placeOrder = async (customer, { ref = null } = {}) => {
         setBusy(true);
         setError('');
         try {
@@ -338,29 +282,27 @@ export function useTicketCheckout(event, { open }) {
                 eventId,
                 items: itemsForApi(),
                 couponCode: coupon?.code || null,
-                paymentRef: free ? '' : clean,
-                paymentProof: free ? '' : proof,
                 bookingRef: ref || bookingRef || null,
                 customer,
             }, { timeoutMs: 25000 });
             if (!res.ok) {
-                if (res.unavailable) setError(free ? UNREACHABLE : 'We couldn’t reach the ticket service. Your UTR is saved here: try again in a moment.');
+                if (res.unavailable) setError(UNREACHABLE);
                 else if (['SOLD_OUT', 'COUPON_INVALID', 'NOT_ON_SALE'].includes(res.code)) refused(res);
                 else setError(res.error || 'We couldn’t complete your booking.');
                 return false;
             }
-            finish(res.data, customer, free ? 0 : amountDue);
+            finish(res.data, customer, 0);
             return true;
         } catch (err) {
             console.warn('[app/tickets] order failed:', err);
-            setError('We couldn’t complete your booking. If you’ve already paid, don’t worry: your UTR is saved here, try again.');
+            setError('We couldn’t complete your booking. Please try again.');
             return false;
         } finally {
             setBusy(false);
         }
     };
 
-    /* Card / netbanking / UPI through Razorpay. */
+    /* UPI, card or netbanking through Razorpay. */
     const payOnline = async (customer) => {
         setBusy(true);
         setError('');
@@ -372,10 +314,10 @@ export function useTicketCheckout(event, { open }) {
             if (!res.ok) {
                 if (res.unavailable) setError(UNREACHABLE);
                 else if (['SOLD_OUT', 'COUPON_INVALID', 'NOT_ON_SALE'].includes(res.code)) refused(res);
-                else setError(res.error || 'Card payment isn’t working right now. Please pay by UPI.');
+                else setError(res.error || 'Online payment isn’t working right now. Please try again in a moment.');
                 return false;
             }
-            if (!Razorpay) { setError('The payment window didn’t load. Check your connection, or pay by UPI.'); return false; }
+            if (!Razorpay) { setError('The payment window didn’t load. Check your connection and try again.'); return false; }
             const start = res.data;
             setBookingRef(start.bookingRef);
             return await new Promise((resolve) => {
@@ -398,7 +340,7 @@ export function useTicketCheckout(event, { open }) {
                     },
                     modal: { ondismiss: () => { setBusy(false); resolve(false); } },
                 });
-                rzp.on('payment.failed', (e) => setError(e?.error?.description || 'The payment didn’t go through. Try again or pay by UPI.'));
+                rzp.on('payment.failed', (e) => setError(e?.error?.description || 'The payment didn’t go through. Please try again.'));
                 setBusy(false);
                 rzp.open();
             });
@@ -407,22 +349,6 @@ export function useTicketCheckout(event, { open }) {
         }
     };
 
-    const attachProof = async (file) => {
-        if (!file) return;
-        if (!file.type?.startsWith('image/')) { setError('Pick a screenshot (an image).'); return; }
-        if (file.size > 8 * 1024 * 1024) { setError('That image is too big. Pick one under 8 MB.'); return; }
-        setProofBusy(true);
-        setError('');
-        try { setProof(await uploadProof(file)); } catch {
-            setError(payments.requireProof ? 'The screenshot didn’t upload. Check your connection and try again.' : 'The screenshot didn’t upload. You can still confirm with the UTR alone.');
-        }
-        finally { setProofBusy(false); }
-    };
-
-    const setUtr = (v) => { setUtrRaw(String(v || '').replace(/[^\dA-Za-z:\s-]/g, '').slice(0, 40)); setError(''); };
-
-    const upiId = event?.upiId || event?.paymentDetails?.upiId || payment?.upiId || '';
-
     return {
         step, setStep,
         tiers, visibleTiers, hasCategories,
@@ -430,15 +356,8 @@ export function useTicketCheckout(event, { open }) {
         availability, soldOut, sale, now,
         lines, subtotal, discount, total, count, people, orderMax,
         coupon, couponInput, setCouponInput, couponBusy, couponError, applyCode, removeCoupon,
-        amountDue, bookingRef, utr, setUtr, utrValid: isValidUtr(utr),
-        proof, setProof, proofBusy, attachProof,
-        launched, setLaunched, agreed, setAgreed,
-        upi: {
-            upiId,
-            payeeName: event?.upiName || payment?.upiName || payment?.accountName || 'Newbi Entertainment',
-            merchant: event?.upiMerchant ? { code: event.upiMerchantCode || '' } : null,
-            qrCodeUrl: event?.qrCodeUrl || payment?.qrCodeUrl || null,
-        },
+        amountDue, bookingRef,
+        agreed, setAgreed,
         payments,
         busy, error, setError,
         goToReview, goToPayment, placeOrder, payOnline, result,
