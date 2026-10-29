@@ -165,9 +165,14 @@ const PayByUpi = ({ co, onPayOnline }) => {
                             </div>
                         )}
                         {co.upi.upiId && (
-                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                                <CopyRow label={t('Or pay to UPI ID')} value={co.upi.upiId} />
-                                {ref && <CopyRow label={t('Add this note')} value={ref} />}
+                            <div className="space-y-2">
+                                <p className="text-[13px] font-bold text-gray-700 dark:text-zinc-300">{t('App says “payment failed” or “UPI risk policy”? Pay by hand instead:')}</p>
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                    <CopyRow label={t('Pay to UPI ID')} value={co.upi.upiId} />
+                                    <CopyRow label={t('Amount')} value={Number(amount).toFixed(2)} />
+                                    {ref && <CopyRow label={t('Add this note')} value={ref} />}
+                                </div>
+                                <p className="text-[12px] text-gray-500 dark:text-zinc-500">{t('Open your UPI app, choose “Pay to UPI ID”, paste the ID, type the amount, then come back and enter the UTR.')}</p>
                             </div>
                         )}
                     </section>
