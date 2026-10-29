@@ -516,7 +516,8 @@ const Invoice = () => {
                         <div key={pageIdx} style={{ width: 794 * scale, height: 1123 * scale }} className="relative shrink-0 overflow-hidden rounded-xl shadow-2xl">
                             <div className="absolute left-0 top-0 origin-top-left" style={{ transform: `scale(${scale})` }}>
                                 <InvoicePage forCapture data={paperData} columns={paperData.customColumns || []} pageItems={pageItems} pageIndex={pageIdx} pageCount={paperPages.length}
-                                    amounts={{ subtotal, gstAmount, total: totalAmount }} balanceDue={toBePaid} paymentsReceived={paymentsReceived} />
+                                    amounts={{ subtotal, gstAmount, total: totalAmount }} balanceDue={toBePaid} paymentsReceived={paymentsReceived}
+                                    onPay={!isAdmin && !isPaid ? handlePayOnline : undefined} />
                             </div>
                         </div>
                     ))}
