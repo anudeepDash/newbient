@@ -178,12 +178,14 @@ const invoiceDue = (inv) => {
 };
 
 const razorpayStart = async (db, body) => {
-    if (!razorpayConfigured()) throw new DocError('GATEWAY', 'Online payment isn’t set up yet. Please contact us.', 503);
     const ref = docRef(db, 'invoice', str(body.id, 128));
     const snap = await ref.get();
     if (!snap.exists) throw new DocError('NOT_FOUND', 'This invoice no longer exists.', 404);
     const inv = snap.data();
     if (inv.status === INVOICE_STATUS.PAID) throw new DocError('CLOSED', 'This invoice is already paid.', 409);
+    // The team can switch online payment off per invoice (builder → Online payment).
+    if (inv.onlinePayment === false) throw new DocError('DISABLED', 'Online payment is switched off for this invoice. Please contact us to pay.', 403);
+    if (!razorpayConfigured()) throw new DocError('GATEWAY', 'Online payment isn’t set up yet. Please contact us.', 503);
     const due = invoiceDue(inv);
     if (due <= 0) throw new DocError('CLOSED', 'Nothing is due on this invoice.', 409);
     let gw;

@@ -72,3 +72,13 @@ describe('invoice payments through Razorpay', () => {
         expect(db.dump('invoices').i1.paymentLogs).toBeUndefined();
     });
 });
+
+describe('switching online payment off for an invoice', () => {
+    it('refuses to open a Razorpay order when the invoice has it off', async () => {
+        const { _internal } = await import('../api/_lib/sharedDocs.js');
+        const db = new FakeFirestore({
+            'invoices/off': { invoiceNumber: 'NB-2', total: 1000, status: 'Pending', onlinePayment: false },
+        });
+        await fails(_internal.actions['razorpay-start'](db, { id: 'off' }, {}), 'DISABLED');
+    });
+});

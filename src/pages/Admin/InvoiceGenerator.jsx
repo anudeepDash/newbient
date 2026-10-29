@@ -92,7 +92,7 @@ const EDITOR_FIELDS = [
     'clientName', 'clientAddress', 'clientGst', 'clientEmail', 'clientState',
     'invoiceNumber', 'invoiceDate', 'dueDate', 'advancePaid', 'note', 'paymentDetails',
     'showNotes', 'showPaymentDetails', 'showUPI', 'upiId', 'qrType', 'customQrImage',
-    'showGst', 'gstPercentage', 'showFooter', 'showAdvance', 'showSignatureBlock', 'showPaymentButton', 'paymentLink',
+    'showGst', 'gstPercentage', 'showFooter', 'showAdvance', 'showSignatureBlock', 'showPaymentButton', 'paymentLink', 'onlinePayment',
     'selectedLogo', 'showSeal', 'showSignatures', 'providerSignature', 'attachments',
 ];
 
@@ -114,7 +114,7 @@ const blankInvoice = () => ({
     advancePaid: '', note: '', paymentDetails: '',
     showNotes: true, showPaymentDetails: true, showUPI: false, upiId: '', qrType: 'auto', customQrImage: '',
     showGst: true, gstPercentage: 18, showFooter: true, showAdvance: true, showSignatureBlock: true,
-    showPaymentButton: false, paymentLink: '', selectedLogo: 'entertainment',
+    showPaymentButton: false, paymentLink: '', onlinePayment: true, selectedLogo: 'entertainment',
     showSeal: false, showSignatures: true, providerSignature: '', attachments: [],
 });
 
@@ -309,6 +309,7 @@ const InvoiceGenerator = () => {
             showFooter: invoice.showFooter !== false,
             showUPI: invoice.showUPI === undefined ? Boolean(invoice.upiId) : Boolean(invoice.showUPI),
             showPaymentButton: Boolean(invoice.showPaymentButton || invoice.paymentLink),
+            onlinePayment: invoice.onlinePayment !== false,
             showAdvance: invoice.showAdvance ?? (Number(invoice.advancePaid) > 0),
             attachments: Array.isArray(invoice.attachments) ? invoice.attachments : [],
         });
@@ -1112,9 +1113,10 @@ const InvoiceGenerator = () => {
                                 </BuilderCard>
 
                                 <BuilderCard title="Online payment" hint="Razorpay takes every payment" action={<span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', accent('teal').chip)}><Landmark size={16} /></span>}>
-                                    <p className="text-[13px] leading-relaxed text-gray-600 dark:text-zinc-300">
-                                        Clients pay the balance on the invoice link with Razorpay (UPI, cards or netbanking). The printed invoice carries a “Pay online” button, and the invoice is marked paid as soon as the payment goes through.
-                                    </p>
+                                    <Toggle label="Let the client pay online with Razorpay" checked={formData.onlinePayment !== false} onChange={v => set({ onlinePayment: v })}
+                                        hint={formData.onlinePayment !== false
+                                            ? 'The invoice page and the printed invoice get a “Pay online” button (UPI, cards or netbanking). It is marked paid as soon as the payment goes through.'
+                                            : 'Off: no pay buttons and Razorpay can’t be used for this invoice. Record payments yourself in Invoices.'} />
                                 </BuilderCard>
 
                                 <BuilderCard title="Notes and terms" hint='Printed under "Additional note"'>

@@ -102,7 +102,7 @@ export const paginateInvoice = (items, data) => {
     let weight = 0;
     if (data.showGst) weight += 1; // tax rows and the amount in words
     if (data.showAdvance && data.advancePaid > 0) weight += 0.5;
-    weight += 0.5; // the "Pay online" button
+    if (data.onlinePayment !== false) weight += 0.5; // the "Pay online" button
     if (data.showSeal || data.showSignatures) weight += 2;
     if (data.showNotes && !isBlankText(data.note)) weight += 1;
 
@@ -306,7 +306,7 @@ export const InvoicePage = ({ data, columns = [], pageItems, pageIndex, pageCoun
                                 <AmountBlock label="Total" value={money(amounts.total)} />
                             )}
                             {amounts.total > 0 && <p className="mt-2 text-right text-[9px] leading-snug text-gray-500">{amountInWords(amounts.total)}</p>}
-                            {balanceDue > 0 && (() => {
+                            {balanceDue > 0 && data.onlinePayment !== false && (() => {
                                 const cls = 'mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-full border-2 border-gray-950 text-[9px] font-bold uppercase tracking-[0.22em] text-gray-950';
                                 const label = <><Zap size={12} className="fill-current" /> Pay online</>;
                                 // On the public page the button starts the Razorpay payment itself.

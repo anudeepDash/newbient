@@ -416,6 +416,8 @@ const Invoice = () => {
 
 
     const isPaid = displayInvoice.status === 'Paid';
+    // The team can switch Razorpay off for one invoice (builder → Online payment).
+    const onlinePay = displayInvoice.onlinePayment !== false;
     const isVerifying = !isPaid && (displayInvoice.status === 'Verification Pending' || displayInvoice.paymentClaim?.status === 'pending');
     const overdueBy = daysOverdue(displayInvoice);
     const dueLine = displayInvoice.dueDate
@@ -427,6 +429,12 @@ const Invoice = () => {
         payPanel = (
             <PanelCard theme={docTheme('invoice')} icon={CheckCircle2} title="Paid — thank you"
                 subtitle={displayInvoice.paidAt ? `Settled on ${fmtDate(displayInvoice.paidAt)}.` : 'This invoice is settled.'} />
+        );
+    } else if (!isAdmin && !onlinePay) {
+        payPanel = (
+            <PanelCard theme={docTheme('invoice')} icon={Wallet} title="Payment" subtitle={dueLine}>
+                <p className="text-[13px] leading-relaxed text-gray-600 dark:text-zinc-300">Online payment isn’t available for this invoice. Please contact us to arrange the payment.</p>
+            </PanelCard>
         );
     } else if (!isAdmin) {
         payPanel = (
@@ -491,8 +499,8 @@ const Invoice = () => {
                 onPrint={handlePrint}
                 pdfBlobUrl={pdfBlobUrl}
                 actionPanel={<>{payPanel}{attachmentsPanel}</>}
-                actionLabel={isAdmin ? 'Mark as paid' : `Pay ${fmtMoney(toBePaid)}`}
-                onAction={!isAdmin && !isPaid && toBePaid > 0 ? handlePayOnline : undefined}
+                actionLabel={isAdmin ? 'Mark as paid' : onlinePay ? `Pay ${fmtMoney(toBePaid)}` : 'Payment'}
+                onAction={!isAdmin && !isPaid && onlinePay && toBePaid > 0 ? handlePayOnline : undefined}
                 actionBusy={paying}
                 summary={{ amount: isPaid ? totalAmount : toBePaid }}
                 onStageWidth={fitToStage}
@@ -522,7 +530,7 @@ const Invoice = () => {
                             <div className="absolute left-0 top-0 origin-top-left" style={{ transform: `scale(${scale})` }}>
                                 <InvoicePage forCapture data={paperData} columns={paperData.customColumns || []} pageItems={pageItems} pageIndex={pageIdx} pageCount={paperPages.length}
                                     amounts={{ subtotal, gstAmount, total: totalAmount }} balanceDue={toBePaid} paymentsReceived={paymentsReceived}
-                                    onPay={!isAdmin && !isPaid ? handlePayOnline : undefined} />
+                                    onPay={!isAdmin && !isPaid && onlinePay ? handlePayOnline : undefined} />
                             </div>
                         </div>
                     ))}
