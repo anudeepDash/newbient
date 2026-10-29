@@ -25,8 +25,22 @@ export const loadRazorpay = () => {
 /** Warm the script up before the click. Never throws. */
 export const preloadRazorpay = () => { loadRazorpay().catch(() => {}); };
 
-/** Newbi's look inside Razorpay's window: our logo, accent colour and a dimmed backdrop. */
-export const razorpayBrand = (color = '#16a34a') => ({
+/** The methods Razorpay can show, by the name our buttons use. */
+export const PAY_METHODS = ['upi', 'card', 'netbanking', 'wallet'];
+
+/**
+ * Open Razorpay on one method (a button per method), or on all of them when none is given.
+ * Razorpay hides the methods set to false, so the window is short and focused.
+ */
+export const razorpayMethodOptions = (method) => (PAY_METHODS.includes(method)
+    ? { method: { upi: method === 'upi', card: method === 'card', netbanking: method === 'netbanking', wallet: method === 'wallet', emi: false, paylater: false } }
+    : {});
+
+/**
+ * Newbi's look inside Razorpay's window: our logo, a near-black accent (its side panel and buttons
+ * take this colour; Razorpay's window has no dark mode of its own) and a dimmed backdrop.
+ */
+export const razorpayBrand = (color = '#0b0b0d') => ({
     image: typeof window !== 'undefined' ? `${window.location.origin}/brand/newbi-icon-512.png` : undefined,
     theme: { color, backdrop_color: 'rgba(8, 8, 10, 0.72)' },
     retry: { enabled: true, max_count: 3 },

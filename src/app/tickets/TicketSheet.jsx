@@ -210,7 +210,7 @@ const TicketSheet = ({ event, open, onClose, startTier = null }) => {
                         onEditProfile={() => { setEditAll(true); setProfileOpen(true); }}
                     />
                 )}
-                {event && co.step === 'pay' && <PayOnline event={event} co={co} />}
+                {event && co.step === 'pay' && <PayOnline event={event} co={co} onPay={(method) => co.payOnline(customer(), { method })} />}
                 {co.step === 'done' && co.result && <TicketDone result={co.result} event={event} />}
             </Sheet>
 
