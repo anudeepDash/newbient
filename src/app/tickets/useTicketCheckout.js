@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { callTicketApi } from '../../lib/ticketApi';
-import { loadRazorpay } from '../../lib/razorpayCheckout';
+import { loadRazorpay, preloadRazorpay, razorpayBrand } from '../../lib/razorpayCheckout';
 import {
     applyCoupon, cartProblem, eventMaxPerOrder, eventSaleState, eventTiers, linesAdmit,
     normalizeCouponCode, priceCart, tierMaxPerOrder, tierMinPerOrder, tierSaleState,
@@ -98,6 +98,7 @@ export function useTicketCheckout(event, { open }) {
         if (!open || !eventId) return undefined;
         setAvailability(null);
         refreshAvailability();
+        preloadRazorpay();
         // Sale windows open and close while the page is open.
         const timer = setInterval(() => setNow(new Date()), 30000);
         return () => clearInterval(timer);
@@ -330,7 +331,7 @@ export function useTicketCheckout(event, { open }) {
                     description: start.description,
                     prefill: { name: customer.name, email: customer.email, contact: customer.phone },
                     notes: { bookingRef: start.bookingRef },
-                    theme: { color: '#16a34a' },
+                    ...razorpayBrand('#16a34a'),
                     handler: async (resp) => {
                         setBusy(true);
                         const conf = await callTicketApi('ticket-gateway-confirm', { orderId: start.orderId, ...resp }, { timeoutMs: 25000 });
@@ -338,7 +339,7 @@ export function useTicketCheckout(event, { open }) {
                         if (conf.ok) { finish({ ...conf.data, totalAmount: start.amount / 100 }, customer, start.amount / 100); resolve(true); }
                         else { setError(conf.error || `Payment received, but we couldn’t confirm it yet. Keep your booking reference ${start.bookingRef}; your ticket will follow.`); resolve(false); }
                     },
-                    modal: { ondismiss: () => { setBusy(false); resolve(false); } },
+                    modal: { confirm_close: true, ondismiss: () => { setBusy(false); resolve(false); } },
                 });
                 rzp.on('payment.failed', (e) => setError(e?.error?.description || 'The payment didn’t go through. Please try again.'));
                 setBusy(false);
