@@ -40,6 +40,7 @@ const PaymentSettingsPanel = ({ event, onEdit }) => {
                 action={onEdit && <Button variant="secondary" className="h-11" onClick={() => onEdit('payments')}><Pencil size={14} /> Edit</Button>} />
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-[minmax(0,1fr)_auto]">
                 <div className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                    {raw?.payments?.free === true && <Row label="Free bookings"><Badge tone="amber">On: no payment taken</Badge></Row>}
                     <Row label="UPI apps">{upiOn ? <Badge tone="green">On</Badge> : <Badge tone="gray">Off</Badge>}</Row>
                     {upiOn && <Row label="UPI ID">{shownId ? <span className="font-mono">{shownId}</span> : <span className="text-red-600 dark:text-red-400">Not set</span>}{fallback && <span className="ml-1 text-[11px] font-medium text-gray-500">(site-wide)</span>}</Row>}
                     {upiOn && raw?.upiName && <Row label="Name shown">{raw.upiName}</Row>}

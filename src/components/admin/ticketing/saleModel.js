@@ -145,7 +145,7 @@ export const fromEvent = (e = {}) => {
         venueMap: normalizeVenueMap(e.venueMap),
         showVenueMap: e.hideVenueMap !== true,
 
-        payments: { upi: payments.upi !== false, gateway: payments.gateway === true, requireProof: payments.requireProof === true },
+        payments: { upi: payments.upi !== false, gateway: payments.gateway === true, requireProof: payments.requireProof === true, free: payments.free === true },
         upiId: str(e.upiId || e.paymentDetails?.upiId),
         upiName: str(e.upiName),
         upiMerchant: e.upiMerchant === true,
@@ -205,7 +205,7 @@ export const saleProblems = (form, { soldByTier = {} } = {}) => {
         if (intOrNull(t.minPerOrder) > 1 && intOrNull(t.maxPerOrder) && intOrNull(t.minPerOrder) > intOrNull(t.maxPerOrder)) add('tickets', `${label}: the minimum per order is above the maximum.`);
     });
     if (form.salesStart && form.salesEnd && form.salesStart > form.salesEnd) add('tickets', 'Sales end before they start.');
-    const paid = tiers.some(t => t.price > 0);
+    const paid = tiers.some(t => t.price > 0) && !form.payments.free;
     if (form.upiId.trim() && !isValidUpiId(form.upiId)) add('payments', 'That UPI ID looks wrong. It should look like name@bank.');
     if (form.qrCodeUrl.trim() && !/^https:\/\/\S+$/i.test(form.qrCodeUrl.trim())) add('payments', 'The QR image link should start with https://');
     if (paid && !form.payments.upi && !form.payments.gateway) add('payments', 'Turn on at least one way to pay.');
@@ -280,7 +280,7 @@ export const toPayload = (form) => {
         // Off keeps the drawn map (and any old venue image) but buyers don't see it.
         hideVenueMap: !form.showVenueMap,
 
-        payments: { upi: Boolean(form.payments.upi), gateway: Boolean(form.payments.gateway), requireProof: Boolean(form.payments.requireProof) },
+        payments: { upi: Boolean(form.payments.upi), gateway: Boolean(form.payments.gateway), requireProof: Boolean(form.payments.requireProof), free: Boolean(form.payments.free) },
         upiId: form.upiId.trim(),
         upiName: form.upiName.trim().slice(0, 50),
         upiMerchant: Boolean(form.upiMerchant),

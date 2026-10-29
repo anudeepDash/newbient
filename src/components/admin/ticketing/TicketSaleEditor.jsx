@@ -208,7 +208,7 @@ const TicketSaleEditor = ({ open, onClose, event, onSaved, initialSection }) => 
     const setList = (key, fn) => setForm(f => ({ ...f, [key]: fn(f[key]) }));
 
     const problems = saleProblems(form, { soldByTier });
-    if (form.payments.gateway && !form.payments.upi && gatewayReady === false && form.tiers.some(t => Number(t.price) > 0)) {
+    if (!form.payments.free && form.payments.gateway && !form.payments.upi && gatewayReady === false && form.tiers.some(t => Number(t.price) > 0)) {
         problems.push({ section: 'payments', message: 'Razorpay isn’t set up yet, so keep UPI on or buyers can’t pay.' });
     }
     const problemsBy = problems.reduce((m, p) => ({ ...m, [p.section]: (m[p.section] || 0) + 1 }), {});
@@ -483,6 +483,9 @@ const TicketSaleEditor = ({ open, onClose, event, onSaved, initialSection }) => 
                     </Card>
 
                     <Card id="payments" title="Payments" hint="How buyers pay. Paid orders wait for your check before the ticket is issued.">
+                        <Toggle label="Take bookings without payment" hint="Every ticket becomes free: buyers skip payment and get their pass straight away. Your ticket prices are kept, so turning this off brings them back."
+                            checked={form.payments.free} onChange={(v) => set({ payments: { ...form.payments, free: v } })} />
+                        {!form.payments.free && <>
                         <Toggle label="UPI (any UPI app)" hint="Buyers pay in GPay, PhonePe, Paytm or BHIM, then type the 12-digit UTR. You verify it in Orders."
                             checked={form.payments.upi} onChange={(v) => set({ payments: { ...form.payments, upi: v } })} />
                         {form.payments.upi && (
@@ -523,7 +526,10 @@ const TicketSaleEditor = ({ open, onClose, event, onSaved, initialSection }) => 
                             checked={form.payments.gateway}
                             onChange={(v) => set({ payments: { ...form.payments, gateway: v } })}
                         />
-                        {!paidTiers && <p className="text-[12px] text-gray-500">Every ticket type is free right now, so nobody pays.</p>}
+                        </>}
+                        {form.payments.free
+                            ? <p className="text-[12px] font-semibold text-amber-700 dark:text-amber-400">Payments are off: every ticket is free for buyers.</p>
+                            : !paidTiers && <p className="text-[12px] text-gray-500">Every ticket type is free right now, so nobody pays.</p>}
                     </Card>
 
                     <Card id="faqs" title="FAQs and terms"
