@@ -1,15 +1,12 @@
 import React from 'react';
 import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
-import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
-import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
-import Landmark from 'lucide-react/dist/esm/icons/landmark';
-import Wallet from 'lucide-react/dist/esm/icons/wallet';
 import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import Lock from 'lucide-react/dist/esm/icons/lock';
 import Zap from 'lucide-react/dist/esm/icons/zap';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import { Notice } from '../creator/ui';
+import PayMethodButtons from '../../components/PayMethodButtons';
 import { cn } from '../../lib/utils';
 import { isPresent } from '../../lib/present';
 import { useT } from '../../i18n';
@@ -27,20 +24,13 @@ const Box = ({ children, className }) => (
     <section className={cn('rounded-3xl border border-black/[0.07] bg-white/70 p-4 dark:border-white/[0.08] dark:bg-white/[0.04]', className)}>{children}</section>
 );
 
-const METHODS = [
-    [Smartphone, 'UPI', 'GPay, PhonePe, Paytm'],
-    [CreditCard, 'Cards', 'Credit and debit'],
-    [Landmark, 'Netbanking', 'All major banks'],
-    [Wallet, 'Wallets', 'Paytm, Mobikwik & more'],
-];
-
 const NEXT = [
     ['Pay in Razorpay’s secure window', Lock],
     ['Your booking confirms instantly', Zap],
     ['Your pass arrives in the app, email and WhatsApp', Ticket],
 ];
 
-const PayOnline = ({ event, co }) => {
+const PayOnline = ({ event, co, onPay }) => {
     const t = useT();
     const amount = co.amountDue || co.total;
     const when = [dayLabel(event), timeRange(event)].filter(isPresent).join(' · ');
@@ -78,18 +68,9 @@ const PayOnline = ({ event, co }) => {
             </Box>
 
             <Box>
-                <h3 className="text-[14px] font-extrabold">{t('Pay with')}</h3>
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                    {METHODS.map(([Icon, name, hint]) => (
-                        <div key={name} className="flex items-center gap-2.5 rounded-2xl bg-black/[0.035] px-3 py-2.5 dark:bg-white/[0.05]">
-                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-gray-700 shadow-sm ring-1 ring-black/[0.06] dark:bg-white/[0.08] dark:text-zinc-200 dark:ring-white/10"><Icon size={17} /></span>
-                            <span className="min-w-0">
-                                <span className="block text-[13.5px] font-bold leading-tight">{t(name)}</span>
-                                <span className="block truncate text-[11.5px] text-gray-500 dark:text-zinc-500">{t(hint)}</span>
-                            </span>
-                        </div>
-                    ))}
-                </div>
+                <h3 className="text-[14px] font-extrabold">{t('Choose how to pay')}</h3>
+                <p className="mt-0.5 text-[12.5px] text-gray-500 dark:text-zinc-500">{t('Tap one to pay. Razorpay opens right on it.')}</p>
+                <PayMethodButtons className="mt-3" onPick={onPay} disabled={co.busy || !co.payments.gateway} label={t} />
             </Box>
 
             <Box>

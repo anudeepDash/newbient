@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { callTicketApi } from '../../lib/ticketApi';
-import { loadRazorpay, preloadRazorpay, razorpayBrand } from '../../lib/razorpayCheckout';
+import { loadRazorpay, preloadRazorpay, razorpayBrand, razorpayMethodOptions } from '../../lib/razorpayCheckout';
 import {
     applyCoupon, cartProblem, eventMaxPerOrder, eventSaleState, eventTiers, linesAdmit,
     normalizeCouponCode, priceCart, tierMaxPerOrder, tierMinPerOrder, tierSaleState,
@@ -304,7 +304,7 @@ export function useTicketCheckout(event, { open }) {
     };
 
     /* UPI, card or netbanking through Razorpay. */
-    const payOnline = async (customer) => {
+    const payOnline = async (customer, { method } = {}) => {
         setBusy(true);
         setError('');
         try {
@@ -331,7 +331,8 @@ export function useTicketCheckout(event, { open }) {
                     description: start.description,
                     prefill: { name: customer.name, email: customer.email, contact: customer.phone },
                     notes: { bookingRef: start.bookingRef },
-                    ...razorpayBrand('#16a34a'),
+                    ...razorpayBrand(),
+                    ...razorpayMethodOptions(method),
                     handler: async (resp) => {
                         setBusy(true);
                         const conf = await callTicketApi('ticket-gateway-confirm', { orderId: start.orderId, ...resp }, { timeoutMs: 25000 });

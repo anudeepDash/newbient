@@ -25,10 +25,11 @@ import jsPDF from 'jspdf';
 import { useStore } from '../lib/store';
 import useSharedDoc from '../hooks/useSharedDoc';
 import { sharedDocPost } from '../lib/passesApi';
-import { loadRazorpay, preloadRazorpay, razorpayBrand } from '../lib/razorpayCheckout';
+import { loadRazorpay, preloadRazorpay, razorpayBrand, razorpayMethodOptions } from '../lib/razorpayCheckout';
 import { safeLocalStorage } from '../lib/storage';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import PayMethodButtons from '../components/PayMethodButtons';
 import NotificationBell from '../components/NotificationBell';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import { getDocumentShareMeta } from '../lib/documentPreviewUtils';
@@ -346,7 +347,7 @@ const Invoice = () => {
 
     // Razorpay is the only way to pay. The server works out the amount, checks Razorpay's
     // signature and marks the invoice paid (Razorpay's webhook is the backstop).
-    const handlePayOnline = async () => {
+    const handlePayOnline = async (method) => {
         setPaying(true);
         setPayError('');
         try {
@@ -363,7 +364,8 @@ const Invoice = () => {
                     name: s.name,
                     description: s.description,
                     prefill: s.prefill,
-                    ...razorpayBrand('#0891b2'),
+                    ...razorpayBrand(),
+                    ...razorpayMethodOptions(typeof method === 'string' ? method : undefined),
                     handler: async (resp) => {
                         const conf = await sharedDocPost('razorpay-confirm', { id, ...resp }, { timeoutMs: 25000 });
                         if (conf.ok) {
@@ -435,6 +437,8 @@ const Invoice = () => {
                         className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#00D1FF] text-[15px] font-bold text-black transition-transform active:scale-[0.98] disabled:opacity-60">
                         <CreditCard size={16} /> {paying ? 'Opening payment…' : `Pay ${fmtMoney(toBePaid)}`}
                     </button>
+                    <p className="pt-1 text-[12.5px] font-semibold text-gray-500 dark:text-zinc-400">Or choose how to pay</p>
+                    <PayMethodButtons onPick={handlePayOnline} disabled={paying || toBePaid <= 0} />
                     {payError && <p role="alert" className="text-[13px] font-medium text-red-600 dark:text-red-400">{payError}</p>}
                     <p className="flex items-center gap-1.5 text-[12px] text-gray-500 dark:text-zinc-400"><ShieldCheck size={13} /> UPI, cards and netbanking through Razorpay. Payment details never reach Newbi.</p>
                 </div>
