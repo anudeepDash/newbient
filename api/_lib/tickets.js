@@ -243,7 +243,6 @@ const checkAction = async (db, body) => {
 const placeOrder = async (db, body, decodedToken, method) => {
     const customer = readCustomer(body.customer);
     const { event, lines, subtotal } = await readCart(db, body);
-    if (method === 'upi' && !upiOn(event)) throw new TicketError('VALIDATION', 'UPI payment isn’t available for this event.');
     if (method === 'gateway' && !gatewayOn(event)) throw new TicketError('VALIDATION', 'Card payment isn’t available for this event.');
 
     const rawUtr = String(body.paymentRef || '').trim();
@@ -280,6 +279,7 @@ const placeOrder = async (db, body, decodedToken, method) => {
         const { discount, total } = applyCoupon(subtotal, couponIssue ? null : coupon);
         const isPaid = total > 0;
 
+        if (method === 'upi' && isPaid && !upiOn(freshEvent)) throw new TicketError('VALIDATION', 'UPI payment isn’t available for this event.');
         if (method === 'gateway' && !isPaid) throw new TicketError('VALIDATION', 'These tickets are free. No payment needed.');
         if (method === 'upi' && isPaid) {
             if (!rawUtr) throw new TicketError('UTR_REQUIRED', 'Enter the 12-digit UTR from your UPI app.');
