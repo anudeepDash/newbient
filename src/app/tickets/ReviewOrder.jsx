@@ -142,14 +142,6 @@ const ReviewOrder = ({ event, co, customer, needsEmail, email, onEmail, emailErr
                     </details>
                 </Box>
             )}
-
-            <label className="flex cursor-pointer items-start gap-3 rounded-2xl px-1 py-1">
-                <input type="checkbox" checked={co.agreed} onChange={(e) => { co.setAgreed(e.target.checked); co.setError(''); }}
-                    className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer rounded accent-emerald-600" />
-                <span className="text-[13.5px] text-gray-700 dark:text-zinc-300">
-                    {terms.length ? t('I agree to the terms above and that entry needs a valid ticket.') : t('I understand entry needs a valid ticket and the venue’s entry rules apply.')}
-                </span>
-            </label>
         </div>
     );
 };

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
+import Lock from 'lucide-react/dist/esm/icons/lock';
 import { Button, Sheet } from '../../components/app';
 import { useAppStore } from '../../lib/store/appStore';
 import { isPresent } from '../../lib/present';
@@ -13,7 +14,7 @@ import PickTickets from './PickTickets';
 import ReviewOrder from './ReviewOrder';
 import PayOnline from './PayOnline';
 import TicketDone from './TicketDone';
-import { dayLabel, timeRange, venueName } from './eventDetails';
+import { dayLabel, termsOf, timeRange, venueName } from './eventDetails';
 import { ErrorText, rupees, StepDots } from './ticketParts';
 
 /*
@@ -114,9 +115,17 @@ const TicketSheet = ({ event, open, onClose, startTier = null }) => {
             );
         }
         if (co.step === 'review') {
+            // The agreement sits in the footer, so it is always in view next to the button.
             return (
                 <div className="space-y-3">
                     <ErrorText>{co.error}</ErrorText>
+                    <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-black/[0.035] px-3 py-2.5 dark:bg-white/[0.05]">
+                        <input type="checkbox" checked={co.agreed} onChange={(e) => { co.setAgreed(e.target.checked); co.setError(''); }}
+                            className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer rounded accent-emerald-600" />
+                        <span className="text-[13px] leading-snug text-gray-700 dark:text-zinc-300">
+                            {termsOf(event).length ? t('I agree to the terms above and that entry needs a valid ticket.') : t('I understand entry needs a valid ticket and the venue’s entry rules apply.')}
+                        </span>
+                    </label>
                     <div className="flex items-center gap-4">
                         <Summary />
                         <Button size="lg" className="shrink-0 px-7" onClick={confirmReview} loading={co.busy} disabled={!co.count}>
@@ -126,7 +135,19 @@ const TicketSheet = ({ event, open, onClose, startTier = null }) => {
                 </div>
             );
         }
-        if (co.step === 'pay') return co.error ? <ErrorText>{co.error}</ErrorText> : null;
+        if (co.step === 'pay') {
+            return (
+                <div className="space-y-3">
+                    <ErrorText>{co.error}</ErrorText>
+                    <div className="flex items-center gap-4">
+                        <Summary />
+                        <Button size="lg" icon={Lock} className="shrink-0 px-7" onClick={() => co.payOnline(customer())} loading={co.busy} disabled={!co.payments.gateway}>
+                            {t('Pay {amount}', { amount: rupees(co.amountDue || co.total) })}
+                        </Button>
+                    </div>
+                </div>
+            );
+        }
         if (co.step === 'done' && co.result) {
             const confirmed = co.result.status !== 'pending';
             return (
@@ -189,7 +210,7 @@ const TicketSheet = ({ event, open, onClose, startTier = null }) => {
                         onEditProfile={() => { setEditAll(true); setProfileOpen(true); }}
                     />
                 )}
-                {event && co.step === 'pay' && <PayOnline co={co} onPayOnline={() => co.payOnline(customer())} />}
+                {event && co.step === 'pay' && <PayOnline event={event} co={co} />}
                 {co.step === 'done' && co.result && <TicketDone result={co.result} event={event} />}
             </Sheet>
 

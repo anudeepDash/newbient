@@ -25,7 +25,7 @@ import jsPDF from 'jspdf';
 import { useStore } from '../lib/store';
 import useSharedDoc from '../hooks/useSharedDoc';
 import { sharedDocPost } from '../lib/passesApi';
-import { loadRazorpay } from '../lib/razorpayCheckout';
+import { loadRazorpay, preloadRazorpay, razorpayBrand } from '../lib/razorpayCheckout';
 import { safeLocalStorage } from '../lib/storage';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -55,6 +55,7 @@ const Invoice = () => {
     const [isExporting, setIsExporting] = React.useState(false);
     const [pdfBlobUrl, setPdfBlobUrl] = React.useState('');
     const [paying, setPaying] = React.useState(false);
+    React.useEffect(() => { preloadRazorpay(); }, []);
     const [payError, setPayError] = React.useState('');
     const [showAttachments, setShowAttachments] = React.useState(false);
     const [confirmPaid, setConfirmPaid] = React.useState(false);
@@ -362,7 +363,7 @@ const Invoice = () => {
                     name: s.name,
                     description: s.description,
                     prefill: s.prefill,
-                    theme: { color: '#00A3CC' },
+                    ...razorpayBrand('#0891b2'),
                     handler: async (resp) => {
                         const conf = await sharedDocPost('razorpay-confirm', { id, ...resp }, { timeoutMs: 25000 });
                         if (conf.ok) {
@@ -373,7 +374,7 @@ const Invoice = () => {
                         }
                         resolve();
                     },
-                    modal: { ondismiss: () => resolve() },
+                    modal: { confirm_close: true, ondismiss: () => resolve() },
                 });
                 rzp.on('payment.failed', (e) => setPayError(e?.error?.description || 'The payment didn’t go through. Please try again.'));
                 rzp.open();
