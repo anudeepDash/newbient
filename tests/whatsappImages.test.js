@@ -103,6 +103,18 @@ describe('sending', () => {
         expect(headerOf(sent[2])).toBeUndefined();
     });
 
+    it('drops the picture whichever error code Meta files the header mismatch under', async () => {
+        setWhatsAppFetchForTests(async (url, init) => {
+            const body = JSON.parse(init.body);
+            sent.push(body);
+            if (headerOf(body)) return { ok: false, status: 400, json: async () => ({ error: { code: 100, message: 'Invalid parameter', error_data: { details: 'header: Template does not contain title component, no parameters allowed' } } }) };
+            return { ok: true, status: 200, json: async () => ({ messages: [{ id: 'wamid.1' }] }) };
+        });
+        const res = await sendTemplate({ to: '+919876500001', template: 'pass_confirmed', bodyParams: ['Riya'] });
+        expect(res.ok).toBe(true);
+        expect(sent.map(headerOf)).toEqual([expect.objectContaining({ type: 'image' }), undefined]);
+    });
+
     it('keeps a given header when Meta rejects it', async () => {
         setWhatsAppFetchForTests(async (url, init) => {
             sent.push(JSON.parse(init.body));

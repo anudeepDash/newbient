@@ -152,8 +152,9 @@ const PERMANENT_CODES = new Set([100, 131008, 131009, 131026, 131030, 131047, 13
 // Templates Meta told us have no header ("Template does not contain title component").
 const NO_HEADER = new Set();
 export const resetNoHeaderForTests = () => NO_HEADER.clear();
-const isHeaderMismatch = (err) => Number(err?.code) === 132012
-    && /title component|^header\b/i.test(String(err?.error_data?.details || err?.message || ''));
+// Matched on the wording, not the code: Meta files this under more than one code.
+const isHeaderMismatch = (err) => /title component|header: .*no parameters|^header\b/i
+    .test(`${err?.error_data?.details || ''} ${err?.message || ''}`.trim());
 
 /**
  * sendTemplate({ to, template, language, header, image, bodyParams, buttons, event, uid, ref })
