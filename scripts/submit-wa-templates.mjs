@@ -196,10 +196,19 @@ const main = async () => {
         return;
     }
 
-    const { token, waba, version } = readEnv();
-    if (!token || !waba) {
-        console.log('Set WHATSAPP_ACCESS_TOKEN and WHATSAPP_WABA_ID (environment or .env) first.');
+    const { token, waba: wabaFromEnv, version } = readEnv();
+    let waba = wabaFromEnv;
+    if (!token) {
+        console.log('Set WHATSAPP_ACCESS_TOKEN (environment or .env) first.');
         process.exit(1);
+    }
+    // No WHATSAPP_WABA_ID set: the token knows which WhatsApp account it was granted.
+    if (!waba) {
+        const dbg = await (await fetch(`https://graph.facebook.com/${version}/debug_token?input_token=${encodeURIComponent(token)}`, { headers: { Authorization: `Bearer ${token}` } })).json();
+        const scope = (dbg?.data?.granular_scopes || []).find(g => g.scope === 'whatsapp_business_management');
+        waba = scope?.target_ids?.[0] || '';
+        if (!waba) { console.log('Could not work out the WhatsApp account from the token. Set WHATSAPP_WABA_ID.'); process.exit(1); }
+        console.log(`Using WhatsApp account ${waba} (from the token).`);
     }
     const base = `https://graph.facebook.com/${version}/${encodeURIComponent(waba)}/message_templates`;
     const auth = { Authorization: `Bearer ${token}` };
