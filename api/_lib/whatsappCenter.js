@@ -58,6 +58,7 @@ export const describeTemplate = (t) => {
         language: t.language,
         status: t.status,
         category: t.category,
+        rejectedReason: t.status === 'REJECTED' && t.rejected_reason && t.rejected_reason !== 'NONE' ? String(t.rejected_reason) : '',
         header: header ? { format: header.format, text: header.text || '', vars: varsIn(header.text) } : null,
         body: body?.text || '',
         bodyVars: varsIn(body?.text),
@@ -71,7 +72,7 @@ const fetchTemplates = async () => {
     const waba = process.env.WHATSAPP_WABA_ID;
     if (!waba) throw Object.assign(new Error('WHATSAPP_WABA_ID is not set.'), { status: 503 });
     const doFetch = testFetch || fetch;
-    const url = `https://graph.facebook.com/${graphVersion()}/${encodeURIComponent(waba)}/message_templates?fields=name,status,category,language,components&limit=200`;
+    const url = `https://graph.facebook.com/${graphVersion()}/${encodeURIComponent(waba)}/message_templates?fields=name,status,category,language,components,rejected_reason&limit=200`;
     const res = await doFetch(url, { headers: { Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}` } });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw Object.assign(new Error(data?.error?.message || `Meta answered ${res.status}`), { status: 502 });

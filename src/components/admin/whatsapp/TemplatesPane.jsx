@@ -88,6 +88,7 @@ const TemplatesPane = ({ state, reload, onUse, onClose }) => {
                                 </div>
                                 <Badge tone={STATUS_TONE[t.status] || 'gray'}>{statusLabel(t.status)}</Badge>
                             </div>
+                            {t.rejectedReason && <p className="mx-1 mb-2 rounded-xl bg-rose-50 px-3 py-2 text-[12px] font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">Meta’s reason: {statusLabel(t.rejectedReason)}</p>}
                             <PreviewWell className="flex-1">
                                 <TemplateBubble tpl={t} clamp />
                             </PreviewWell>
