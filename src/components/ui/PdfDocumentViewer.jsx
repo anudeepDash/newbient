@@ -42,6 +42,9 @@ const SinglePdfPage = React.memo(function SinglePdfPage({
     const [pageDimensions, setPageDimensions] = useState({ width: 794, height: 1123, aspectRatio: 1123 / 794 });
     const [isRendered, setIsRendered] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
+    // The page is drawn as a picture, so the PDF's own links are laid over it as real links,
+    // in percent of the page so they follow the zoom.
+    const [links, setLinks] = useState([]);
 
     // Track visibility to render pages when approaching viewport
     useEffect(() => {
@@ -94,6 +97,23 @@ const SinglePdfPage = React.memo(function SinglePdfPage({
                 height: viewport.height,
                 aspectRatio: viewport.height / viewport.width
             });
+            page.getAnnotations({ intent: 'display' }).then((annots) => {
+                if (!isMounted) return;
+                setLinks(annots
+                    .filter(a => a.subtype === 'Link' && /^(https?:|mailto:|tel:)/i.test(a.url || ''))
+                    .map((a) => {
+                        // Two corners (this pdf.js has no convertToViewportRectangle).
+                        const [x1, y1] = viewport.convertToViewportPoint(a.rect[0], a.rect[1]);
+                        const [x2, y2] = viewport.convertToViewportPoint(a.rect[2], a.rect[3]);
+                        return {
+                            url: a.url,
+                            left: (Math.min(x1, x2) / viewport.width) * 100,
+                            top: (Math.min(y1, y2) / viewport.height) * 100,
+                            width: (Math.abs(x2 - x1) / viewport.width) * 100,
+                            height: (Math.abs(y2 - y1) / viewport.height) * 100,
+                        };
+                    }));
+            }).catch((err) => console.warn(`Could not read the links on page ${pageNumber}:`, err));
         }).catch(err => {
             console.warn(`Error probing page ${pageNumber}:`, err);
         });
@@ -203,6 +223,19 @@ const SinglePdfPage = React.memo(function SinglePdfPage({
                         isRendered ? "opacity-100" : "opacity-0"
                     )}
                 />
+
+                {isRendered && links.map((link, i) => (
+                    <a
+                        key={i}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Open ${link.url}`}
+                        title={link.url}
+                        className="absolute z-[1] rounded-[2px] transition-colors hover:bg-sky-500/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500"
+                        style={{ left: `${link.left}%`, top: `${link.top}%`, width: `${link.width}%`, height: `${link.height}%` }}
+                    />
+                ))}
 
                 {/* Skeleton shimmer while loading */}
                 {!isRendered && (

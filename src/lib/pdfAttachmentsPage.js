@@ -1,23 +1,31 @@
-import { PDFDocument, PDFString, StandardFonts, rgb } from 'pdf-lib';
+import { PDFDocument, PDFString, StandardFonts, rgb, setCharacterSpacing } from 'pdf-lib';
 import QRCode from 'qrcode';
 
 /*
  * The last page(s) of an uploaded proposal PDF when files or links are
- * attached: one card per attachment with its name, its link (tappable in the
- * PDF) and a QR code to scan from a printout. The same idea as the Attachments
- * page of proposals made in the builder.
+ * attached: one row per attachment with its name, its link (tappable in the
+ * PDF) and a QR code to scan from a printout. Drawn in the proposal paper's
+ * look (src/components/ui/proposalDesign.jsx): dot grid, N. mark header with
+ * the quotation number, grey letter-spaced labels, a ruled table, and the
+ * wordmark footer with the page number.
  *
  * The proposal record keeps how many pages were added (appendixPages), so a
  * later edit can take them off and add a fresh set instead of stacking them.
  */
 
+/** Bumped when the page's design changes, so saving an older proposal redraws it. */
+export const APPENDIX_VERSION = 2;
+
 const TYPE_LABEL = { pdf: 'PDF', spreadsheet: 'Spreadsheet', image: 'Image', other: 'Link' };
 
-const INK = rgb(0.04, 0.05, 0.07);
-const GREY = rgb(0.42, 0.44, 0.48);
-const LINE = rgb(0.88, 0.89, 0.91);
-const LINK = rgb(0.05, 0.4, 0.75);
-const GREEN = rgb(0.22, 0.93, 0.25);
+const hex = (h) => rgb(parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255);
+const INK = hex('#111214');
+const BODY = hex('#2B2D31');
+const MUTED = hex('#9CA3AF'); // gray-400, the paper's labels
+const SUBTLE = hex('#6B7280');
+const LINE = hex('#E8EAE8');
+const DOT = hex('#D9DCD9');
+const LINK = hex('#15803D');
 
 // The standard PDF fonts only cover Latin-1: anything else (₹, emoji, Devanagari) is left out.
 export const pdfSafeText = (s) => String(s || '')
@@ -45,11 +53,13 @@ const wrap = (font, text, size, max, maxLines) => {
             lines.push(ellipsize(font, rest, size, max));
             break;
         }
-        // Break at the last space that fits, or mid-word (long URLs) when none does.
+        // Break at the last space that fits, else after a / ? & = in a link, else mid-word.
         let cut = rest.length;
         while (cut > 1 && font.widthOfTextAtSize(rest.slice(0, cut), size) > max) cut -= 1;
         const space = rest.lastIndexOf(' ', cut);
+        const slash = Math.max(...['/', '?', '&', '='].map(ch => rest.lastIndexOf(ch, cut - 1) + 1));
         if (space > cut * 0.5) cut = space;
+        else if (slash > cut * 0.5) cut = slash;
         lines.push(rest.slice(0, cut).trimEnd());
         rest = rest.slice(cut).trimStart();
     }
@@ -97,7 +107,8 @@ export async function removeLastPages(pdfData, count) {
  *
  * @param {ArrayBuffer|Uint8Array|Blob} pdfData - The proposal PDF
  * @param {Array<{name, url, fileType, type}>} attachments - Files and links attached to the proposal
- * @param {Object} [options] - proposalNumber; logo (PNG bytes, drawn on the dark header band)
+ * @param {Object} [options] - proposalNumber; label ("Quotation"); logo (the N. mark, PNG bytes);
+ *   footerLogo (the black wordmark, PNG bytes); entity (the line under the mark)
  * @returns {Promise<{ bytes: Uint8Array, pagesAdded: number }>}
  */
 export async function appendAttachmentsPage(pdfData, attachments, options = {}) {
@@ -108,96 +119,138 @@ export async function appendAttachmentsPage(pdfData, attachments, options = {}) 
     const pdfDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-    let logo = null;
-    if (options.logo) {
-        try { logo = await pdfDoc.embedPng(options.logo); } catch (err) { console.warn('[attachments page] logo skipped', err); }
-    }
-    const qrs = await Promise.all(list.map(a => QRCode.toDataURL(a.url, { margin: 1, width: 360, errorCorrectionLevel: 'M', color: { dark: '#000000', light: '#ffffff' } })
+    const embed = async (png) => {
+        if (!png) return null;
+        try { return await pdfDoc.embedPng(png); } catch (err) { console.warn('[attachments page] image skipped', err); return null; }
+    };
+    const mark = await embed(options.logo);
+    const wordmark = await embed(options.footerLogo);
+    const qrs = await Promise.all(list.map(a => QRCode.toDataURL(a.url, { margin: 0, width: 360, errorCorrectionLevel: 'M', color: { dark: '#111214', light: '#ffffff' } })
         .then(uri => pdfDoc.embedPng(uri))));
 
-    const pages = pdfDoc.getPages();
-    const last = pages[pages.length - 1];
+    const existing = pdfDoc.getPageCount();
+    const last = existing ? pdfDoc.getPage(existing - 1) : null;
     const { width, height } = last ? last.getSize() : { width: 595.28, height: 841.89 };
-    const landscape = width > height * 1.05;
-    const s = Math.min(width, height) / (landscape ? 540 : 595); // 1 on A4 portrait and a 960×540 deck
-    const margin = 44 * s;
-    const bandH = 76 * s;
-    const titleY = height - bandH - 58 * s;
-    const top = titleY - 40 * s; // where the cards start
-    const bottom = 46 * s; // above the footer
-    const cols = landscape ? 2 : 1;
-    const gap = 14 * s;
-    const cardW = (width - margin * 2 - gap * (cols - 1)) / cols;
-    const cardH = 112 * s;
-    const rows = Math.max(1, Math.floor((top - bottom + gap) / (cardH + gap)));
-    const perPage = rows * cols;
-    const pageCount = Math.ceil(list.length / perPage);
-    const number = pdfSafeText(options.proposalNumber);
+    // Sizes are the paper's CSS pixels (794 wide); u turns them into points on this page.
+    const u = Math.min(width / 794, height / 600);
+    const padX = 50 * u;
+    const right = width - padX;
+    const contentW = right - padX;
+
+    const text = (page, str, { x, y, size, f = font, color = INK, tracking = 0, align = 'left' }) => {
+        const t = pdfSafeText(str);
+        if (!t) return 0;
+        const w = f.widthOfTextAtSize(t, size * u) + tracking * size * u * Math.max(0, t.length - 1);
+        const left = align === 'right' ? x - w : x;
+        if (tracking) page.pushOperators(setCharacterSpacing(tracking * size * u));
+        page.drawText(t, { x: left, y, size: size * u, font: f, color });
+        if (tracking) page.pushOperators(setCharacterSpacing(0));
+        return w;
+    };
+    const rule = (page, y, from = padX, to = right) => page.drawLine({ start: { x: from, y }, end: { x: to, y }, thickness: 0.75 * u, color: LINE });
+
+    // Vertical plan, top down (y is from the bottom in PDF space).
+    const headerTop = height - 40 * u;
+    const markH = 42 * u;
+    const headerLine = headerTop - markH - 24 * u;
+    const eyebrowY = headerLine - 44 * u;
+    const titleY = eyebrowY - 30 * u;
+    const tableHeadY = titleY - 40 * u;
+    const tableTop = tableHeadY - 12 * u;
+    const footerLine = 70 * u; // top of the footer (no rule, like the paper)
+    const rowH = 96 * u;
+    const noteSpace = 34 * u;
+    const rowsFit = Math.max(1, Math.floor((tableTop - footerLine - noteSpace - 20 * u) / rowH));
+    const pageCount = Math.ceil(list.length / rowsFit);
+    const total = existing + pageCount;
+
+    const number = options.proposalNumber || '';
+    const label = options.label || 'Quotation';
+    const entity = options.entity || 'Newbi Entertainment & Marketing LLP';
+    const colType = padX + contentW * 0.6;
+    const qrSize = 68 * u;
 
     for (let p = 0; p < pageCount; p += 1) {
         const page = pdfDoc.addPage([width, height]);
         page.drawRectangle({ x: 0, y: 0, width, height, color: rgb(1, 1, 1) });
 
-        // Dark band with the logo, like the hosted proposal page.
-        page.drawRectangle({ x: 0, y: height - bandH, width, height: bandH, color: INK });
-        if (logo) {
-            const h = bandH * 0.62;
-            const w = (logo.width / logo.height) * h;
-            page.drawImage(logo, { x: margin, y: height - bandH + (bandH - h) / 2, width: w, height: h });
+        // Fine dot grid behind the header, fading out downwards.
+        const step = 12 * u;
+        const fade = 150 * u;
+        for (let dy = step / 2; dy < fade; dy += step) {
+            const opacity = Math.max(0, 1 - (dy / fade) ** 1.5);
+            for (let dx = step / 2; dx < width; dx += step) {
+                page.drawCircle({ x: dx, y: height - dy, size: 0.9 * u, color: DOT, opacity });
+            }
         }
-        if (number) {
-            const size = 10 * s;
-            page.drawText(number, { x: width - margin - bold.widthOfTextAtSize(number, size), y: height - bandH / 2 - size * 0.35, size, font: bold, color: rgb(1, 1, 1) });
+
+        // Header: N. mark and the company on the left, the quotation number on the right.
+        if (mark) {
+            const w = (mark.width / mark.height) * markH;
+            page.drawImage(mark, { x: padX, y: headerTop - markH, width: w, height: markH });
+        } else {
+            text(page, 'Newbi', { x: padX, y: headerTop - markH * 0.8, size: 22, f: bold });
         }
-        page.drawRectangle({ x: 0, y: height - bandH - 3 * s, width, height: 3 * s, color: GREEN });
+        text(page, entity.toUpperCase(), { x: padX, y: headerTop - markH - 12 * u, size: 6, f: bold, color: SUBTLE, tracking: 0.12 });
+        text(page, label.toUpperCase(), { x: right, y: headerTop - 14 * u, size: 8.5, f: bold, color: SUBTLE, tracking: 0.04, align: 'right' });
+        if (number) text(page, number, { x: right, y: headerTop - 31 * u, size: 13, f: bold, align: 'right' });
+        rule(page, headerLine);
 
-        page.drawText('APPENDIX', { x: margin, y: titleY + 30 * s, size: 8 * s, font: bold, color: GREY });
-        page.drawText(p === 0 ? 'Attachments' : 'Attachments (continued)', { x: margin, y: titleY, size: 24 * s, font: bold, color: INK });
-        page.drawText('Scan a code with your phone camera, or tap a card to open the file.', { x: margin, y: titleY - 18 * s, size: 9.5 * s, font, color: GREY });
+        // Eyebrow and title.
+        text(page, 'APPENDIX', { x: padX, y: eyebrowY, size: 8.5, f: bold, color: MUTED, tracking: 0.12 });
+        text(page, `Attachments${p > 0 ? ' (continued)' : ''}`, { x: padX, y: titleY, size: 24, f: bold });
 
-        list.slice(p * perPage, (p + 1) * perPage).forEach((att, i) => {
-            const idx = p * perPage + i;
-            const col = i % cols;
-            const row = Math.floor(i / cols);
-            const x = margin + col * (cardW + gap);
-            const y = top - (row + 1) * cardH - row * gap;
-            const pad = 12 * s;
-            const qrSize = cardH - pad * 2;
+        // Table head.
+        text(page, '#', { x: padX, y: tableHeadY, size: 7.7, f: bold, color: MUTED, tracking: 0.1 });
+        text(page, 'DOCUMENT', { x: padX + 42 * u, y: tableHeadY, size: 7.7, f: bold, color: MUTED, tracking: 0.1 });
+        text(page, 'TYPE', { x: colType, y: tableHeadY, size: 7.7, f: bold, color: MUTED, tracking: 0.1 });
+        text(page, 'SCAN', { x: right, y: tableHeadY, size: 7.7, f: bold, color: MUTED, tracking: 0.1, align: 'right' });
+        rule(page, tableTop);
 
-            page.drawRectangle({ x, y, width: cardW, height: cardH, borderColor: LINE, borderWidth: 1, color: rgb(1, 1, 1) });
-            page.drawImage(qrs[idx], { x: x + pad, y: y + pad, width: qrSize, height: qrSize });
+        const rows = list.slice(p * rowsFit, (p + 1) * rowsFit);
+        rows.forEach((att, i) => {
+            const idx = p * rowsFit + i;
+            const rowTop = tableTop - i * rowH;
+            const rowBottom = rowTop - rowH;
+            const firstLine = rowTop - 30 * u;
 
-            const tx = x + pad * 2 + qrSize;
-            const tw = cardW - (tx - x) - pad;
-            // Top down: number and kind, the name (up to two lines), the link, and "Open" at the foot.
-            let cursor = y + cardH - pad - 8 * s;
-            const kind = `${String(idx + 1).padStart(2, '0')}  ·  ${TYPE_LABEL[att.fileType] || TYPE_LABEL.other}${att.type === 'file' ? ' file' : ''}`.toUpperCase();
-            page.drawText(pdfSafeText(kind), { x: tx, y: cursor, size: 7.5 * s, font: bold, color: GREY });
+            text(page, String(idx + 1).padStart(2, '0'), { x: padX, y: firstLine, size: 11, color: BODY });
 
-            const nameSize = 13 * s;
-            const name = pdfSafeText(att.name) || `Attachment ${idx + 1}`;
-            const nameLines = wrap(bold, name, nameSize, tw, 2);
-            nameLines.forEach((line) => {
-                cursor -= nameSize * 1.3;
-                page.drawText(line, { x: tx, y: cursor, size: nameSize, font: bold, color: INK });
+            const docX = padX + 42 * u;
+            const docW = colType - docX - 16 * u;
+            const nameLines = wrap(bold, pdfSafeText(att.name) || `Attachment ${idx + 1}`, 12 * u, docW, 2);
+            let cursor = firstLine;
+            nameLines.forEach((line, l) => {
+                if (l) cursor -= 15 * u;
+                text(page, line, { x: docX, y: cursor, size: 12, f: bold });
             });
-
-            const urlSize = 8 * s;
-            cursor -= 4 * s;
-            wrap(font, pdfSafeText(att.url.replace(/^https?:\/\//i, '')), urlSize, tw, nameLines.length > 1 ? 1 : 2).forEach((line) => {
-                cursor -= urlSize * 1.35;
-                page.drawText(line, { x: tx, y: cursor, size: urlSize, font, color: LINK });
+            wrap(font, pdfSafeText(att.url.replace(/^https?:\/\//i, '')), 8.6 * u, docW, nameLines.length > 1 ? 1 : 2).forEach((line) => {
+                cursor -= 14 * u;
+                text(page, line, { x: docX, y: cursor, size: 8.6, color: SUBTLE });
             });
+            text(page, 'Open  >', { x: docX, y: rowBottom + 14 * u, size: 8.6, f: bold, color: LINK, tracking: 0.04 });
 
-            page.drawText('Open  >', { x: tx, y: y + pad, size: 8.5 * s, font: bold, color: INK });
-            addLink(pdfDoc, page, x, y, cardW, cardH, att.url);
+            const kind = att.fileType && TYPE_LABEL[att.fileType] && att.fileType !== 'other'
+                ? `${TYPE_LABEL[att.fileType]} ${att.type === 'file' ? 'file' : 'link'}`
+                : (att.type === 'file' ? 'File' : 'Web link');
+            text(page, kind, { x: colType, y: firstLine, size: 11, color: BODY });
+
+            page.drawImage(qrs[idx], { x: right - qrSize, y: rowBottom + (rowH - qrSize) / 2, width: qrSize, height: qrSize });
+            rule(page, rowBottom);
+            addLink(pdfDoc, page, padX, rowBottom, contentW, rowH, att.url);
         });
 
-        const footSize = 7.5 * s;
-        page.drawLine({ start: { x: margin, y: 30 * s }, end: { x: width - margin, y: 30 * s }, thickness: 0.6, color: LINE });
-        page.drawText('Newbi Entertainment & Marketing LLP', { x: margin, y: 18 * s, size: footSize, font, color: GREY });
-        const pg = pageCount > 1 ? `Attachments ${p + 1} of ${pageCount}` : 'newbi.live';
-        page.drawText(pg, { x: width - margin - font.widthOfTextAtSize(pg, footSize), y: 18 * s, size: footSize, font, color: GREY });
+        const tableBottom = tableTop - rows.length * rowH;
+        text(page, 'Scan a code with your phone camera, or tap a row to open it. Links stay live, so they always show the latest version.', { x: padX, y: tableBottom - 18 * u, size: 7.7, color: MUTED });
+
+        // Footer: wordmark and page number.
+        const wordH = 32 * u;
+        if (wordmark) {
+            page.drawImage(wordmark, { x: padX, y: footerLine - wordH, width: (wordmark.width / wordmark.height) * wordH, height: wordH });
+        } else {
+            text(page, 'newbi.live', { x: padX, y: footerLine - wordH * 0.7, size: 11, f: bold });
+        }
+        text(page, `PAGE ${existing + p + 1} OF ${total}`, { x: right, y: footerLine - wordH * 0.62, size: 8.5, color: MUTED, tracking: 0.06, align: 'right' });
     }
 
     return { bytes: await pdfDoc.save(), pagesAdded: pageCount };
