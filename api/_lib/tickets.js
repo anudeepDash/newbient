@@ -358,7 +358,7 @@ export const settleTicketByGatewayOrder = async (db, gatewayOrderId, paymentId) 
     return true;
 };
 
-const gatewayConfirmAction = async (db, body, decodedToken, { isStaff } = {}) => {
+const gatewayConfirmAction = async (db, body) => {
     if (!razorpayConfigured()) throw new TicketError('GATEWAY', 'Online payment isn’t set up.', 503);
     const orderId = String(body.orderId || '');
     if (!orderId || orderId.length > 64) throw new TicketError('VALIDATION', 'Missing order.');
@@ -370,8 +370,9 @@ const gatewayConfirmAction = async (db, body, decodedToken, { isStaff } = {}) =>
 
     let paymentId = null;
     if (body.sync) {
-        // Staff "check with Razorpay": ask the gateway whether it was paid.
-        if (!(await isStaff?.())) throw new TicketError('FORBIDDEN', 'Forbidden', 403);
+        // "Check with Razorpay": ask the gateway itself whether it was paid. Safe for the buyer
+        // too (the answer comes from Razorpay, not the caller), so a payment finished in a UPI
+        // app, or a closed tab, still ends in a ticket without waiting on the webhook.
         const paid = await paidPaymentFor(order.gatewayOrderId);
         if (!paid) return { success: true, paid: false, status: order.status };
         paymentId = paid.id;

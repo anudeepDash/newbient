@@ -304,6 +304,18 @@ export function useTicketCheckout(event, { open }) {
     };
 
     /* UPI, card or netbanking through Razorpay. */
+    // Asks Razorpay (via our server) whether this order was paid; retries a few times
+    // because the capture can land a moment after the window closes.
+    const verifyWithRazorpay = async (orderId, tries) => {
+        let last = null;
+        for (let i = 0; i < tries; i++) {
+            last = await callTicketApi('ticket-gateway-confirm', { orderId, sync: true }, { timeoutMs: 20000 });
+            if (last.ok && last.data?.paid) return last;
+            if (i < tries - 1) await new Promise(r => setTimeout(r, 2500));
+        }
+        return last;
+    };
+
     const payOnline = async (customer, { method } = {}) => {
         setBusy(true);
         setError('');
@@ -335,12 +347,24 @@ export function useTicketCheckout(event, { open }) {
                     ...razorpayMethodOptions(method),
                     handler: async (resp) => {
                         setBusy(true);
-                        const conf = await callTicketApi('ticket-gateway-confirm', { orderId: start.orderId, ...resp }, { timeoutMs: 25000 });
+                        let conf = await callTicketApi('ticket-gateway-confirm', { orderId: start.orderId, ...resp }, { timeoutMs: 25000 });
+                        // Couldn't confirm from the signature: ask Razorpay directly before giving up.
+                        if (!conf.ok || !conf.data?.paid) conf = await verifyWithRazorpay(start.orderId, 4);
                         setBusy(false);
-                        if (conf.ok) { finish({ ...conf.data, totalAmount: start.amount / 100 }, customer, start.amount / 100); resolve(true); }
-                        else { setError(conf.error || `Payment received, but we couldn’t confirm it yet. Keep your booking reference ${start.bookingRef}; your ticket will follow.`); resolve(false); }
+                        if (conf?.ok && conf.data?.paid) { finish({ ...conf.data, totalAmount: start.amount / 100 }, customer, start.amount / 100); resolve(true); }
+                        else { setError(`Payment received, but we couldn’t confirm it yet. Keep your booking reference ${start.bookingRef}; your ticket will follow.`); resolve(false); }
                     },
-                    modal: { confirm_close: true, ondismiss: () => { setBusy(false); resolve(false); } },
+                    modal: {
+                        confirm_close: true,
+                        // Closed without the success callback: a UPI app may still have completed it.
+                        ondismiss: async () => {
+                            setBusy(true);
+                            const conf = await verifyWithRazorpay(start.orderId, 3);
+                            setBusy(false);
+                            if (conf?.ok && conf.data?.paid) { finish({ ...conf.data, totalAmount: start.amount / 100 }, customer, start.amount / 100); resolve(true); }
+                            else resolve(false);
+                        },
+                    },
                 });
                 rzp.on('payment.failed', (e) => setError(e?.error?.description || 'The payment didn’t go through. Please try again.'));
                 setBusy(false);
