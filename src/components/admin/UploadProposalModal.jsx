@@ -5,17 +5,20 @@ import { cn } from '../../lib/utils';
 import { generateNextProposalNumber, embedProposalNumberInPdf } from '../../lib/pdfStampUtils';
 import { guessFields, nameFromFileName, isPdfFile } from '../../lib/pdfInspect';
 import { todayKey } from '../../lib/invoicing';
+import { appendAttachmentsPage, removeLastPages, attachmentsKey, linkableAttachments } from '../../lib/pdfAttachmentsPage';
 import Sheet from './Sheet';
 import { Button } from './ui';
 import {
     Choice, DocumentDrop, Field, Section, SignatureField, Toggle, UploadProgress,
     areaCls, fieldCls, formatBytes, useDocumentIntake,
 } from './uploads/UploadKit';
+import { AttachmentsList } from './proposals/builder/CommonSections';
 
 /*
  * Host a proposal or deck made elsewhere. The client gets a Newbi link where
  * they can read it, accept or decline, and you see when they open it. The
  * proposal number (and our signature, if drawn) is stamped onto every page.
+ * Attached files and links go on an extra last page with a QR code for each.
  */
 
 const BRANDS = [
@@ -34,7 +37,7 @@ const emptyForm = () => ({
     clientName: '', clientEmail: '', campaignName: '', dealValue: '',
     proposalNumber: generateNextProposalNumber(useStore.getState().proposals),
     validUntil: plusDays(30), selectedLogo: 'entertainment', status: 'Draft',
-    showSignatures: true, showSeal: true, ourSignature: null, coverDescription: '',
+    showSignatures: true, showSeal: true, ourSignature: null, coverDescription: '', attachments: [],
 });
 
 const fromProposal = (p) => ({
@@ -50,7 +53,18 @@ const fromProposal = (p) => ({
     showSeal: p.showSeal !== false,
     ourSignature: p.ourSignature || null,
     coverDescription: p.coverDescription || '',
+    attachments: p.attachments || [],
 });
+
+const loadLogo = async (id) => {
+    try {
+        const brand = BRANDS.find(b => b.id === id) || BRANDS[0];
+        const res = await fetch(brand.path);
+        return res.ok ? new Uint8Array(await res.arrayBuffer()) : null;
+    } catch {
+        return null;
+    }
+};
 
 const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSuccess }) => {
     const [form, setForm] = useState(emptyForm);
@@ -114,12 +128,37 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
         }
         const number = form.proposalNumber.trim() || generateNextProposalNumber(proposals);
         const stamp = { ourSignature: form.ourSignature, senderName: 'Newbi Entertainment & Marketing LLP' };
+        const attachments = form.attachments || [];
+
+        // Stamp the number, then add the attachments page (if anything is attached) at the end.
+        const preparePdf = async (bytes) => {
+            let out = bytes;
+            setSaving({ percent: 5, step: 'Stamping the proposal number' });
+            try {
+                out = await embedProposalNumberInPdf(out, number, stamp);
+            } catch (stampErr) {
+                console.warn('Could not stamp the proposal number; keeping the original.', stampErr);
+            }
+            let pagesAdded = 0;
+            if (linkableAttachments(attachments).length) {
+                setSaving({ percent: 10, step: 'Adding the attachments page' });
+                try {
+                    const result = await appendAttachmentsPage(out, attachments, { proposalNumber: number, logo: await loadLogo(form.selectedLogo) });
+                    out = result.bytes;
+                    pagesAdded = result.pagesAdded;
+                } catch (pageErr) {
+                    console.warn('Could not add the attachments page.', pageErr);
+                }
+            }
+            return { bytes: out, pagesAdded };
+        };
 
         try {
             let fileUrl = editingProposal?.fileUrl || '';
             let fileName = editingProposal?.fileName || '';
             let fileSize = editingProposal?.fileSize || '';
             let fileType = editingProposal?.fileType || 'pdf';
+            let appendixPages = editingProposal?.appendixPages || 0;
 
             const upload = async (blob, label) => {
                 const result = await uploadProposalFile(blob, (p) => setSaving({ percent: 15 + p * 0.8, step: label }));
@@ -129,13 +168,14 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
 
             if (intake.file) {
                 let toUpload = intake.file;
+                appendixPages = 0;
                 if (isPdfFile(intake.file)) {
-                    setSaving({ percent: 5, step: 'Stamping the proposal number' });
                     try {
-                        const bytes = await embedProposalNumberInPdf(await intake.file.arrayBuffer(), number, stamp);
-                        toUpload = new File([bytes], intake.file.name, { type: 'application/pdf' });
-                    } catch (stampErr) {
-                        console.warn('Could not stamp the proposal number; uploading the original.', stampErr);
+                        const prepared = await preparePdf(await intake.file.arrayBuffer());
+                        toUpload = new File([prepared.bytes], intake.file.name, { type: 'application/pdf' });
+                        appendixPages = prepared.pagesAdded;
+                    } catch (prepErr) {
+                        console.warn('Could not prepare the PDF; uploading the original.', prepErr);
                     }
                 }
                 const result = await upload(toUpload, 'Uploading');
@@ -143,18 +183,26 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
                 fileName = result.fileName || intake.file.name;
                 fileSize = formatBytes(result.fileSize || intake.file.size);
                 fileType = result.fileType || 'pdf';
-            } else if (editingProposal?.fileUrl && (number !== editingProposal.proposalNumber || form.ourSignature !== (editingProposal.ourSignature || null))) {
-                // Number or signature changed on a saved PDF: restamp it.
+            } else if (editingProposal?.fileUrl && fileType !== 'image' && (
+                number !== editingProposal.proposalNumber
+                || form.ourSignature !== (editingProposal.ourSignature || null)
+                || attachmentsKey(attachments) !== attachmentsKey(editingProposal.attachments)
+                || (form.selectedLogo !== editingProposal.selectedLogo && (appendixPages > 0 || linkableAttachments(attachments).length > 0))
+            )) {
+                // Number, signature or attachments changed on a saved PDF: take off the old
+                // attachments page, then restamp and add a fresh one.
                 try {
-                    setSaving({ percent: 10, step: 'Updating the stamped PDF' });
+                    setSaving({ percent: 3, step: 'Updating the PDF' });
                     const resp = await fetch(editingProposal.fileUrl);
                     if (resp.ok) {
-                        const bytes = await embedProposalNumberInPdf(await resp.arrayBuffer(), number, stamp);
-                        const result = await upload(new File([bytes], fileName || 'proposal.pdf', { type: 'application/pdf' }), 'Uploading the updated PDF');
+                        const original = await removeLastPages(await resp.arrayBuffer(), appendixPages);
+                        const prepared = await preparePdf(original);
+                        const result = await upload(new File([prepared.bytes], fileName || 'proposal.pdf', { type: 'application/pdf' }), 'Uploading the updated PDF');
                         fileUrl = result.url;
+                        appendixPages = prepared.pagesAdded;
                     }
                 } catch (restampErr) {
-                    console.warn('Could not restamp the saved PDF.', restampErr);
+                    console.warn('Could not update the saved PDF.', restampErr);
                 }
             }
 
@@ -180,6 +228,8 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
                 fileSize,
                 fileType,
                 pageCount: intake.info?.pages || editingProposal?.pageCount || null,
+                attachments,
+                appendixPages,
                 items: editingProposal?.items || [],
                 updatedAt: new Date().toISOString(),
             };
@@ -297,6 +347,10 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
                     <Field label="Note above the document" optional>
                         <textarea className={areaCls} rows={3} value={form.coverDescription} onChange={e => set({ coverDescription: e.target.value })} placeholder="A line or two for the client, e.g. what this covers and what you need from them." />
                     </Field>
+                </Section>
+
+                <Section title="Attachments" hint="Budget sheets, decks, reference files. The PDF gets a last page with a link and QR code for each, and the client can open them from the link too.">
+                    <AttachmentsList formData={form} setFormData={setForm} />
                 </Section>
 
                 <Section title="Sign-off">

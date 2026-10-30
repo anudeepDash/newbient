@@ -252,7 +252,8 @@ const LinkSheet = ({ open, onClose, onAdd }) => {
     );
 };
 
-export const AttachmentsSection = ({ formData, setFormData }) => {
+/** The attachment list with upload and link buttons; also used by the uploaded-proposal sheet. */
+export const AttachmentsList = ({ formData, setFormData }) => {
     const list = formData.attachments || [];
     const setList = (fn) => setFormData(prev => ({ ...prev, attachments: fn(prev.attachments || []) }));
     const inputRef = useRef(null);
@@ -278,7 +279,7 @@ export const AttachmentsSection = ({ formData, setFormData }) => {
     };
 
     return (
-        <BuilderCard title="Attachments" hint="Files and links the client can open from the proposal">
+        <>
             <div className="space-y-3">
                 {list.length === 0 && <p className="rounded-xl bg-black/[0.03] p-4 text-center text-[13px] text-gray-500 dark:bg-white/[0.03]">Nothing attached yet. Add a budget sheet, a deck or a reference PDF.</p>}
                 {list.map((att, idx) => {
@@ -304,6 +305,12 @@ export const AttachmentsSection = ({ formData, setFormData }) => {
                 <input ref={inputRef} type="file" className="hidden" accept=".pdf,.csv,.xlsx,.xls,.tsv,.jpg,.jpeg,.png,.webp,.gif" onChange={e => { upload(e.target.files?.[0]); e.target.value = ''; }} />
             </div>
             <LinkSheet open={linkOpen} onClose={() => setLinkOpen(false)} onAdd={(att) => setList(l => [...l, att])} />
-        </BuilderCard>
+        </>
     );
 };
+
+export const AttachmentsSection = ({ formData, setFormData }) => (
+    <BuilderCard title="Attachments" hint="Files and links the client can open from the proposal">
+        <AttachmentsList formData={formData} setFormData={setFormData} />
+    </BuilderCard>
+);
