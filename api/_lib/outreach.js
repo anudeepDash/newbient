@@ -17,8 +17,8 @@
  *   POST ?action=outreach-queue-run          admin: a short pass; Bearer CRON_SECRET: the worker (chains itself)
  *
  * Phase 3 (api/_lib/outreachDeliver.js, api/_lib/outreachInbox.js):
- *   public  outreach-deliverables, outreach-submit, outreach-upi        (the creator's personal link)
- *   admin   outreach-review, outreach-ticket, outreach-payout, outreach-resend-link,
+ *   public  outreach-deliverables, outreach-submit, outreach-upi, outreach-payout-details   (the creator's personal link)
+ *   admin   outreach-review, outreach-ticket, outreach-payout, outreach-resend-link, outreach-ask-payout, outreach-payout-links,
  *           inbox-list, inbox-thread, inbox-reply, inbox-react, inbox-template, inbox-state, inbox-media
  *
  * Data (see docs/campaign-outreach.md):
@@ -49,8 +49,8 @@ import { cityGroupFor } from '../../src/lib/outreach/cityGroups.js';
 import { isWhatsAppConfigured } from './whatsapp.js';
 import { submitUrlFor } from './outreachQueue.js';
 import {
-    handleCreatorDeliverables, handleCreatorSubmit, handleCreatorUpi, handleReview, handleTicket, handlePayout, handleResendLink,
-    handleCreatorJoined, handleMine,
+    handleCreatorDeliverables, handleCreatorSubmit, handleCreatorPayoutDetails, handleReview, handleTicket, handlePayout, handleResendLink,
+    handleCreatorJoined, handleMine, handleAskPayout, handlePayoutLinks,
 } from './outreachDeliver.js';
 import {
     handleInboxList, handleInboxThread, handleInboxReply, handleInboxReact, handleInboxTemplate, handleInboxState, handleInboxMedia,
@@ -61,14 +61,14 @@ import { WA_CENTER_ACTIONS, handleWhatsAppCenterAction } from './whatsappCenter.
 export const OUTREACH_ACTIONS = new Set([
     'outreach-campaign', 'outreach-apply', 'outreach-list', 'outreach-status', 'outreach-settings', 'outreach-audit',
     'outreach-send', 'outreach-cancel', 'outreach-queue-run',
-    'outreach-deliverables', 'outreach-submit', 'outreach-upi', 'outreach-joined', 'outreach-mine',
-    'outreach-review', 'outreach-ticket', 'outreach-payout', 'outreach-resend-link',
+    'outreach-deliverables', 'outreach-submit', 'outreach-upi', 'outreach-payout-details', 'outreach-joined', 'outreach-mine',
+    'outreach-review', 'outreach-ticket', 'outreach-payout', 'outreach-resend-link', 'outreach-ask-payout', 'outreach-payout-links',
     'inbox-list', 'inbox-thread', 'inbox-reply', 'inbox-react', 'inbox-template', 'inbox-state', 'inbox-media',
     'outreach-city-notify', 'outreach-wame',
     // The admin WhatsApp center (api/_lib/whatsappCenter.js).
     ...WA_CENTER_ACTIONS,
 ]);
-const PUBLIC = new Set(['outreach-campaign', 'outreach-apply', 'outreach-deliverables', 'outreach-submit', 'outreach-upi', 'outreach-joined', 'outreach-mine']);
+const PUBLIC = new Set(['outreach-campaign', 'outreach-apply', 'outreach-deliverables', 'outreach-submit', 'outreach-upi', 'outreach-payout-details', 'outreach-joined', 'outreach-mine']);
 
 /* Personal data is for these roles only (narrower than the creator admin roles on purpose). */
 export const OUTREACH_ROLES = ['founder', 'super_admin', 'developer', 'admin'];
@@ -631,7 +631,7 @@ export const handleOutreachAction = async (action, req, res, { decodedToken, db 
         if (action === 'outreach-apply') return await handleApply(req, res, { db, token: decodedToken });
         if (action === 'outreach-deliverables') return await handleCreatorDeliverables(req, res, { db });
         if (action === 'outreach-submit') return await handleCreatorSubmit(req, res, { db, rateLimit: checkRateLimit });
-        if (action === 'outreach-upi') return await handleCreatorUpi(req, res, { db });
+        if (action === 'outreach-upi' || action === 'outreach-payout-details') return await handleCreatorPayoutDetails(req, res, { db, rateLimit: checkRateLimit });
         if (action === 'outreach-joined') return await handleCreatorJoined(req, res, { db });
         if (action === 'outreach-mine') return await handleMine(req, res, { db, token: decodedToken });
         if (PUBLIC.has(action)) return send(res, 400, { success: false, error: 'Unknown action.' });
@@ -653,6 +653,8 @@ export const handleOutreachAction = async (action, req, res, { decodedToken, db 
         if (action === 'outreach-ticket') return await handleTicket(req, res, withActor);
         if (action === 'outreach-payout') return await handlePayout(req, res, withActor);
         if (action === 'outreach-resend-link') return await handleResendLink(req, res, withActor);
+        if (action === 'outreach-ask-payout') return await handleAskPayout(req, res, withActor);
+        if (action === 'outreach-payout-links') return await handlePayoutLinks(req, res, withActor);
         if (action === 'inbox-list') return await handleInboxList(req, res, withActor);
         if (action === 'inbox-thread') return await handleInboxThread(req, res, withActor);
         if (action === 'inbox-reply') return await handleInboxReply(req, res, withActor);

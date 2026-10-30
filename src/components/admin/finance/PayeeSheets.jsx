@@ -365,6 +365,7 @@ export const PayeeDetailSheet = ({ payee, open, onClose, payees, spends, canDele
                             <Row label="Method">{payee.paymentMode || 'Not set'}</Row>
                             {acct.upiId && <Row label="UPI ID" mono onCopy={() => copyText(acct.upiId, 'UPI ID')}>{acct.upiId}</Row>}
                             {acct.bankName && <Row label="Bank">{acct.bankName}</Row>}
+                            {payee.accountHolder && <Row label="Name on account" onCopy={() => copyText(payee.accountHolder, 'Name')}>{payee.accountHolder}</Row>}
                             {acct.accountNumber && <Row label="Account no." mono onCopy={() => copyText(acct.accountNumber, 'Account number')}>{acct.accountNumber}</Row>}
                             {acct.ifscCode && <Row label="IFSC" mono onCopy={() => copyText(acct.ifscCode, 'IFSC')}>{acct.ifscCode}</Row>}
                             {!acct.upiId && !acct.accountNumber && <Row label="Details">{payee.destinationDetails || 'Not given yet'}</Row>}
@@ -375,7 +376,8 @@ export const PayeeDetailSheet = ({ payee, open, onClose, payees, spends, canDele
                         <div className="divide-y divide-black/[0.06] rounded-2xl border border-black/[0.08] px-4 dark:divide-white/[0.06] dark:border-white/[0.08]">
                             <Row label="Email" onCopy={payee.email ? () => copyText(payee.email, 'Email') : undefined}>{payee.email || '—'}</Row>
                             <Row label="Phone" onCopy={payee.phone ? () => copyText(payee.phone, 'Phone') : undefined}>{payee.phone || '—'}</Row>
-                            <Row label="Added">{formatDay(payee.createdAt) || '—'}{payee.source === 'admin' ? ' · by the team' : payee.createdAt ? ' · self-registered' : ''}</Row>
+                            {payee.instagramHandle && <Row label="Instagram">@{payee.instagramHandle}</Row>}
+                            <Row label="Added">{formatDay(payee.createdAt) || '—'}{payee.source === 'admin' ? ' · by the team' : payee.source === 'campaign' ? ' · by the creator, from a campaign payout link' : payee.createdAt ? ' · self-registered' : ''}</Row>
                         </div>
                         {(payee.email || payee.phone) && (
                             <div className="flex gap-2">

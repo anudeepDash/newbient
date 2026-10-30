@@ -136,6 +136,54 @@ export const normalizeUpi = (v) => {
     return UPI.test(s) ? s : null;
 };
 
+/*
+ * Where to pay a creator, from their campaign page: a UPI ID, or a bank
+ * account (holder name, number, IFSC). The same details are saved as their
+ * Vendor payee in Finance (api/_lib/outreachDeliver.js).
+ */
+export const PAYOUT_DETAIL_MODES = [
+    { value: 'upi', label: 'UPI' },
+    { value: 'bank', label: 'Bank account' },
+];
+const IFSC = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+export const normalizeIfsc = (v) => {
+    const s = String(v || '').replace(/\s+/g, '').toUpperCase();
+    return IFSC.test(s) ? s : null;
+};
+const accountDigits = (v) => String(v || '').replace(/[\s-]/g, '');
+
+/** → { ok, value: { mode, name, upiId, accountNumber, ifsc, bankName }, errors }. A UPI name is optional; a bank holder name isn't. */
+export const validatePayoutDetails = (input = {}) => {
+    const errors = {};
+    const mode = input.mode === 'bank' ? 'bank' : 'upi';
+    const name = String(input.name ?? input.upiName ?? '').replace(/\s+/g, ' ').trim().slice(0, 80);
+    const value = { mode, name, upiId: null, accountNumber: null, ifsc: null, bankName: null };
+    if (mode === 'upi') {
+        value.upiId = normalizeUpi(input.upiId);
+        if (!value.upiId) errors.upiId = 'Enter your UPI ID, like name@okaxis.';
+    } else {
+        if (name.length < 2) errors.name = 'Enter the name on the bank account.';
+        const acct = accountDigits(input.accountNumber);
+        if (!/^\d{9,18}$/.test(acct)) errors.accountNumber = 'Enter your account number (9 to 18 digits).';
+        else if (input.confirmAccountNumber !== undefined && accountDigits(input.confirmAccountNumber) !== acct) errors.confirmAccountNumber = 'The account numbers don’t match.';
+        value.accountNumber = acct;
+        value.ifsc = normalizeIfsc(input.ifsc);
+        if (!value.ifsc) errors.ifsc = 'Enter the 11-character IFSC, like HDFC0001234.';
+        value.bankName = String(input.bankName || '').replace(/\s+/g, ' ').trim().slice(0, 80) || null;
+    }
+    return { ok: Object.keys(errors).length === 0, value, errors };
+};
+
+/** True when a creator has told us where to pay them (old records only have upiId). */
+export const hasPayoutDetails = (d) => Boolean(d?.upiId || (d?.mode === 'bank' && d?.accountNumber));
+
+/** "UPI: x" or "Bank: … | A/C: … | IFSC: …", the format Finance payees and spends use. */
+export const payoutDestination = (d) => {
+    if (!hasPayoutDetails(d)) return '';
+    if (d.mode === 'bank') return `Bank: ${d.bankName || ''} | A/C: ${d.accountNumber} | IFSC: ${d.ifsc || ''}`;
+    return `UPI: ${d.upiId}`;
+};
+
 /** The tier's cash amount for this person, the default for "Mark paid". */
 export const defaultPayoutAmount = (campaign, application) => {
     const cash = Number(campaign?.perksByTier?.[application?.tier]?.cash);

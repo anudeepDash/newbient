@@ -10,6 +10,7 @@ import sessionsRevoked from './sessions-revoked.js';
 import passConfirmed from './pass-confirmed.js';
 import campaignTicket from './campaign-ticket.js';
 import campaignFeedback from './campaign-feedback.js';
+import campaignPayoutDetails from './campaign-payout-details.js';
 import orderReceived from './order-received.js';
 import creatorApplicationReceived from './creator-application-received.js';
 import creatorApproved from './creator-approved.js';
@@ -37,6 +38,7 @@ export const TEMPLATES = {
     'pass-confirmed': passConfirmed,
     'campaign-ticket': campaignTicket,
     'campaign-feedback': campaignFeedback,
+    'campaign-payout-details': campaignPayoutDetails,
     'order-received': orderReceived,
     'creator-application-received': creatorApplicationReceived,
     'creator-approved': creatorApproved,

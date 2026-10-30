@@ -43,6 +43,7 @@ const TicketLinkPage = lazy(() => import('./passes/TicketLinkPage'));
 const CampaignApplyPage = lazy(() => import('./creator/campaign/apply/CampaignApplyPage'));
 const DeliverablesPage = lazy(() => import('./creator/campaign/apply/DeliverablesPage'));
 const FeedbackPage = lazy(() => import('./creator/campaign/feedback/FeedbackPage'));
+const PayoutDetailsPage = lazy(() => import('./creator/campaign/payout/PayoutDetailsPage'));
 
 export const APP_MODULES = [
     {
@@ -155,6 +156,8 @@ export const STANDALONE_ROUTES = [
     { path: 'd/:token', Component: DeliverablesPage },
     // After a campaign: their feedback and testimonial form, from WhatsApp or email (no sign-in).
     { path: 'f/:token', Component: FeedbackPage },
+    // Where to pay them for a campaign, from the link the team sends or shares (no sign-in).
+    { path: 'pay/:token', Component: PayoutDetailsPage },
 ];
 
 /* Route definitions for the router, relative to the app root. */

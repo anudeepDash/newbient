@@ -15,9 +15,10 @@ import { PageBody } from '../../../pages/PageHeader';
 import { PanelLabel } from '../../../pages/DetailLayout';
 import { Notice, ToneChip } from '../../ui';
 import { callCreatorApi, uploadProof } from '../../api';
-import { validateSubmission, DELIVERABLE_STATUS, normalizeUpi } from '../../../../lib/outreach/deliverables';
+import { validateSubmission, DELIVERABLE_STATUS } from '../../../../lib/outreach/deliverables';
 import { formatDeadline } from '../../../../lib/outreach/template';
 import { useT } from '../../../../i18n';
+import { appPath } from '../../../host';
 
 /*
  * /d/:token: a creator's own page for a campaign. The token is their personal
@@ -25,7 +26,7 @@ import { useT } from '../../../../i18n';
  * set up); the page itself needs no sign-in. It has the WhatsApp groups to
  * join with an "I've joined" button (WhatsApp never tells us who's in a
  * group), each deliverable to send (a post link, or a story screenshot), what
- * to change, a UPI ID for payment, and their ticket once it's released.
+ * to change, where to pay them (a link to /pay/:token), and their ticket once it's released.
  */
 
 const GroupCard = ({ token, which, title, hint, group, onDone }) => {
@@ -171,36 +172,19 @@ const TaskCard = ({ token, task, onDone }) => {
     );
 };
 
-const UpiCard = ({ token, saved, onSaved }) => {
+/* Where to pay them: the summary, and their payout details page (/pay/:token) to add or change it. */
+const PayoutCard = ({ token, details, paid }) => {
     const t = useT();
-    const [upi, setUpi] = useState('');
-    const [name, setName] = useState('');
-    const [error, setError] = useState('');
-    const [saving, setSaving] = useState(false);
-    const [editing, setEditing] = useState(!saved);
-    const save = async (e) => {
-        e.preventDefault();
-        if (!normalizeUpi(upi)) { setError(t('Enter your UPI ID, like name@okaxis.')); return; }
-        setSaving(true);
-        const r = await callCreatorApi('outreach-upi', { token, upiId: upi, upiName: name });
-        setSaving(false);
-        if (!r.ok) { setError(r.error); return; }
-        setEditing(false);
-        onSaved();
-    };
     return (
         <section className="space-y-2 rounded-[1.5rem] bg-white p-4 ring-1 ring-inset ring-black/[0.06] dark:bg-[#0c0e14] dark:ring-white/[0.08]">
-            <p className="flex items-center gap-2 text-[16px] font-bold"><Wallet size={17} /> {t('Where to pay you')}</p>
-            {!editing ? (
-                <p className="text-[14px] text-gray-600 dark:text-zinc-400">{t('UPI')} {saved}. <button type="button" className="font-bold underline" onClick={() => setEditing(true)}>{t('Change')}</button></p>
-            ) : (
-                <form onSubmit={save} noValidate className="space-y-3">
-                    <TextInput label={t('UPI ID')} autoCapitalize="none" placeholder="name@okaxis" value={upi} onChange={(e) => { setUpi(e.target.value); setError(''); }} error={error} />
-                    <TextInput label={t('Name on the UPI account (optional)')} value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
-                    <Button type="submit" variant="secondary" loading={saving} className="w-full">{t('Save UPI ID')}</Button>
-                    <p className="text-[12px] text-gray-500 dark:text-zinc-500">{t('Only the Newbi team sees this. We never ask for bank passwords or OTPs.')}</p>
-                </form>
-            )}
+            <div className="flex items-start justify-between gap-3">
+                <p className="flex items-center gap-2 text-[16px] font-bold"><Wallet size={17} /> {t('Where to pay you')}</p>
+                {details && <ToneChip tone="green" className="shrink-0 whitespace-nowrap">{t('Details added')}</ToneChip>}
+            </div>
+            {details
+                ? <p className="text-[14px] text-gray-600 dark:text-zinc-400">{details.mode === 'bank' ? t('Bank account') : t('UPI')} <span className="font-mono">{details.label}</span></p>
+                : <p className="text-[14px] text-gray-600 dark:text-zinc-400">{t('Add a UPI ID or bank account so we can pay you.')}</p>}
+            {!paid && <Button to={appPath(`/pay/${token}`)} variant={details ? 'secondary' : 'primary'} className="w-full">{details ? t('Change payout details') : t('Add payout details')}</Button>}
         </section>
     );
 };
@@ -255,7 +239,7 @@ const DeliverablesPage = () => {
                 {d.status === 'applied' && <Notice tone="info" title={t('You’ve applied.')}>{t('If you’re shortlisted, you’ll get a notification in the Newbi app and this page will show the campaign group.')}</Notice>}
                 {/* Posts are sent only once they're shortlisted. */}
                 {isOnShortlist(d.status) && d.tasks.map(tk => <TaskCard key={tk.id} token={token} task={tk} onDone={load} />)}
-                <UpiCard token={token} saved={d.upi} onSaved={load} />
+                <PayoutCard token={token} details={d.payoutDetails} paid={Boolean(d.payout)} />
             </div>
         </PageBody>
     );

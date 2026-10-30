@@ -5,29 +5,37 @@
  *   POST ?action=outreach-deliverables   { token }                                 their campaign page: groups, posts, ticket, payout
  *   POST ?action=outreach-joined         { token, which: 'campaign'|'city' }       "I've joined" (WhatsApp can't tell us)
  *   POST ?action=outreach-submit         { token, taskId, link, screenshotUrl, note }   rate-limited per IP
- *   POST ?action=outreach-upi            { token, upiId, upiName }                  where to pay them
+ *   POST ?action=outreach-payout-details { token, mode: 'upi'|'bank', name, upiId | accountNumber, confirmAccountNumber, ifsc, bankName }
+ *                                        or { token, useSaved: true }               where to pay them (outreach-upi: the old UPI-only form)
  *
  * Admins (outreach roles, checked by the router):
  *   POST ?action=outreach-review         { campaignId, appId, taskId, decision: 'approve'|'reject', reason }
  *   POST ?action=outreach-ticket         { campaignId, appIds[], action: 'release'|'revoke', reason? }
  *   POST ?action=outreach-payout         { campaignId, appId, action: 'paid'|'cancel', amount, method, paidAt, reference, accountType, note, override?, overrideReason? }
  *   POST ?action=outreach-resend-link    { campaignId, appIds[] }
+ *   POST ?action=outreach-ask-payout     { campaignId, appIds[], again? }           email + WhatsApp + in-app: "add your payout details"
  *
  * Everything lands on the application (deliverables, ticket, payout,
  * payoutDetails) with an audit entry. A paid payout also writes a Spend
  * (spends/{id}, payoutType 'Creator Payout') so Finance sees it, and
  * cancelling marks that Spend Cancelled. Nothing here moves money.
+ *
+ * Payout details are asked for only when the team triggers it. Saving them
+ * also keeps the creator's Vendor payee in Finance up to date
+ * (finance_payees/creator_<uid>, one per person across campaigns).
  */
 import { nowIso } from './db.js';
 import { readSignedToken } from './linkSign.js';
 import { releaseApplicationPass, revokePassForOutreach, ticketLinkFor } from './passes.js';
-import { enqueueJob, sendSoon, submitUrlFor, kindLive, switchFor } from './outreachQueue.js';
+import { enqueueJob, sendSoon, submitUrlFor, payoutUrlFor, kindLive, switchFor } from './outreachQueue.js';
+import { notify } from './notify.js';
+import { campaignImageOf } from './whatsapp.js';
 import { canTransition, canSystemTransition, isOnShortlist } from '../../src/lib/outreach/status.js';
 import { firstNameOf } from '../../src/lib/outreach/normalize.js';
 import { approvedSummary } from '../../src/lib/outreach/whatsappTemplate.js';
 import {
-    deliverablesFor, validateSubmission, deliverableSummary, preEventApproved, ticketRuleOf, normalizeUpi,
-    validatePayout, PAYOUT_METHODS,
+    deliverablesFor, validateSubmission, deliverableSummary, preEventApproved, ticketRuleOf,
+    validatePayout, PAYOUT_METHODS, validatePayoutDetails, hasPayoutDetails, payoutDestination,
 } from '../../src/lib/outreach/deliverables.js';
 
 const send = (res, status, body) => res.status(status).json(body);
@@ -59,6 +67,15 @@ const maskUpi = (upi) => {
     const [user, bank] = String(upi || '').split('@');
     if (!user || !bank) return '';
     return `${user.slice(0, 2)}${'•'.repeat(Math.max(1, user.length - 2))}@${bank}`;
+};
+
+/* "A/C •••• 1234 · HDFC0001234" or a masked UPI ID: enough to recognise, never the whole number. */
+const maskPayout = (d) => {
+    if (!hasPayoutDetails(d)) return null;
+    if (d.mode === 'bank') {
+        return { mode: 'bank', label: `A/C •••• ${String(d.accountNumber).slice(-4)}${d.ifsc ? ` · ${d.ifsc}` : ''}`, name: d.name || '', bankName: d.bankName || '' };
+    }
+    return { mode: 'upi', label: maskUpi(d.upiId), name: d.name || d.upiName || '' };
 };
 
 /*
@@ -96,6 +113,9 @@ const creatorView = ({ campaign, app }, settings = {}) => ({
         };
     }),
     upi: maskUpi(app.payoutDetails?.upiId),
+    payoutDetails: maskPayout(app.payoutDetails),
+    payoutDetailsAt: app.payoutDetails?.updatedAt || null,
+    payoutRequestedAt: app.payoutDetailsRequest?.requestedAt || null,
     payout: app.payout?.status === 'paid' ? { amount: app.payout.amount, paidAt: app.payout.paidAt } : null,
     ticket: app.ticket?.status === 'released' && app.ticket.passRef ? { url: ticketLinkFor(app.ticket.passRef) } : null,
 });
@@ -103,8 +123,13 @@ const creatorView = ({ campaign, app }, settings = {}) => ({
 export const handleCreatorDeliverables = async (req, res, { db }) => {
     const ctx = await fromToken(db, req.body?.token || req.query?.token);
     if (!ctx) return send(res, 404, { success: false, error: 'This link isn’t active. Ask the Newbi team for a new one.' });
-    const priv = await ctx.campRef.collection('private').doc('outreach').get();
-    return send(res, 200, { success: true, ...creatorView(ctx, priv.exists ? priv.data() : {}) });
+    const [priv, payee] = await Promise.all([
+        ctx.campRef.collection('private').doc('outreach').get(),
+        hasPayoutDetails(ctx.app.payoutDetails) ? null : payeeRefFor(db, ctx).get(),
+    ]);
+    // Details they gave for another campaign, offered as one tap ("Use these").
+    const saved = payee?.exists ? maskPayout(detailsFromPayee(payee.data())) : null;
+    return send(res, 200, { success: true, ...creatorView(ctx, priv.exists ? priv.data() : {}), savedPayout: saved });
 };
 
 /*
@@ -192,17 +217,86 @@ export const handleCreatorSubmit = async (req, res, { db, rateLimit, now = nowIs
     return send(res, 200, { success: true });
 };
 
-export const handleCreatorUpi = async (req, res, { db, now = nowIso() }) => {
+/* ── Payout details (creator) ─────────────────────────────────────────── */
+
+/* One Vendor payee per creator in Finance, whichever campaigns they're paid for. */
+const payeeIdFor = (app, appId) => `creator_${String(app.uid || app.contactId || appId).replace(/[^\w-]/g, '').slice(0, 120)}`;
+const payeeRefFor = (db, ctx) => db.collection('finance_payees').doc(payeeIdFor(ctx.app, ctx.appId));
+
+const detailsFromPayee = (p = {}) => (p.paymentMode === 'Bank Transfer' && p.bankDetails?.accountNumber
+    ? { mode: 'bank', name: p.accountHolder || p.name || '', accountNumber: p.bankDetails.accountNumber, ifsc: p.bankDetails.ifscCode || '', bankName: p.bankDetails.bankName || null }
+    : p.upiId ? { mode: 'upi', name: p.accountHolder || '', upiId: p.upiId } : null);
+
+/*
+ * Keeps finance_payees/creator_<uid> in step with what they gave us. New or
+ * changed details go back to Pending, so Finance checks them before paying;
+ * the payee keeps its type if Finance changed it.
+ */
+export const syncCreatorPayee = async (db, ctx, details, now = nowIso()) => {
+    const ref = payeeRefFor(db, ctx);
+    const { app, campaign, campaignId, appId } = ctx;
+    const destination = payoutDestination(details);
+    await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        const cur = snap.exists ? snap.data() : null;
+        const changed = !cur || cur.destinationDetails !== destination;
+        const campaigns = { ...(cur?.campaigns || {}), [campaignId]: { title: campaign.title || '', appId, at: now } };
+        const titles = Object.values(campaigns).map(c => c.title).filter(Boolean);
+        tx.set(ref, {
+            // The name they applied with, so this campaign's payout Spends (receiverName) match it.
+            name: app.fullName || cur?.name || details.name || '',
+            accountHolder: details.name || null,
+            email: app.email || cur?.email || '',
+            phone: app.phone || cur?.phone || '',
+            type: cur?.type || 'Vendor',
+            category: 'Creator',
+            instagramHandle: app.instagramHandle || cur?.instagramHandle || '',
+            paymentMode: details.mode === 'bank' ? 'Bank Transfer' : 'UPI',
+            upiId: details.mode === 'upi' ? details.upiId : '',
+            bankDetails: details.mode === 'bank' ? { bankName: details.bankName || '', accountNumber: details.accountNumber, ifscCode: details.ifsc } : null,
+            destinationDetails: destination,
+            campaigns,
+            linkedGig: titles.length > 1 ? `${titles.length} campaigns: ${titles.slice(-3).join(', ')}` : `Campaign: ${titles[0] || 'creator campaign'}`,
+            status: changed ? 'Pending' : cur.status || 'Pending',
+            source: cur?.source || 'campaign',
+            submittedByUid: app.uid || cur?.submittedByUid || null,
+            createdAt: cur?.createdAt || now,
+            detailsUpdatedAt: changed ? now : cur.detailsUpdatedAt || now,
+            updatedAt: now,
+        }, { merge: true });
+    });
+    return ref.id;
+};
+
+/*
+ * Where to pay them: a UPI ID or a bank account, from their payout page (or
+ * the older UPI card on their campaign page), or `useSaved` to reuse what they
+ * gave for another campaign. The audit says it changed, never what it is.
+ */
+export const handleCreatorPayoutDetails = async (req, res, { db, rateLimit, now = nowIso() }) => {
     if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });
     const ctx = await fromToken(db, req.body?.token);
     if (!ctx) return send(res, 404, { success: false, error: 'This link isn’t active. Ask the Newbi team for a new one.' });
-    const upiId = normalizeUpi(req.body?.upiId);
-    if (!upiId) return send(res, 400, { success: false, field: 'upiId', error: 'Enter your UPI ID, like name@okaxis.' });
-    const upiName = str(req.body?.upiName, 80).replace(/\s+/g, ' ');
-    await ctx.appRef.update({ payoutDetails: { upiId, upiName: upiName || null, updatedAt: now }, updatedAt: now });
-    // The audit says it changed, never what it is.
-    await auditRef(db, ctx.campaignId).set({ appId: ctx.appId, field: 'payout_details', from: null, to: 'updated', source: 'creator', note: null, actorUid: null, actorEmail: null, at: now });
-    return send(res, 200, { success: true, upi: maskUpi(upiId) });
+    if (rateLimit && (await rateLimit(db, req, { bucket: 'outreach-payout-details' })).limited) {
+        return send(res, 429, { success: false, error: 'Too many tries from this network. Try again in a few minutes.' });
+    }
+    let input = req.body || {};
+    if (input.useSaved === true) {
+        const payee = await payeeRefFor(db, ctx).get();
+        const saved = payee.exists ? detailsFromPayee(payee.data()) : null;
+        if (!saved) return send(res, 404, { success: false, error: 'There are no saved details to use. Add them below.' });
+        input = saved;
+    }
+    const { ok, value, errors } = validatePayoutDetails(input);
+    if (!ok) {
+        const field = Object.keys(errors)[0];
+        return send(res, 400, { success: false, code: 'invalid', errors, field, error: errors[field] });
+    }
+    const details = { ...value, upiName: value.mode === 'upi' ? value.name || null : null, updatedAt: now };
+    const payeeId = await syncCreatorPayee(db, ctx, details, now);
+    await ctx.appRef.update({ payoutDetails: { ...details, payeeId }, updatedAt: now });
+    await auditRef(db, ctx.campaignId).set({ appId: ctx.appId, field: 'payout_details', from: null, to: 'updated', source: 'creator', note: value.mode === 'bank' ? 'Bank account' : 'UPI', actorUid: null, actorEmail: null, at: now });
+    return send(res, 200, { success: true, upi: maskUpi(details.upiId), details: maskPayout(details) });
 };
 
 /* ── Status helpers ───────────────────────────────────────────────────── */
@@ -393,7 +487,7 @@ export const handlePayout = async (req, res, { db, actor, now = nowIso() }) => {
         const from = app.status || 'applied';
         const move = from !== 'paid' && (canTransition(from, 'paid') || canSystemTransition(from, 'paid'));
         const spendRef = db.collection('spends').doc();
-        const upi = app.payoutDetails?.upiId || '';
+        const destination = payoutDestination(app.payoutDetails);
         tx.set(spendRef, {
             title: `Creator payout: ${campaign.title || 'campaign'}`,
             amount: value.amount,
@@ -406,7 +500,8 @@ export const handlePayout = async (req, res, { db, actor, now = nowIso() }) => {
             receiverName: app.fullName || '',
             paidTo: app.fullName || '',
             paidBy: value.accountType === 'personal' ? 'Team Member' : 'Newbi Core',
-            destinationDetails: upi ? `UPI: ${upi}` : '',
+            destinationDetails: destination,
+            payeeId: app.payoutDetails?.payeeId || null,
             paymentRef: value.reference || '',
             source: 'outreach',
             linkedCampaignId: campaignId,
@@ -449,3 +544,87 @@ export const handleResendLink = async (req, res, { db, actor }) => {
     return send(res, 200, { success: true, queued });
 };
 
+/* ── Admin: ask for payout details ────────────────────────────────────── */
+
+const EMAIL_GOING = new Set(['sent', 'deferred', 'retry', 'duplicate']);
+
+/*
+ * Only when the team asks (never automatic): an email and an in-app notice
+ * with their payout page link, and the campaign_payout_details WhatsApp
+ * template once it's switched on. People who already gave their details are
+ * skipped unless `again` (to ask them to check or change them).
+ * → { results: [{ id, outcome: 'sent' | 'has_details' | 'no_channel' | 'not_found', channels }] }
+ */
+export const handleAskPayout = async (req, res, { db, actor, now = nowIso() }) => {
+    const b = req.body || {};
+    const campaignId = str(b.campaignId, 120);
+    const ids = [...new Set((Array.isArray(b.appIds) ? b.appIds : []).map(id => str(id, 120)).filter(Boolean))].slice(0, 200);
+    if (!campaignId || !ids.length) return send(res, 400, { success: false, error: 'Choose at least one person.' });
+    const campSnap = await db.collection('campaigns').doc(campaignId).get();
+    if (!campSnap.exists) return send(res, 404, { success: false, error: 'Campaign not found.' });
+    if (!payoutUrlFor(campaignId, ids[0])) return send(res, 503, { success: false, error: 'Personal links aren’t set up (LINK_SIGNING_SECRET).' });
+    const campaign = campSnap.data();
+    const waOn = kindLive('payout_details');
+    const results = [];
+    for (const appId of ids) {
+        const ref = db.collection(appsPath(campaignId)).doc(appId);
+        const snap = await ref.get();
+        const app = snap.exists ? snap.data() : null;
+        if (!app || app.status === 'removed') { results.push({ id: appId, outcome: 'not_found' }); continue; }
+        if (hasPayoutDetails(app.payoutDetails) && b.again !== true) { results.push({ id: appId, outcome: 'has_details' }); continue; }
+        const payUrl = payoutUrlFor(campaignId, appId);
+        const channels = {};
+        // Written before sending, so the WhatsApp worker's whatsappSentAt lands on this request.
+        const prev = app.payoutDetailsRequest || {};
+        await ref.set({
+            payoutDetailsRequest: { requestedAt: now, requestedBy: actor.actorEmail || null, count: (Number(prev.count) || 0) + 1, channels: {}, whatsappSentAt: null },
+            updatedAt: now,
+        }, { merge: true });
+        const out = await notify('campaign-payout-details', app.uid || null, {
+            name: app.fullName, campaignTitle: campaign.title, campaignId, image: campaignImageOf(campaign) || '', payUrl,
+        }, { to: { email: app.email || undefined, name: app.fullName }, skip: ['whatsapp'] }).catch(e => { console.warn('[outreach] payout details notice failed:', e.message); return null; });
+        if (out?.email) channels.email = out.email.status;
+        if (out?.inApp) channels.inApp = out.inApp.status;
+        if (waOn && app.phone) {
+            const id = await enqueueJob(db, { campaignId, appId, kind: 'payout_details', createdBy: actor.actorEmail, again: true });
+            if (id) channels.whatsapp = await sendSoon(db, id);
+        }
+        const reached = EMAIL_GOING.has(channels.email) || channels.inApp === 'sent' || ['sent', 'queued', 'retry', 'held', 'blocked'].includes(channels.whatsapp);
+        await ref.update({ 'payoutDetailsRequest.channels': channels });
+        await auditRef(db, campaignId).set({
+            appId, field: 'payout_details_request', from: null, to: reached ? 'sent' : 'not_sent', source: 'admin',
+            note: Object.entries(channels).map(([k, v]) => `${k}: ${v}`).join(', ') || 'No email, app account or WhatsApp',
+            ...actor, at: now,
+        });
+        results.push({ id: appId, outcome: reached ? 'sent' : 'no_channel', channels });
+    }
+    return send(res, 200, { success: true, results, whatsapp: waOn });
+};
+
+/*
+ * Each person's payout page link, for sharing by hand (copy, their own
+ * WhatsApp chat) or in a sheet. Nothing is sent; the request is noted so the
+ * Payouts list shows they were asked.
+ * → { links: [{ id, url, name, phone, email, hasDetails }] }
+ */
+export const handlePayoutLinks = async (req, res, { db, actor, now = nowIso() }) => {
+    const b = req.body || {};
+    const campaignId = str(b.campaignId, 120);
+    const ids = [...new Set((Array.isArray(b.appIds) ? b.appIds : []).map(id => str(id, 120)).filter(Boolean))].slice(0, 500);
+    if (!campaignId || !ids.length) return send(res, 400, { success: false, error: 'Choose at least one person.' });
+    if (!payoutUrlFor(campaignId, ids[0])) return send(res, 503, { success: false, error: 'Personal links aren’t set up (LINK_SIGNING_SECRET).' });
+    const links = [];
+    for (const appId of ids) {
+        const ref = db.collection(appsPath(campaignId)).doc(appId);
+        const snap = await ref.get();
+        const app = snap.exists ? snap.data() : null;
+        if (!app || app.status === 'removed') continue;
+        links.push({ id: appId, url: payoutUrlFor(campaignId, appId), name: app.fullName || '', phone: app.phone || '', email: app.email || '', hasDetails: hasPayoutDetails(app.payoutDetails) });
+        if (b.markShared === true && !hasPayoutDetails(app.payoutDetails)) {
+            const prev = app.payoutDetailsRequest || {};
+            await ref.set({ payoutDetailsRequest: { ...prev, requestedAt: now, requestedBy: actor.actorEmail || null, count: (Number(prev.count) || 0) + 1, channels: { ...(prev.channels || {}), manual: b.via === 'sheet' ? 'sheet' : 'link' } }, updatedAt: now }, { merge: true });
+            await auditRef(db, campaignId).set({ appId, field: 'payout_details_request', from: null, to: 'shared', source: 'admin', note: b.via === 'sheet' ? 'Link exported in a sheet' : 'Link shared by hand', ...actor, at: now });
+        }
+    }
+    return send(res, 200, { success: true, links });
+};

@@ -316,6 +316,13 @@ export const EVENTS = {
             build: (d) => ({ bodyParams: [firstName(d.name), short(d.mergedIn || 'Another account', 80), short(d.summary || 'Your account details', 120)] }),
         },
     },
+    // Only when the team asks from a campaign's Payouts. WhatsApp goes through the outreach queue
+    // (campaign_payout_details, with the campaign's picture and their link), so it isn't here.
+    'campaign-payout-details': {
+        email: 'always',
+        push: (d) => ({ title: 'Add your payout details', body: `${short(d.campaignTitle || 'Your campaign', 50)}. Your UPI ID or bank account, so we can pay you.`, link: d.payUrl, tag: `payout-details-${d.campaignId || ''}` }),
+        inApp: (d) => ({ title: `Payout details: ${d.campaignTitle || 'your campaign'}`, message: 'Add your UPI ID or bank account so we can pay you for this campaign.', type: 'campaign', link: d.payUrl || '' }),
+    },
     'payee-registered': { email: 'always' },
     welcome: { email: 'always' },
 };

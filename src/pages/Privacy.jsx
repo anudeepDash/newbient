@@ -52,7 +52,7 @@ const sections = [
                     'Your creator profile: name, contact details, city, niches, rates, whether you do barter, bio, college, and your Instagram, YouTube, LinkedIn or X handles.',
                     'Your public Instagram profile details: username, name, follower and post counts, account type and profile picture. See “Instagram” below.',
                     'Campaign applications: the details on the form, your consent to WhatsApp updates (with the time and wording you agreed to), the links and screenshots of the posts you deliver, and your status in each campaign.',
-                    'Payouts: your UPI ID and name, and the amount, date and reference of each payout. We also keep these in our accounts.',
+                    'Payouts: the UPI ID or bank account (name on the account, account number, IFSC and bank) you give us to pay you, and the amount, date and reference of each payout. We keep these in our accounts so we can pay you and keep tax records, and we only ask for them when a campaign payout is due.',
                     'Campaign feedback: after a campaign, your rating, comments and, if you write one, your testimonial, with your answer on whether we may publish it. We only show a testimonial on our website if you said yes, in the way you chose (your name and Instagram handle, or your first name only), and you can change that or ask us to take it down from the same link at any time.',
                 ]} />
                 <H3>Giveaways, gigs, forms and messages</H3>
@@ -149,7 +149,7 @@ const sections = [
             <>
                 <P>We don’t sell your personal data. We share it only in these cases:</P>
                 <UL items={[
-                    'With brands, when you take part in their campaign: your public creator profile, your posts and how they performed. Your phone number, email and UPI ID are not shared with brands unless you agree.',
+                    'With brands, when you take part in their campaign: your public creator profile, your posts and how they performed. Your phone number, email, UPI ID and bank details are not shared with brands unless you agree.',
                     'With event organisers and venues, the details needed to admit you (for example, the name on a pass), when we run entry for them.',
                     'With the service providers below, who process data for us under contract and only for that purpose.',
                     'When the law requires it, or to protect people’s safety or our rights, for example in response to a valid request from authorities.',
@@ -180,7 +180,7 @@ const sections = [
             <P>
                 Everything you pay us, for tickets and invoices, is paid in Razorpay’s checkout by UPI, card or netbanking. We never
                 see your bank or card details, only whether the payment went through and its Razorpay reference. Razorpay’s terms and
-                privacy policy apply to the payment. Creator payouts are sent by UPI to the UPI ID you give us.
+                privacy policy apply to the payment. Creator payouts are sent by UPI or bank transfer to the UPI ID or bank account you give us. We never ask for your UPI PIN, a password or an OTP.
             </P>
         ),
     },

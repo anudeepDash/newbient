@@ -128,6 +128,16 @@ export const TEMPLATES = [
         buttons: [{ type: 'URL', text: 'Send my posts', url: `${APP}/d/{{1}}`, example: [`${APP}/d/sample-token`] }],
         footer: 'Newbi Creators · app.newbi.live',
     },
+    {
+        // Asked per campaign from Payouts in the admin (outreach-ask-payout). Image header: the payout card,
+        // like campaign_payout_sent; the code sends the campaign's own picture when it has one.
+        name: 'campaign_payout_details',
+        body: "💳 *Payout details needed, {{1}}*\n\n*Campaign:* {{2}}\n\nTo pay you for this campaign, we need your UPI ID or bank account. Tap *Add payout details* to share them securely.\n\nWe will never ask for your PIN, password or OTP.",
+        samples: ['Riya', 'Bacardi NH7 Hype'],
+        header: { image: 'public/og/wa-payout-v1.jpg' },
+        buttons: [{ type: 'URL', text: 'Add payout details', url: `${APP}/pay/{{1}}`, example: [`${APP}/pay/sample-token`] }],
+        footer: 'Newbi Creators · app.newbi.live',
+    },
 ];
 
 /* What Meta checks before review: numbered variables in order, one sample each, none at the edges or touching. */

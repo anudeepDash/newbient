@@ -70,7 +70,9 @@ const ApplicationSheet = ({ app, campaign, campaignId, onClose, onStatus, onMess
                         <Row label="City community">{app.cityGroup?.title ? `${app.cityGroup.title}${app.cityGroupJoinedAt ? ' · joined' : ''}` : null}</Row>
                         <Row label="Their posts link">{app.submitUrl ? <a href={app.submitUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">Open{app.submitLinkSentAt ? ` (sent ${when(app.submitLinkSentAt)})` : ''}</a> : null}</Row>
                         <Row label="Ticket">{app.ticket?.status ? `${TICKET_STATUS[app.ticket.status]?.label || app.ticket.status}${app.ticket.passRef ? ` · ${app.ticket.passRef}` : ''}` : null}</Row>
-                        <Row label="UPI">{app.payoutDetails?.upiId || null}</Row>
+                        <Row label="Payout details">{app.payoutDetails?.mode === 'bank' && app.payoutDetails.accountNumber
+                            ? `${app.payoutDetails.name ? `${app.payoutDetails.name} · ` : ''}A/C ${app.payoutDetails.accountNumber} · ${app.payoutDetails.ifsc}`
+                            : app.payoutDetails?.upiId ? `UPI ${app.payoutDetails.upiId}` : app.payoutDetailsRequest?.requestedAt ? `Asked ${when(app.payoutDetailsRequest.requestedAt)}, not added yet` : null}</Row>
                         <Row label="Payout">{app.payout?.status === 'paid' ? `₹${Number(app.payout.amount).toLocaleString('en-IN')} on ${app.payout.paidAt}${app.payout.reference ? ` · ${app.payout.reference}` : ''}` : app.payout?.status === 'cancelled' ? 'Cancelled' : null}</Row>
                         <Row label="Last message">{app.lastMessageText ? <span className="whitespace-pre-wrap text-left font-normal">{app.lastMessageText}</span> : null}</Row>
                     </dl>
