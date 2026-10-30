@@ -33,8 +33,9 @@ import { fillTokens, missingTokens, FIELDS, JOIN_TEMPLATES } from '../../src/lib
 import { loadTeam } from './teamAlerts.js';
 import { STOP_PAYLOAD } from '../../src/lib/outreach/whatsappTemplate.js';
 import { APP_ORIGIN, OG_IMAGES } from '../../src/app/seo.js';
+import { TEMPLATES as OUR_TEMPLATES, payloadFor, uploadHeaderSample } from '../../scripts/submit-wa-templates.mjs';
 
-export const WA_CENTER_ACTIONS = new Set(['wa-templates', 'wa-team', 'wa-send', 'wa-log', 'wa-number', 'wa-bulk']);
+export const WA_CENTER_ACTIONS = new Set(['wa-templates', 'wa-team', 'wa-send', 'wa-log', 'wa-number', 'wa-bulk', 'wa-submit-template']);
 
 const MAX_RECIPIENTS = 50;
 const MAX_BULK = 500;
@@ -413,6 +414,34 @@ const handleLog = async (req, res, { db }) => {
     return send(res, 200, { success: true, rows });
 };
 
+/* Submits one of our own templates (the list in scripts/submit-wa-templates.mjs) to Meta with the live
+   token, for when WhatsApp Manager won't open. Already in Meta (any status) = nothing to do. */
+const handleSubmitTemplate = async (req, res) => {
+    const t = OUR_TEMPLATES.find(x => x.name === String(req.body?.name || ''));
+    if (!t) return send(res, 400, { success: false, error: 'That isn’t one of our templates.' });
+    const waba = process.env.WHATSAPP_WABA_ID;
+    if (!waba) return send(res, 503, { success: false, error: 'WHATSAPP_WABA_ID is not set.' });
+    const auth = { token: process.env.WHATSAPP_ACCESS_TOKEN, version: graphVersion() };
+    const base = `https://graph.facebook.com/${auth.version}/${encodeURIComponent(waba)}/message_templates`;
+    const headers = { Authorization: `Bearer ${auth.token}` };
+    const have = await (await fetch(`${base}?fields=name,status&limit=500`, { headers })).json().catch(() => ({}));
+    if (have.error) return send(res, 502, { success: false, error: have.error.message || 'Meta refused the request.' });
+    const existing = (have.data || []).find(x => x.name === t.name);
+    if (existing) return send(res, 200, { success: true, already: true, status: existing.status });
+    let handle = null;
+    if (t.header?.image) {
+        const file = t.header.image.replace(/^public\//, '');
+        const img = await fetch(`${APP_ORIGIN}/${file}`);
+        if (!img.ok) return send(res, 502, { success: false, error: 'Couldn’t load the sample picture.' });
+        try {
+            handle = await uploadHeaderSample(auth, { bytes: Buffer.from(await img.arrayBuffer()), type: /\.png$/i.test(file) ? 'image/png' : 'image/jpeg', fileName: file.split('/').pop() });
+        } catch (err) { return send(res, 502, { success: false, error: err.message }); }
+    }
+    const out = await (await fetch(base, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(payloadFor(t, handle)) })).json().catch(() => ({}));
+    if (out.error) return send(res, 502, { success: false, error: out.error.error_user_msg || out.error.message || 'Meta refused the template.' });
+    return send(res, 200, { success: true, status: out.status || 'PENDING' });
+};
+
 export const handleWhatsAppCenterAction = async (action, req, res, ctx) => {
     if (action !== 'wa-log' && !isWhatsAppConfigured()) return send(res, 503, { success: false, error: 'The WhatsApp API isn’t set up.' });
     try {
@@ -421,6 +450,7 @@ export const handleWhatsAppCenterAction = async (action, req, res, ctx) => {
             const team = await loadTeam(ctx.db);
             return send(res, 200, { success: true, team: team.map(m => ({ id: m.id, name: m.name, role: m.role, email: m.email, phone: m.phone ? maskPhone(m.phone) : null })) });
         }
+        if (action === 'wa-submit-template') return await handleSubmitTemplate(req, res);
         if (action === 'wa-send') return await handleSend(req, res, ctx);
         if (action === 'wa-log') return await handleLog(req, res, ctx);
         if (action === 'wa-number') return await handleNumber(req, res, ctx);
