@@ -24,7 +24,7 @@ const GROUPS = {
 };
 
 // Ours that Meta doesn't have yet, so they can be sent for review from here when WhatsApp Manager won't open.
-const SUBMITTABLE = [{ name: 'pass_ticket_qr', title: 'Ticket with QR code', note: 'The ticket message with the QR code as its picture. Switch it on with WHATSAPP_TEMPLATE_PASS_TICKET_QR once Meta approves it.' }];
+const SUBMITTABLE = [{ name: 'pass_ticket_qr_v2', title: 'Ticket with QR code', note: 'The ticket message with the QR code as its picture. Switch it on with WHATSAPP_TEMPLATE_PASS_TICKET_QR_V2 once Meta approves it.' }];
 
 const TemplatesPane = ({ state, reload, onUse, onClose }) => {
     const addToast = useStore(s => s.addToast);

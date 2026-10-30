@@ -5,7 +5,7 @@
  * The same day the 9 guestlist and event templates got an IMAGE header (each
  * with its card from public/og as the sample; the code sends the event's own
  * picture, else that card: api/_lib/whatsapp.js IMAGE_HEADERS). This script
- * doesn't add headers to those; templates with `header: { image }` (pass_ticket_qr)
+ * doesn't add headers to those; templates with `header: { image }` (pass_ticket_qr_v2)
  * get their image header, with the sample uploaded, when submitted. The code only uses each one once WHATSAPP_TEMPLATE_<NAME>
  * is set, after Meta approves it.
  *
@@ -28,9 +28,10 @@ export const TEMPLATES = [
     {
         // The ticket itself: carries the ticket's QR code as its image header (api/_lib/notify.js
         // sends https://app.newbi.live/api/qr?text=<pass code>). Used instead of pass_confirmed
-        // once WHATSAPP_TEMPLATE_PASS_TICKET_QR is set.
-        name: 'pass_ticket_qr',
-        body: "🎟️ *Your ticket is ready, {{1}}*\n\n*Event:* {{2}}\n*Date:* {{3}}\n*Pass code:* {{4}}\n\nShow the QR code above at the entrance. You can also open your pass any time with the button below.",
+        // once WHATSAPP_TEMPLATE_PASS_TICKET_QR_V2 is set.
+        name: 'pass_ticket_qr_v2',
+        // v1 was rejected by Meta as "Incorrect category"; v2 reads as a plain booking confirmation.
+        body: "✅ *Booking confirmed, {{1}}*\n\n*Event:* {{2}}\n*Date:* {{3}}\n*Booking reference:* {{4}}\n\nYour ticket QR code is above. Show it at the entrance. The button below opens your ticket any time.",
         samples: ['Riya', 'NH7 Weekender Pune', 'Sat, 5 Dec', 'NB7K2QXM'],
         header: { image: 'public/og/wa-pass-v1.jpg' },
         buttons: [pass('NB7K2QXM')],
@@ -223,7 +224,7 @@ const main = async () => {
         process.exit(1);
     }
     const have = new Map((existing.data || []).map(x => [x.name, x.status]));
-    // --only=pass_ticket_qr sends just that one.
+    // --only=pass_ticket_qr_v2 sends just that one.
     const only = (process.argv.find(a => a.startsWith('--only=')) || '').slice(7);
     for (const t of TEMPLATES.filter(x => !only || x.name === only)) {
         if (have.has(t.name)) { console.log(`– ${t.name}: already in Meta (${have.get(t.name)}), skipped`); continue; }

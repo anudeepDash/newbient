@@ -25,7 +25,7 @@ const RETRY_DELAYS_MIN = [5, 30, 120];
  */
 const IMAGE_HEADERS = {
     pass_confirmed: 'wa-pass',
-    pass_ticket_qr: 'wa-pass',
+    pass_ticket_qr_v2: 'wa-pass',
     campaign_ticket_link: 'wa-ticket',
     creator_approved: 'wa-approved',
     campaign_invite: 'wa-invite',
