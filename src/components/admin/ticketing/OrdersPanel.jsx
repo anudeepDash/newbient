@@ -104,6 +104,7 @@ const Timeline = ({ o }) => {
 const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canReview = true }) => {
     const addToast = useStore(s => s.addToast);
     const updateTicketOrderStatus = useStore(s => s.updateTicketOrderStatus);
+    const resendTicketWhatsApp = useStore(s => s.resendTicketWhatsApp);
     const counts = useMemo(() => Object.fromEntries([...FILTERS, { value: 'checkedin' }].map(f => [f.value, orders.filter(o => matchesFilter(o, f.value)).length])), [orders]);
     const [filter, setFilter] = useState(() => initialFilter || (counts.pending ? 'pending' : 'all'));
     const [search, setSearch] = useState('');
@@ -194,6 +195,12 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
             action: { label: 'Try again', onClick: () => send(o) },
         });
         else addToast(`Ticket sent to ${o.customerEmail || personName(o)}.`, 'success');
+    });
+
+    const sendWhatsApp = (o) => run(o.id, 'wa', async () => {
+        const res = await resendTicketWhatsApp(o.id);
+        if (res.ok) addToast(`Ticket sent on WhatsApp to ${o.customerPhone || personName(o)}.`, 'success');
+        else addToast(res.reason || 'WhatsApp didn’t go out.', 'warning', { title: 'WhatsApp ticket not sent', action: { label: 'Try again', onClick: () => sendWhatsApp(o) } });
     });
 
     // Gone for good: for test bookings and duplicates. Its pass stops working.
@@ -367,6 +374,7 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
                 <MenuItem as="a" href={`${APP_ORIGIN}/p/${encodeURIComponent(o.bookingRef)}`} target="_blank" rel="noopener noreferrer" icon={ExternalLink}>Open ticket page</MenuItem>
             )}
             {['dispatched', 'confirmed'].includes(o.status) && <MenuItem icon={Send} onClick={() => send(o)} hint="Emails the ticket again">Resend ticket email</MenuItem>}
+            {['dispatched', 'confirmed'].includes(o.status) && o.customerPhone && <MenuItem icon={MessageCircle} onClick={() => sendWhatsApp(o)} hint="Sends the QR ticket on WhatsApp">Resend on WhatsApp</MenuItem>}
             {o.status === 'rejected' && <MenuItem icon={Undo2} onClick={() => verify(o)} hint="If it was rejected by mistake">Verify payment after all</MenuItem>}
             {['approved', 'dispatched', 'confirmed'].includes(o.status) && (
                 <MenuItem icon={X} danger onClick={() => reject(o)} hint="Releases the seats">Cancel order</MenuItem>
@@ -554,6 +562,7 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
                                 <Button as="a" href={`${APP_ORIGIN}/p/${encodeURIComponent(open.bookingRef)}`} target="_blank" rel="noopener noreferrer" variant="secondary" className="h-11"><ExternalLink size={14} /> Ticket page</Button>
                             )}
                             {canReview && ['dispatched', 'confirmed'].includes(open.status) && <Button variant="secondary" className="h-11" onClick={() => send(open)} disabled={Boolean(busy[open.id])}><Send size={14} /> {busy[open.id] === 'send' ? 'Sending…' : 'Resend email'}</Button>}
+                            {canReview && open.customerPhone && ['dispatched', 'confirmed'].includes(open.status) && <Button variant="secondary" className="h-11" onClick={() => sendWhatsApp(open)} disabled={Boolean(busy[open.id])}><MessageCircle size={14} /> {busy[open.id] === 'wa' ? 'Sending…' : 'Resend on WhatsApp'}</Button>}
                             {canReview && open.status === 'rejected' && <Button variant="secondary" className="h-11" onClick={() => verify(open)}><Undo2 size={14} /> Verify after all</Button>}
                             {canReview && ['approved', 'dispatched', 'confirmed'].includes(open.status) && <Button variant="ghost" className="h-11 text-red-600 dark:text-red-400" onClick={() => reject(open)}><X size={14} /> Cancel order</Button>}
                             {canReview && <Button variant="ghost" className="h-11 text-red-600 dark:text-red-400" onClick={() => remove(open)}><Trash2 size={14} /> Delete order</Button>}

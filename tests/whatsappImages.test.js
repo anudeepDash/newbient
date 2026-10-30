@@ -115,6 +115,20 @@ describe('sending', () => {
         expect(sent.map(headerOf)).toEqual([expect.objectContaining({ type: 'image' }), undefined]);
     });
 
+    it('tries a soft header first (the ticket QR) and drops it when the template has none', async () => {
+        setWhatsAppFetchForTests(async (url, init) => {
+            const body = JSON.parse(init.body);
+            sent.push(body);
+            if (headerOf(body)) return { ok: false, status: 400, json: async () => ({ error: { code: 132012, error_data: { details: 'header: Template does not contain title component, no parameters allowed' } } }) };
+            return { ok: true, status: 200, json: async () => ({ messages: [{ id: 'wamid.1' }] }) };
+        });
+        const qr = { type: 'image', link: 'https://app.newbi.live/api/qr?text=ABC123&size=600&margin=4' };
+        const res = await sendTemplate({ to: '+919876500001', template: 'pass_confirmed', softHeader: qr, bodyParams: ['Riya'] });
+        expect(res.ok).toBe(true);
+        expect(headerOf(sent[0]).image.link).toBe(qr.link);
+        expect(headerOf(sent[1])).toBeUndefined();
+    });
+
     it('keeps a given header when Meta rejects it', async () => {
         setWhatsAppFetchForTests(async (url, init) => {
             sent.push(JSON.parse(init.body));
