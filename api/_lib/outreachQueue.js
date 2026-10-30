@@ -210,6 +210,8 @@ const KINDS = {
     changes: { button: 'link' },
     city_group: { button: 'stop' },
     payout: {},
+    // Asked from Payouts: where to pay them. URL button: their campaign page with the payout details form.
+    payout_details: { button: 'link' },
     all_approved: {},
     post_due: { button: 'link' },
     post_overdue: { button: 'link' },
@@ -249,6 +251,11 @@ export const submitToken = (campaignId, appId) => makeSignedToken({ k: 'd', c: c
 export const submitUrlFor = (campaignId, appId) => {
     const token = submitToken(campaignId, appId);
     return token ? `${APP_URL}/d/${token}` : '';
+};
+/* Their payout details page (/pay/<token>): the same personal token, its own page. */
+export const payoutUrlFor = (campaignId, appId) => {
+    const token = submitToken(campaignId, appId);
+    return token ? `${APP_URL}/pay/${token}` : '';
 };
 
 /* Their feedback form after a campaign (/f/<token>, 60 days). `key` is the person's key in campaign_feedback. */
@@ -491,6 +498,8 @@ const afterSent = async (db, job, ctx, { at, messageId }) => {
         await auditRef(db, job.campaignId).set({ appId: job.appId, field: 'submit_link', from: null, to: 'sent', source: 'whatsapp_api', note: 'Personal link to send their posts', ...SYSTEM_ACTOR, at });
     } else if (job.kind === 'payout') {
         await appRefOf(db, job).update({ 'payout.noticeSentAt': at, updatedAt: at }).catch(() => {});
+    } else if (job.kind === 'payout_details') {
+        await appRefOf(db, job).update({ 'payoutDetailsRequest.whatsappSentAt': at, updatedAt: at }).catch(() => {});
     } else if (job.kind === 'feedback') {
         await ctx.fRef.set({ whatsappSentAt: at, updatedAt: at }, { merge: true }).catch(() => {});
     }
@@ -498,7 +507,7 @@ const afterSent = async (db, job, ctx, { at, messageId }) => {
 
 /* ── Queue any message ────────────────────────────────────────────────── */
 
-const ONCE = new Set(['invite', 'reminder', 'deliverables', 'payout', 'city_group', 'all_approved']);
+const ONCE = new Set(['invite', 'reminder', 'deliverables', 'payout', 'payout_details', 'city_group', 'all_approved']);
 
 /**
  * Queues one message. Kinds that go once per person (invite, reminder,

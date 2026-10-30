@@ -59,6 +59,14 @@ export const WA_TEMPLATES = {
         body: '💸 *Payout sent, {{1}}*\n\n*Amount:* ₹{{2}}\n*Campaign:* {{3}}\n*Reference:* {{4}}\n\nThanks for creating with Newbi!',
         placeholders: ['first_name', 'amount', 'campaign_title', 'reference'],
     },
+    // Sent by the team from a campaign's Payouts (outreach-ask-payout): asks where to pay them.
+    // URL button: their payout details page https://app.newbi.live/pay/{{1}} (the same signed token as /d/).
+    payout_details: {
+        name: 'campaign_payout_details',
+        body: "💳 *Payout details needed, {{1}}*\n\n*Campaign:* {{2}}\n\nTo pay you for this campaign, we need your UPI ID or bank account. Tap *Add payout details* to share them securely.\n\nWe will never ask for your PIN, password or OTP.",
+        placeholders: ['first_name', 'campaign_title'],
+        button: 'Add payout details',
+    },
     // When a deliverable opens for posting (worded as an update on their post, so Meta keeps it Utility): the day before its "Opens on" date, or
     // right away when the team opens it (api/_lib/postsOpen.js). Same posts link.
     posts_open: {

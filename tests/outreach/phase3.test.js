@@ -13,7 +13,9 @@ import { setWhatsAppFetchForTests } from '../../api/_lib/whatsapp.js';
 import { handleOutreachAction } from '../../api/_lib/outreach.js';
 import { onOutreachInbound, joinPayload, submitToken, contactIdFor, runQueue } from '../../api/_lib/outreachQueue.js';
 import { releaseApplicationPass, revokePassForOutreach } from '../../api/_lib/passes.js';
-import { validateSubmission, deliverableSummary, preEventTasks, validatePayout, normalizeUpi } from '../../src/lib/outreach/deliverables.js';
+import { validateSubmission, deliverableSummary, preEventTasks, validatePayout, normalizeUpi, validatePayoutDetails } from '../../src/lib/outreach/deliverables.js';
+import { TEMPLATES as SUBMIT_TEMPLATES, problemsWith } from '../../scripts/submit-wa-templates.mjs';
+import { WA_TEMPLATES } from '../../src/lib/outreach/whatsappTemplate.js';
 import { renderMessage } from '../../src/lib/outreach/template.js';
 
 const ADMIN = { uid: 'u-admin', email: 'ops@newbi.live', email_verified: true };
@@ -133,7 +135,7 @@ describe('the creator’s personal link', () => {
     it('stores a UPI ID for payment without writing it to the audit log', async () => {
         expect((await call('outreach-upi', { token: link(), upiId: 'not-upi' }, { token: null })).body.field).toBe('upiId');
         const res = await call('outreach-upi', { token: link(), upiId: 'riya.s@okaxis', upiName: 'Riya Sharma' }, { token: null });
-        expect(res.body).toEqual({ success: true, upi: 'ri••••@okaxis' });
+        expect(res.body).toEqual({ success: true, upi: 'ri••••@okaxis', details: { mode: 'upi', label: 'ri••••@okaxis', name: 'Riya Sharma' } });
         expect(app().payoutDetails).toMatchObject({ upiId: 'riya.s@okaxis', upiName: 'Riya Sharma' });
         expect(JSON.stringify(audit())).not.toContain('okaxis');
     });
@@ -457,5 +459,83 @@ describe('admin list', () => {
         expect(a1.submitUrl).toBe(`https://app.newbi.live/d/${link()}`);
         expect(res.body.settings.ticketRule).toBe('deliverables');
         expect(deliverableSummary(db.store.get('campaigns/c1'), a1)).toMatchObject({ total: 3, requiredCount: 2, allRequiredApproved: false });
+    });
+});
+
+describe('payout details', () => {
+    const BANK = { mode: 'bank', name: 'Riya Sharma', accountNumber: '50100123456789', confirmAccountNumber: '5010 0123 4567 89', ifsc: 'hdfc0001234', bankName: 'HDFC Bank' };
+    const payee = () => db.store.get('finance_payees/creator_a1');
+
+    it('checks a bank account: holder name, matching number, IFSC', () => {
+        expect(validatePayoutDetails({ ...BANK, confirmAccountNumber: '123' }).errors.confirmAccountNumber).toBeTruthy();
+        expect(validatePayoutDetails({ ...BANK, ifsc: 'HDFC1234' }).errors.ifsc).toBeTruthy();
+        expect(validatePayoutDetails({ ...BANK, name: '' }).errors.name).toBeTruthy();
+        expect(validatePayoutDetails(BANK)).toMatchObject({ ok: true, value: { accountNumber: '50100123456789', ifsc: 'HDFC0001234' } });
+    });
+
+    it('saves a bank account on the application and as their Vendor payee in Finance', async () => {
+        const res = await call('outreach-payout-details', { token: link(), ...BANK }, { token: null });
+        expect(res.body).toMatchObject({ success: true, details: { mode: 'bank', label: 'A/C •••• 6789 · HDFC0001234' } });
+        expect(app().payoutDetails).toMatchObject({ mode: 'bank', accountNumber: '50100123456789', payeeId: 'creator_a1' });
+        expect(payee()).toMatchObject({
+            name: 'Riya Sharma', type: 'Vendor', category: 'Creator', paymentMode: 'Bank Transfer', status: 'Pending', source: 'campaign',
+            bankDetails: { accountNumber: '50100123456789', ifscCode: 'HDFC0001234', bankName: 'HDFC Bank' },
+            destinationDetails: 'Bank: HDFC Bank | A/C: 50100123456789 | IFSC: HDFC0001234', linkedGig: 'Campaign: Arijit Singh Live',
+        });
+        expect(JSON.stringify(audit())).not.toContain('50100123456789');
+        // Finance approved it; saving the same details again keeps that, new details go back to Pending.
+        db.store.set('finance_payees/creator_a1', { ...payee(), status: 'Approved', type: 'Artist' });
+        await call('outreach-payout-details', { token: link(), ...BANK }, { token: null });
+        expect(payee()).toMatchObject({ status: 'Approved', type: 'Artist' });
+        await call('outreach-payout-details', { token: link(), mode: 'upi', upiId: 'riya.s@okaxis' }, { token: null });
+        expect(payee()).toMatchObject({ status: 'Pending', paymentMode: 'UPI', upiId: 'riya.s@okaxis', bankDetails: null });
+    });
+
+    it('offers details saved for another campaign, and reuses them in one tap', async () => {
+        db.store.set('finance_payees/creator_a1', { name: 'Riya Sharma', paymentMode: 'UPI', upiId: 'riya.s@okaxis', destinationDetails: 'UPI: riya.s@okaxis', campaigns: { c0: { title: 'Earlier gig' } } });
+        const view = await call('outreach-deliverables', { token: link() }, { token: null });
+        expect(view.body).toMatchObject({ payoutDetails: null, savedPayout: { mode: 'upi', label: 'ri••••@okaxis' } });
+        const res = await call('outreach-payout-details', { token: link(), useSaved: true }, { token: null });
+        expect(res.body.success).toBe(true);
+        expect(app().payoutDetails.upiId).toBe('riya.s@okaxis');
+        expect(payee().linkedGig).toBe('2 campaigns: Earlier gig, Arijit Singh Live');
+    });
+
+    it('asks only when the team triggers it: WhatsApp template with their payout link, skipping people who already added theirs', async () => {
+        vi.stubEnv('WHATSAPP_TEMPLATE_CAMPAIGN_PAYOUT_DETAILS', 'campaign_payout_details');
+        expect((await call('outreach-ask-payout', { campaignId: 'c1', appIds: ['a1'] }, { token: EDITOR })).statusCode).toBe(403);
+        const res = await call('outreach-ask-payout', { campaignId: 'c1', appIds: ['a1', 'a2'] });
+        expect(res.body.results).toEqual([
+            { id: 'a1', outcome: 'sent', channels: { email: 'skipped', whatsapp: 'sent' } },
+            { id: 'a2', outcome: 'not_found' },
+        ]);
+        const msg = sent.at(-1);
+        expect(msg.template.name).toBe('campaign_payout_details');
+        expect(msg.template.components.find(c => c.type === 'body').parameters.map(p => p.text)).toEqual(['Riya', 'Arijit Singh Live']);
+        expect(msg.template.components.find(c => c.type === 'button')).toMatchObject({ sub_type: 'url', parameters: [{ text: link() }] });
+        expect(app().payoutDetailsRequest).toMatchObject({ requestedBy: 'ops@newbi.live', count: 1 });
+        expect(app().payoutDetailsRequest.whatsappSentAt).toBeTruthy();
+        await call('outreach-payout-details', { token: link(), mode: 'upi', upiId: 'riya.s@okaxis' }, { token: null });
+        expect((await call('outreach-ask-payout', { campaignId: 'c1', appIds: ['a1'] })).body.results[0].outcome).toBe('has_details');
+    });
+
+    it('hands admins each payout link to share by hand or in a sheet', async () => {
+        const res = await call('outreach-payout-links', { campaignId: 'c1', appIds: ['a1', 'a2'], markShared: true, via: 'sheet' });
+        expect(res.body.links).toEqual([{ id: 'a1', url: `https://app.newbi.live/pay/${link()}`, name: 'Riya Sharma', phone: '+919876500001', email: '', hasDetails: false }]);
+        expect(app().payoutDetailsRequest.channels).toEqual({ manual: 'sheet' });
+        expect((await call('outreach-payout-links', { campaignId: 'c1', appIds: ['a1'] }, { token: EDITOR })).statusCode).toBe(403);
+    });
+
+    it('a paid payout carries the bank account and payee to Spends', async () => {
+        await call('outreach-payout-details', { token: link(), ...BANK }, { token: null });
+        const { body } = await call('outreach-payout', { campaignId: 'c1', appId: 'a1', action: 'paid', amount: 1500, method: 'bank', paidAt: '2026-11-21', override: true, overrideReason: 'Agreed advance' });
+        expect(db.store.get(`spends/${body.spendId}`)).toMatchObject({ destinationDetails: 'Bank: HDFC Bank | A/C: 50100123456789 | IFSC: HDFC0001234', payeeId: 'creator_a1' });
+    });
+
+    it('the WhatsApp template matches what we submit to Meta and passes its checks', () => {
+        const t = SUBMIT_TEMPLATES.find(x => x.name === 'campaign_payout_details');
+        expect(t.body).toBe(WA_TEMPLATES.payout_details.body);
+        expect(problemsWith(t)).toEqual([]);
+        expect(t.buttons[0]).toMatchObject({ text: WA_TEMPLATES.payout_details.button, url: 'https://app.newbi.live/pay/{{1}}' });
     });
 });

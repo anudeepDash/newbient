@@ -35,6 +35,7 @@ const IMAGE_HEADERS = {
     campaign_deliverables: 'wa-deliverables',
     campaign_deliverable_changes: 'wa-changes',
     campaign_payout_sent: 'wa-payout',
+    campaign_payout_details: 'wa-payout',
     campaign_post_due: 'wa-deliverables',
     campaign_post_overdue: 'wa-deliverables',
     campaign_posts_open: 'wa-deliverables',
