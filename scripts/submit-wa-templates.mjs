@@ -167,20 +167,25 @@ const readEnv = () => {
     return { token: pick('WHATSAPP_ACCESS_TOKEN'), waba: pick('WHATSAPP_WABA_ID'), version: pick('WHATSAPP_API_VERSION') || 'v23.0' };
 };
 
-/* Meta wants a sample picture for an image header, uploaded through its resumable-upload API. */
-const uploadSample = async ({ token, version }, file) => {
-    const bytes = fs.readFileSync(file);
-    const type = /\.png$/i.test(file) ? 'image/png' : 'image/jpeg';
+/* Meta wants a sample picture for an image header, uploaded through its resumable-upload API.
+   Used by this script and by the admin's "Submit to Meta" button (api/_lib/whatsappCenter.js). */
+export const uploadHeaderSample = async ({ token, version }, { bytes, type, fileName }) => {
     // The app id comes from the token itself, so there's nothing more to set.
     const dbg = await (await fetch(`https://graph.facebook.com/${version}/debug_token?input_token=${encodeURIComponent(token)}`, { headers: { Authorization: `Bearer ${token}` } })).json();
     const appId = dbg?.data?.app_id || process.env.WHATSAPP_APP_ID;
     if (!appId) throw new Error('Could not find the Meta app id (set WHATSAPP_APP_ID).');
-    const session = await (await fetch(`https://graph.facebook.com/${version}/${appId}/uploads?file_length=${bytes.length}&file_type=${encodeURIComponent(type)}&file_name=${encodeURIComponent(file.split('/').pop())}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })).json();
+    const session = await (await fetch(`https://graph.facebook.com/${version}/${appId}/uploads?file_length=${bytes.length}&file_type=${encodeURIComponent(type)}&file_name=${encodeURIComponent(fileName)}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })).json();
     if (!session.id) throw new Error(`Upload not started: ${session.error?.message || 'no session'}`);
     const done = await (await fetch(`https://graph.facebook.com/${version}/${session.id}`, { method: 'POST', headers: { Authorization: `OAuth ${token}`, file_offset: '0', 'Content-Type': type }, body: bytes })).json();
     if (!done.h) throw new Error(`Upload failed: ${done.error?.message || 'no handle'}`);
     return done.h;
 };
+
+const uploadSample = (auth, file) => uploadHeaderSample(auth, {
+    bytes: fs.readFileSync(file),
+    type: /\.png$/i.test(file) ? 'image/png' : 'image/jpeg',
+    fileName: file.split('/').pop(),
+});
 
 const main = async () => {
     const submit = process.argv.includes('--submit');
