@@ -277,6 +277,7 @@ export const handleCreatorPayoutDetails = async (req, res, { db, rateLimit, now 
     if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });
     const ctx = await fromToken(db, req.body?.token);
     if (!ctx) return send(res, 404, { success: false, error: 'This link isn’t active. Ask the Newbi team for a new one.' });
+    if (!isOnShortlist(ctx.app.status)) return send(res, 409, { success: false, code: 'not_shortlisted', error: 'You can add payout details once you’re selected for this campaign.' });
     if (rateLimit && (await rateLimit(db, req, { bucket: 'outreach-payout-details' })).limited) {
         return send(res, 429, { success: false, error: 'Too many tries from this network. Try again in a few minutes.' });
     }
@@ -551,9 +552,10 @@ const EMAIL_GOING = new Set(['sent', 'deferred', 'retry', 'duplicate']);
 /*
  * Only when the team asks (never automatic): an email and an in-app notice
  * with their payout page link, and the campaign_payout_details WhatsApp
- * template once it's switched on. People who already gave their details are
- * skipped unless `again` (to ask them to check or change them).
- * → { results: [{ id, outcome: 'sent' | 'has_details' | 'no_channel' | 'not_found', channels }] }
+ * template once it's switched on. Approved creators only (shortlisted onwards).
+ * People who already gave their details are skipped unless `again` (to ask
+ * them to check or change them).
+ * → { results: [{ id, outcome: 'sent' | 'has_details' | 'no_channel' | 'not_shortlisted' | 'not_found', channels }] }
  */
 export const handleAskPayout = async (req, res, { db, actor, now = nowIso() }) => {
     const b = req.body || {};
@@ -571,6 +573,7 @@ export const handleAskPayout = async (req, res, { db, actor, now = nowIso() }) =
         const snap = await ref.get();
         const app = snap.exists ? snap.data() : null;
         if (!app || app.status === 'removed') { results.push({ id: appId, outcome: 'not_found' }); continue; }
+        if (!isOnShortlist(app.status)) { results.push({ id: appId, outcome: 'not_shortlisted' }); continue; }
         if (hasPayoutDetails(app.payoutDetails) && b.again !== true) { results.push({ id: appId, outcome: 'has_details' }); continue; }
         const payUrl = payoutUrlFor(campaignId, appId);
         const channels = {};
@@ -602,8 +605,8 @@ export const handleAskPayout = async (req, res, { db, actor, now = nowIso() }) =
 };
 
 /*
- * Each person's payout page link, for sharing by hand (copy, their own
- * WhatsApp chat) or in a sheet. Nothing is sent; the request is noted so the
+ * Each approved creator's payout page link, for sharing by hand (copy, their
+ * own WhatsApp chat) or in a sheet; anyone not on the shortlist is left out. Nothing is sent; the request is noted so the
  * Payouts list shows they were asked.
  * → { links: [{ id, url, name, phone, email, hasDetails }] }
  */
@@ -618,7 +621,8 @@ export const handlePayoutLinks = async (req, res, { db, actor, now = nowIso() })
         const ref = db.collection(appsPath(campaignId)).doc(appId);
         const snap = await ref.get();
         const app = snap.exists ? snap.data() : null;
-        if (!app || app.status === 'removed') continue;
+        // Approved creators only (shortlisted onwards): applicants aren't asked for bank details.
+        if (!app || !isOnShortlist(app.status)) continue;
         links.push({ id: appId, url: payoutUrlFor(campaignId, appId), name: app.fullName || '', phone: app.phone || '', email: app.email || '', hasDetails: hasPayoutDetails(app.payoutDetails) });
         if (b.markShared === true && !hasPayoutDetails(app.payoutDetails)) {
             const prev = app.payoutDetailsRequest || {};

@@ -1,12 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import TriangleAlert from 'lucide-react/dist/esm/icons/triangle-alert';
 import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
+import Copy from 'lucide-react/dist/esm/icons/copy';
 import Sheet from '../../Sheet';
 import { Button } from '../../ui';
+import { useStore } from '../../../../lib/store';
+import { copyToClipboard } from '../../../../lib/clipboard';
 import { TRANSITIONS, isOnShortlist } from '../../../../lib/outreach/status';
 import { isBelowMinimum, minFollowersFor } from '../../../../lib/outreach/application';
 import { formatCount } from '../campaignModel';
-import { deliverableSummary, DELIVERABLE_STATUS, TICKET_STATUS } from '../../../../lib/outreach/deliverables';
+import { deliverableSummary, DELIVERABLE_STATUS, TICKET_STATUS, hasPayoutDetails } from '../../../../lib/outreach/deliverables';
+import { callOutreach } from './outreachApi';
+import { shareMessage } from './PayoutsPanel';
 import ActivityList from './ActivityList';
 import { StatusBadge, Handle, STATUS_ACTIONS, when } from './parts';
 
@@ -19,7 +24,33 @@ const Row = ({ label, children }) => (children === null || children === undefine
     </div>
 ));
 
-const ApplicationSheet = ({ app, campaign, campaignId, onClose, onStatus, onMessage = null, nameOf, refreshKey }) => {
+/*
+ * Copy an approved creator's payout page link (or a message with it) to share
+ * by hand. Nothing is sent; it's noted as shared, like in Payouts.
+ */
+const PayoutLinkButtons = ({ app, campaign, campaignId, onChanged }) => {
+    const addToast = useStore(s => s.addToast);
+    const [busy, setBusy] = useState(false);
+    const copy = async (withMessage) => {
+        setBusy(true);
+        const r = await callOutreach('outreach-payout-links', { campaignId, appIds: [app.id], markShared: !hasPayoutDetails(app.payoutDetails), via: 'link' });
+        setBusy(false);
+        const url = r.ok ? r.data.links[0]?.url : null;
+        if (!url) { addToast(r.ok ? 'Only shortlisted creators get a payout link.' : r.error, 'error', { title: 'No payout link' }); return; }
+        const ok = await copyToClipboard(withMessage ? shareMessage(app, campaign || {}, url) : url);
+        if (!ok) { addToast('Your browser blocked copying.', 'warning'); return; }
+        addToast(withMessage ? 'Paste it in your chat with them.' : 'Paste it wherever you talk to them.', 'success', { title: withMessage ? 'Message with link copied' : 'Payout link copied' });
+        onChanged?.();
+    };
+    return (
+        <span className="inline-flex flex-wrap justify-end gap-1.5">
+            <Button size="sm" variant="secondary" disabled={busy} onClick={() => copy(false)}><Copy size={13} /> Copy link</Button>
+            <Button size="sm" variant="ghost" disabled={busy} onClick={() => copy(true)}>Copy message</Button>
+        </span>
+    );
+};
+
+const ApplicationSheet = ({ app, campaign, campaignId, onClose, onStatus, onMessage = null, nameOf, refreshKey, onChanged }) => {
     const summary = app && campaign ? deliverableSummary(campaign, app) : null;
     // Under the campaign's follower minimum (the Nano "from" count): can't go onto the shortlist.
     const belowMin = Boolean(app && campaign && !isOnShortlist(app.status) && isBelowMinimum(app, campaign));
@@ -73,6 +104,7 @@ const ApplicationSheet = ({ app, campaign, campaignId, onClose, onStatus, onMess
                         <Row label="Payout details">{app.payoutDetails?.mode === 'bank' && app.payoutDetails.accountNumber
                             ? `${app.payoutDetails.name ? `${app.payoutDetails.name} · ` : ''}A/C ${app.payoutDetails.accountNumber} · ${app.payoutDetails.ifsc}`
                             : app.payoutDetails?.upiId ? `UPI ${app.payoutDetails.upiId}` : app.payoutDetailsRequest?.requestedAt ? `Asked ${when(app.payoutDetailsRequest.requestedAt)}, not added yet` : null}</Row>
+                        <Row label="Payout link">{isOnShortlist(app.status) && app.payout?.status !== 'paid' ? <PayoutLinkButtons app={app} campaign={campaign} campaignId={campaignId} onChanged={onChanged} /> : null}</Row>
                         <Row label="Payout">{app.payout?.status === 'paid' ? `₹${Number(app.payout.amount).toLocaleString('en-IN')} on ${app.payout.paidAt}${app.payout.reference ? ` · ${app.payout.reference}` : ''}` : app.payout?.status === 'cancelled' ? 'Cancelled' : null}</Row>
                         <Row label="Last message">{app.lastMessageText ? <span className="whitespace-pre-wrap text-left font-normal">{app.lastMessageText}</span> : null}</Row>
                     </dl>

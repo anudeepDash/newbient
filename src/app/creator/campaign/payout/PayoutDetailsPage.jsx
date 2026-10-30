@@ -15,6 +15,7 @@ import { ActionBar, ExpandedHero, ExpandedPage, ExpandedSkeleton, ExpandedTitle 
 import { Notice } from '../../ui';
 import { callCreatorApi } from '../../api';
 import { validatePayoutDetails } from '../../../../lib/outreach/deliverables';
+import { isOnShortlist } from '../../../../lib/outreach/status';
 import { useT } from '../../../../i18n';
 
 /*
@@ -24,7 +25,8 @@ import { useT } from '../../../../i18n';
  * A UPI ID, or a bank account; details they gave for another campaign can be
  * reused in one tap. Once saved, the page says so ("Details added") and they
  * can change them until they're paid. Saving also updates their payee in
- * Finance (api/_lib/outreachDeliver.js).
+ * Finance (api/_lib/outreachDeliver.js). Approved creators only: anyone not
+ * on the shortlist is told it opens once they're selected.
  */
 
 const FORM_ID = 'payout-details-form';
@@ -124,6 +126,20 @@ const PayoutDetailsPage = () => {
                     <div className="mx-auto max-w-md space-y-3 rounded-3xl border border-dashed border-black/[0.1] px-6 py-10 text-center dark:border-white/[0.1]">
                         <p className="text-[17px] font-bold">{t('This link isn’t active')}</p>
                         <p className="text-[15px] text-gray-600 dark:text-zinc-400">{state.error || t('Ask the Newbi team on WhatsApp for a new one.')}</p>
+                    </div>
+                )}
+            />
+        );
+    }
+
+    if (!isOnShortlist(d.status)) {
+        return (
+            <ExpandedPage
+                label={t('Payout details')}
+                body={(
+                    <div className="mx-auto max-w-md space-y-3 rounded-3xl border border-dashed border-black/[0.1] px-6 py-10 text-center dark:border-white/[0.1]">
+                        <p className="text-[17px] font-bold">{t('Not open yet')}</p>
+                        <p className="text-[15px] text-gray-600 dark:text-zinc-400">{t('You can add payout details once you’re selected for this campaign.')}</p>
                     </div>
                 )}
             />

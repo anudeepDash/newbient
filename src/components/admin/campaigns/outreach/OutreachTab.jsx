@@ -327,7 +327,7 @@ const OutreachTab = ({ campaign }) => {
                 onShortlist={addToShortlist}
                 onMark={(ids, to, source) => changeStatus(ids, to, { source })}
             />
-            <ApplicationSheet app={openId ? byId.get(openId) : null} campaign={campaign} campaignId={campaign.id} onClose={() => setOpenId(null)} onStatus={changeStatus} onMessage={data.api?.configured ? messageOnWhatsApp : null} nameOf={nameOf} refreshKey={refreshKey} />
+            <ApplicationSheet app={openId ? byId.get(openId) : null} campaign={campaign} campaignId={campaign.id} onClose={() => setOpenId(null)} onStatus={changeStatus} onMessage={data.api?.configured ? messageOnWhatsApp : null} nameOf={nameOf} refreshKey={refreshKey} onChanged={() => { setRefreshKey(k => k + 1); load(); }} />
             <ConfirmSheet
                 open={Boolean(confirmRemove)}
                 onClose={() => setConfirmRemove(null)}
