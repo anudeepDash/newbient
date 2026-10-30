@@ -526,6 +526,20 @@ describe('payout details', () => {
         expect((await call('outreach-payout-links', { campaignId: 'c1', appIds: ['a1'] }, { token: EDITOR })).statusCode).toBe(403);
     });
 
+    it('is for approved creators only: shortlisted people get a link before their message, applicants never do', async () => {
+        db.store.set('campaigns/c1/applications/a1', { ...app(), status: 'shortlisted' });
+        expect((await call('outreach-payout-links', { campaignId: 'c1', appIds: ['a1'] })).body.links.map(l => l.id)).toEqual(['a1']);
+        expect((await call('outreach-payout-details', { token: link(), mode: 'upi', upiId: 'riya.s@okaxis' }, { token: null })).body.success).toBe(true);
+        db.store.set('campaigns/c1/applications/a1', { ...app(), status: 'applied', payoutDetails: null });
+        expect((await call('outreach-payout-links', { campaignId: 'c1', appIds: ['a1'], markShared: true })).body.links).toEqual([]);
+        expect((await call('outreach-ask-payout', { campaignId: 'c1', appIds: ['a1'] })).body.results).toEqual([{ id: 'a1', outcome: 'not_shortlisted' }]);
+        const save = await call('outreach-payout-details', { token: link(), mode: 'upi', upiId: 'riya.s@okaxis' }, { token: null });
+        expect(save.statusCode).toBe(409);
+        expect(save.body.code).toBe('not_shortlisted');
+        expect(app().payoutDetails).toBeNull();
+        expect(app().payoutDetailsRequest).toBeFalsy();
+    });
+
     it('a paid payout carries the bank account and payee to Spends', async () => {
         await call('outreach-payout-details', { token: link(), ...BANK }, { token: null });
         const { body } = await call('outreach-payout', { campaignId: 'c1', appId: 'a1', action: 'paid', amount: 1500, method: 'bank', paidAt: '2026-11-21', override: true, overrideReason: 'Agreed advance' });

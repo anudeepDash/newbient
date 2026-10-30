@@ -278,6 +278,8 @@ export default {
     "Your campaign": "Your campaign",
     "This link isn’t active": "This link isn’t active",
     "Ask the Newbi team on WhatsApp for a new one.": "Naye link ke liye Newbi team se WhatsApp pe poochho.",
+    "Not open yet": "Abhi open nahi hai",
+    "You can add payout details once you’re selected for this campaign.": "Is campaign ke liye select hone ke baad tum payout details add kar paoge.",
     "Hey {name}!": "Hey {name}!",
     "Hey!": "Hey!",
     "Send each post here once it’s live on @{handle}.": "Har post yahan send karo jaise hi wo @{handle} pe live ho.",

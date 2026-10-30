@@ -7,6 +7,7 @@ import Link2 from 'lucide-react/dist/esm/icons/link-2';
 import Copy from 'lucide-react/dist/esm/icons/copy';
 import { copyToClipboard } from '../../../../lib/clipboard';
 import { firstNameOf } from '../../../../lib/outreach/normalize';
+import { isOnShortlist } from '../../../../lib/outreach/status';
 import { cn } from '../../../../lib/utils';
 import { useStore } from '../../../../lib/store';
 import { Button, Card, Badge, EmptyState, Menu, MenuItem } from '../../ui';
@@ -32,7 +33,8 @@ import { StatusBadge, Handle, when } from './parts';
  * They're asked only from here: "Ask for payout details" emails them, sends
  * the campaign_payout_details WhatsApp (once it's switched on) and an in-app
  * notice; or copy each link, or export everyone's links in a sheet, to share
- * them yourself.
+ * them yourself. Everyone approved (shortlisted onwards) is listed, so their
+ * link can go out before the campaign message does; tickets still wait for it.
  */
 
 const IN_PLAY = new Set(['message_sent', 'replied', 'joined', 'posted', 'paid']);
@@ -54,7 +56,7 @@ const detailsBadge = (app) => {
 };
 
 /* The message to paste in a chat with their link. */
-const shareMessage = (app, campaign, url) => `Hi ${firstNameOf(app.fullName) || 'there'}! Please add your payout details for ${campaign.title || 'the campaign'} here, so we can pay you: ${url}\n\nIt's your personal link. We'll never ask for your UPI PIN, a password or an OTP. – Team Newbi`;
+export const shareMessage = (app, campaign, url) => `Hi ${firstNameOf(app.fullName) || 'there'}! Please add your payout details for ${campaign.title || 'the campaign'} here, so we can pay you: ${url}\n\nIt's your personal link. We'll never ask for your UPI PIN, a password or an OTP. – Team Newbi`;
 
 const PaySheet = ({ campaign, app, onClose, onDone }) => {
     const addToast = useStore(s => s.addToast);
@@ -141,7 +143,7 @@ const PayoutsPanel = ({ campaign, applications, onChanged }) => {
     const [busy, setBusy] = useState(false);
     const [links, setLinks] = useState({});
     const rows = useMemo(() => applications
-        .filter(a => IN_PLAY.has(a.status) || a.payout || a.ticket)
+        .filter(a => isOnShortlist(a.status) || a.payout || a.ticket)
         .map(a => ({ app: a, summary: deliverableSummary(campaign, a) }))
         .sort((x, y) => String(x.app.fullName || '').localeCompare(String(y.app.fullName || ''))), [campaign, applications]);
 
@@ -239,7 +241,7 @@ const PayoutsPanel = ({ campaign, applications, onChanged }) => {
     const due = rows.filter(r => r.summary.allRequiredApproved && r.app.payout?.status !== 'paid');
     const needDetails = rows.filter(r => !hasPayoutDetails(r.app.payoutDetails) && r.app.payout?.status !== 'paid');
     const withDetails = rows.filter(r => hasPayoutDetails(r.app.payoutDetails)).length;
-    const readyForTicket = rows.filter(r => r.app.ticket?.status !== 'released');
+    const readyForTicket = rows.filter(r => IN_PLAY.has(r.app.status) && r.app.ticket?.status !== 'released');
     const exportSpec = () => (due.length ? {
         filename: `${String(campaign.title || 'campaign').replace(/[^\w-]+/g, '_').slice(0, 40)}_payouts_due`,
         sheetName: 'Payouts due',
@@ -283,7 +285,7 @@ const PayoutsPanel = ({ campaign, applications, onChanged }) => {
     };
 
     if (!rows.length) {
-        return <Card><EmptyState icon={Users} title="Nobody to pay or ticket yet" description="People show up here once their message is sent." /></Card>;
+        return <Card><EmptyState icon={Users} title="Nobody to pay or ticket yet" description="People show up here once they’re shortlisted." /></Card>;
     }
     const paidTotal = rows.reduce((n, r) => n + (r.app.payout?.status === 'paid' ? Number(r.app.payout.amount) || 0 : 0), 0);
 
@@ -328,7 +330,7 @@ const PayoutsPanel = ({ campaign, applications, onChanged }) => {
                                     {app.payout?.status !== 'paid' && <MenuItem onClick={() => setAskFor({ ids: [app.id], again: hasPayoutDetails(app.payoutDetails), name: app.fullName })}>{hasPayoutDetails(app.payoutDetails) ? 'Ask to check payout details' : app.payoutDetailsRequest?.requestedAt ? 'Ask for payout details again' : 'Ask for payout details'}</MenuItem>}
                                     <MenuItem onClick={() => copyLink(app, false)}>Copy payout link</MenuItem>
                                     <MenuItem onClick={() => copyLink(app, true)}>Copy message with payout link</MenuItem>
-                                    {t !== 'released' && <MenuItem onClick={() => ticket([app.id], 'release')}>Send ticket</MenuItem>}
+                                    {t !== 'released' && IN_PLAY.has(app.status) && <MenuItem onClick={() => ticket([app.id], 'release')}>Send ticket</MenuItem>}
                                     {t === 'released' && <MenuItem danger onClick={() => setRevokeFor(app)}>Revoke ticket</MenuItem>}
                                     {(campaign.tasks || []).length > 0 && <MenuItem onClick={() => resendLink(app)}>Resend their posts link</MenuItem>}
                                     {app.payout?.status === 'paid' && <MenuItem danger onClick={() => setCancelFor(app)}>Cancel payout</MenuItem>}
