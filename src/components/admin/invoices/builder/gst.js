@@ -162,3 +162,18 @@ export const composeBankDetails = (fields) => BANK_FIELDS
     .filter(f => String(fields?.[f.key] || '') !== '')
     .map(f => `${f.label}: ${fields[f.key]}`)
     .join('\n');
+
+/** Same bank details, ignoring spacing and case: which saved account an invoice is using. */
+export const sameBankDetails = (a, b) => {
+    const flat = (v) => String(v || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    return Boolean(flat(a)) && flat(a) === flat(b);
+};
+
+/** A name for a saved account, like "HDFC Bank ··1234". */
+export const bankAccountLabel = (text) => {
+    const f = parseBankDetails(text);
+    if (!f) return 'Bank account';
+    const last4 = String(f.accountNumber || '').replace(/\D/g, '').slice(-4);
+    const name = String(f.bankName || f.accountName || '').trim() || 'Bank account';
+    return last4 ? `${name} ··${last4}` : name;
+};

@@ -20,6 +20,9 @@ import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import Clock from 'lucide-react/dist/esm/icons/clock';
 import Wallet from 'lucide-react/dist/esm/icons/wallet';
 import Paperclip from 'lucide-react/dist/esm/icons/paperclip';
+import Landmark from 'lucide-react/dist/esm/icons/landmark';
+import Copy from 'lucide-react/dist/esm/icons/copy';
+import Check from 'lucide-react/dist/esm/icons/check';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useStore } from '../lib/store';
@@ -34,8 +37,40 @@ import NotificationBell from '../components/NotificationBell';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import { getDocumentShareMeta } from '../lib/documentPreviewUtils';
 import { invoiceReceived, invoiceAmounts, daysOverdue } from '../lib/invoicing';
-import { InvoicePage, paginateInvoice, paperDataFrom } from '../components/admin/invoices/builder/InvoicePaper';
+import { InvoicePage, paginateInvoice, paperDataFrom, isBlankText } from '../components/admin/invoices/builder/InvoicePaper';
+import { BANK_FIELDS, parseBankDetails } from '../components/admin/invoices/builder/gst';
+import { copyToClipboard } from '../lib/clipboard';
+import { cn } from '../lib/utils';
 
+
+/** The invoice's bank details as rows the client can copy (free text is shown as written). */
+const BankTransfer = ({ details }) => {
+    const [copied, setCopied] = React.useState('');
+    const fields = parseBankDetails(details);
+    const copy = async (key, value) => {
+        if (await copyToClipboard(value)) {
+            setCopied(key);
+            setTimeout(() => setCopied(c => (c === key ? '' : c)), 1500);
+        }
+    };
+    if (!fields) return <p className="whitespace-pre-line text-[13px] leading-relaxed text-gray-700 dark:text-zinc-200">{String(details).replace(/<[^>]*>/g, '')}</p>;
+    return (
+        <dl className="-my-1 divide-y divide-black/[0.06] dark:divide-white/[0.06]">
+            {BANK_FIELDS.filter(f => String(fields[f.key] || '').trim()).map(f => (
+                <div key={f.key} className="flex min-h-11 items-center justify-between gap-3 py-1">
+                    <div className="min-w-0">
+                        <dt className="text-[11.5px] font-semibold text-gray-500 dark:text-zinc-400">{f.label}</dt>
+                        <dd className={cn('break-words text-[14px] font-semibold text-gray-900 dark:text-white', ['accountNumber', 'ifsc', 'upi'].includes(f.key) && 'font-mono')}>{fields[f.key]}</dd>
+                    </div>
+                    <button type="button" onClick={() => copy(f.key, fields[f.key].trim())} aria-label={`Copy ${f.label}`}
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-gray-400 hover:bg-black/[0.04] hover:text-gray-900 dark:hover:bg-white/[0.06] dark:hover:text-white">
+                        {copied === f.key ? <Check size={15} className="text-emerald-600 dark:text-emerald-400" /> : <Copy size={15} />}
+                    </button>
+                </div>
+            ))}
+        </dl>
+    );
+};
 
 const Invoice = () => {
     const { id } = useParams();
@@ -418,6 +453,8 @@ const Invoice = () => {
     const isPaid = displayInvoice.status === 'Paid';
     // The team can switch Razorpay off for one invoice (builder → Online payment).
     const onlinePay = displayInvoice.onlinePayment !== false;
+    const bankDetails = paperData.showPaymentDetails && !isBlankText(displayInvoice.paymentDetails) ? displayInvoice.paymentDetails : '';
+    const bankReference = displayInvoice.invoiceNumber ? `Use ${displayInvoice.invoiceNumber} as the payment reference.` : '';
     const isVerifying = !isPaid && (displayInvoice.status === 'Verification Pending' || displayInvoice.paymentClaim?.status === 'pending');
     const overdueBy = daysOverdue(displayInvoice);
     const dueLine = displayInvoice.dueDate
@@ -432,8 +469,11 @@ const Invoice = () => {
         );
     } else if (!isAdmin && !onlinePay) {
         payPanel = (
-            <PanelCard theme={docTheme('invoice')} icon={Wallet} title="Payment" subtitle={dueLine}>
-                <p className="text-[13px] leading-relaxed text-gray-600 dark:text-zinc-300">Online payment isn’t available for this invoice. Please contact us to arrange the payment.</p>
+            <PanelCard theme={docTheme('invoice')} icon={bankDetails ? Landmark : Wallet} title={bankDetails ? 'Pay by bank transfer' : 'Payment'}
+                subtitle={bankDetails ? `${dueLine} · ${fmtMoney(toBePaid)}. ${bankReference}`.trim() : dueLine}>
+                {bankDetails
+                    ? <BankTransfer details={bankDetails} />
+                    : <p className="text-[13px] leading-relaxed text-gray-600 dark:text-zinc-300">Online payment isn’t available for this invoice. Please contact us to arrange the payment.</p>}
             </PanelCard>
         );
     } else if (!isAdmin) {
@@ -462,6 +502,14 @@ const Invoice = () => {
             </PanelCard>
         );
     }
+
+    // With online payment on, bank transfer is the other way to pay.
+    const bankPanel = !isAdmin && !isPaid && onlinePay && bankDetails ? (
+        <PanelCard theme={docTheme('invoice')} icon={Landmark} title="Or pay by bank transfer"
+            subtitle={`${bankReference} We’ll mark it paid once it reaches us.`.trim()}>
+            <BankTransfer details={bankDetails} />
+        </PanelCard>
+    ) : null;
 
     // Files and links attached in the invoice builder. One opens directly; several are listed in the side panel.
     const attachments = (Array.isArray(displayInvoice.attachments) ? displayInvoice.attachments : []).filter(att => att?.url);
@@ -498,7 +546,7 @@ const Invoice = () => {
                 onDownloadPDF={handleDownloadPDF}
                 onPrint={handlePrint}
                 pdfBlobUrl={pdfBlobUrl}
-                actionPanel={<>{payPanel}{attachmentsPanel}</>}
+                actionPanel={<>{payPanel}{bankPanel}{attachmentsPanel}</>}
                 actionLabel={isAdmin ? 'Mark as paid' : onlinePay ? `Pay ${fmtMoney(toBePaid)}` : 'Payment'}
                 onAction={!isAdmin && !isPaid && onlinePay && toBePaid > 0 ? handlePayOnline : undefined}
                 actionBusy={paying}
