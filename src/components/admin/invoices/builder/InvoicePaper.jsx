@@ -103,6 +103,7 @@ export const paginateInvoice = (items, data) => {
     if (data.showGst) weight += 1; // tax rows and the amount in words
     if (data.showAdvance && data.advancePaid > 0) weight += 0.5;
     if (data.onlinePayment !== false) weight += 0.5; // the "Pay online" button
+    if (data.showPaymentDetails && !isBlankText(data.paymentDetails)) weight += 1.5;
     if (data.showSeal || data.showSignatures) weight += 2;
     if (data.showNotes && !isBlankText(data.note)) weight += 1;
 
@@ -129,6 +130,7 @@ export const paperDataFrom = (invoice = {}) => ({
     ...invoice,
     invoiceDate: invoice.invoiceDate || invoice.issueDate || invoice.createdAt || '',
     showNotes: invoice.showNotes !== false,
+    showPaymentDetails: invoice.showPaymentDetails !== false,
     showFooter: invoice.showFooter !== false,
     advancePaid: Number(invoice.advancePaid) || 0,
     gstPercentage: Number(invoice.gstPercentage) || 0,
@@ -284,6 +286,12 @@ export const InvoicePage = ({ data, columns = [], pageItems, pageIndex, pageCoun
                 {isLast && (
                     <div className="mt-7 flex w-full items-start gap-10">
                         <div className="flex-1 space-y-5">
+                            {data.showPaymentDetails && !isBlankText(data.paymentDetails) && (
+                                <div>
+                                    <Label>Bank details</Label>
+                                    <div className="mt-2.5 rounded-2xl border border-gray-200 bg-[#F4F2EC]/60 p-4 text-[10px] leading-relaxed text-gray-700">{renderContent(data.paymentDetails)}</div>
+                                </div>
+                            )}
                             {data.showNotes && !isBlankText(data.note) && (
                                 <div>
                                     <Label>Note</Label>
