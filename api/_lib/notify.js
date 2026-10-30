@@ -58,7 +58,8 @@ export const EVENTS = {
         whatsapp: {
             mode: 'always',
             // RSVP lists have no QR code, so they get guestlist_rsvp_confirmed once it's approved.
-            template: (d) => (rsvpTemplate(d) ? 'guestlist_rsvp_confirmed' : 'pass_confirmed'),
+            // The QR-header ticket once Meta approves it (WHATSAPP_TEMPLATE_PASS_TICKET_QR), else the plain one.
+            template: (d) => (rsvpTemplate(d) ? 'guestlist_rsvp_confirmed' : isTemplateLive('pass_ticket_qr') ? 'pass_ticket_qr' : 'pass_confirmed'),
             build: (d) => (rsvpTemplate(d)
                 ? { bodyParams: [firstName(d.name), short(d.eventName || 'your event'), formatDate(d.date) || 'See the guestlist', short(doorName(d), 80)] }
                 : { softHeader: d.ref && d.mode !== 'rsvp' ? { type: 'image', link: `${PASS_ORIGIN}/api/qr?text=${encodeURIComponent(d.ref)}&size=600&margin=4` } : undefined, bodyParams: [firstName(d.name), short(d.eventName || 'your event'), formatDate(d.date) || 'See pass', d.ref || '-'], buttons: d.ref ? [{ index: 0, param: d.ref }] : [] }),
