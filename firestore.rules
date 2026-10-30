@@ -112,6 +112,7 @@ service cloud.firestore {
     match /spends/{id} { allow read, write: if isFinance(); }
     match /other_incomes/{id} { allow read, write: if isFinance(); }
     match /finance_payees/{id} { allow read, write: if isFinance(); }
+    match /finance_bank_accounts/{id} { allow read, write: if isFinance(); }   // saved bank details for invoices
 
     // ---------- 5. people ----------
 

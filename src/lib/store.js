@@ -799,6 +799,7 @@ export const useStore = create((set, get) => ({
     spends: [],
     otherIncomes: [],
     financePayees: [], // Registered Payees
+    bankAccounts: [], // Saved bank accounts for invoices (finance only)
     forms: [], // Forms config
     upcomingEvents: [],
     ticketOrders: [], // Ticket Purchases and Offline Reconciliations
@@ -1076,6 +1077,7 @@ export const useStore = create((set, get) => ({
     subscribeToSpends: () => get().subscribeToKey('spends', 'spends', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
     subscribeToOtherIncomes: () => get().subscribeToKey('otherIncomes', 'other_incomes', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
     subscribeToFinancePayees: () => get().subscribeToKey('financePayees', 'finance_payees', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
+    subscribeToBankAccounts: () => get().subscribeToKey('bankAccounts', 'finance_bank_accounts', (data) => data.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0))),
     subscribeToMessages: () => get().subscribeToKey('messages', 'messages', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
     subscribeToCreators: () => get().subscribeToKey('creators', 'creators', (data) => {
         (data || []).forEach(creator => {
@@ -2575,6 +2577,36 @@ export const useStore = create((set, get) => ({
     },
     deleteFinancePayee: async (id) => {
         await deleteDoc(doc(db, 'finance_payees', id));
+    },
+
+    // Bank accounts saved from the invoice builder: { label, details, isDefault }
+    addBankAccount: async (account) => {
+        const now = new Date().toISOString();
+        return await addDoc(collection(db, 'finance_bank_accounts'), {
+            label: account.label || 'Bank account',
+            details: account.details || '',
+            isDefault: Boolean(account.isDefault),
+            createdAt: now,
+            updatedAt: now,
+            createdBy: get().user?.email || null,
+        });
+    },
+    updateBankAccount: async (id, updates) => {
+        const cleaned = { ...updates, updatedAt: new Date().toISOString() };
+        delete cleaned.id;
+        await updateDoc(doc(db, 'finance_bank_accounts', id), cleaned);
+    },
+    deleteBankAccount: async (id) => {
+        await deleteDoc(doc(db, 'finance_bank_accounts', id));
+    },
+    /** One default at a time: new invoices start with it. */
+    setDefaultBankAccount: async (id) => {
+        const batch = writeBatch(db);
+        const now = new Date().toISOString();
+        (get().bankAccounts || []).forEach(acc => {
+            if ((acc.id === id) !== Boolean(acc.isDefault)) batch.update(doc(db, 'finance_bank_accounts', acc.id), { isDefault: acc.id === id, updatedAt: now });
+        });
+        await batch.commit();
     },
 
     // Proposals
