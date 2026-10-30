@@ -3371,7 +3371,7 @@ export const useStore = create((set, get) => ({
     resendTicketWhatsApp: async (orderId) => {
         const result = await notifyEvent('pass-confirmed', { orderId, channel: 'whatsapp' });
         const wa = result?.delivery?.whatsapp;
-        return { ok: Boolean(result?.success && wa?.status === 'sent'), status: wa?.status || null, reason: wa?.reason || wa?.error || result?.error || '' };
+        return { ok: Boolean(result?.success && wa?.status === 'sent'), noQr: Boolean(wa?.droppedHeader), status: wa?.status || null, reason: wa?.reason || wa?.error || result?.error || '' };
     },
 
     // Messages

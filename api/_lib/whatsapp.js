@@ -196,6 +196,7 @@ export const sendTemplate = async ({ to, template, language, header: givenHeader
         }
     };
     let result = await send(header);
+    let droppedHeader = false;
     // The picture we added isn't in the approved template (it was approved without
     // a header, or the header edit is still in review): send it plain, and stop
     // adding one to this template until the next deploy.
@@ -203,6 +204,7 @@ export const sendTemplate = async ({ to, template, language, header: givenHeader
         NO_HEADER.add(name);
         console.warn(`[WHATSAPP] ${name} has no header in Meta; sending without the picture.`);
         header = null;
+        droppedHeader = true;
         result = await send(null);
     }
 
@@ -210,7 +212,7 @@ export const sendTemplate = async ({ to, template, language, header: givenHeader
         const messageId = result.data.messages[0].id;
         await logRef.set({ ...base, status: 'sent', messageId, error: FieldValue.delete(), payload: FieldValue.delete() }, { merge: true }).catch(() => {});
         await writeDelivery(ref, { status: 'sent', messageId, at: nowIso(), error: null });
-        return { ok: true, status: 'sent', messageId, logId: logRef.id };
+        return { ok: true, status: 'sent', messageId, logId: logRef.id, ...(droppedHeader ? { droppedHeader: true } : {}) };
     }
 
     const err = result.data?.error || {};
