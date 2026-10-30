@@ -5,8 +5,8 @@
  * The same day the 9 guestlist and event templates got an IMAGE header (each
  * with its card from public/og as the sample; the code sends the event's own
  * picture, else that card: api/_lib/whatsapp.js IMAGE_HEADERS). This script
- * doesn't add headers: a new one would need its image header added in
- * WhatsApp Manager the same way. The code only uses each one once WHATSAPP_TEMPLATE_<NAME>
+ * doesn't add headers to those; templates with `header: { image }` (pass_ticket_qr)
+ * get their image header, with the sample uploaded, when submitted. The code only uses each one once WHATSAPP_TEMPLATE_<NAME>
  * is set, after Meta approves it.
  *
  *   node scripts/submit-wa-templates.mjs            checks every template, sends nothing
@@ -25,6 +25,16 @@ const pass = (example) => ({ type: 'URL', text: 'Open pass', url: `${APP}/p/{{1}
 const list = (text, example) => ({ type: 'URL', text, url: `${APP}/community/g/{{1}}`, example: [`${APP}/community/g/${example}`] });
 
 export const TEMPLATES = [
+    {
+        // The ticket itself: carries the ticket's QR code as its image header (api/_lib/notify.js
+        // sends https://app.newbi.live/api/qr?text=<pass code>). Used instead of pass_confirmed
+        // once WHATSAPP_TEMPLATE_PASS_TICKET_QR is set.
+        name: 'pass_ticket_qr',
+        body: "🎟️ *Your ticket is ready, {{1}}*\n\n*Event:* {{2}}\n*Date:* {{3}}\n*Pass code:* {{4}}\n\nShow the QR code above at the entrance. You can also open your pass any time with the button below.",
+        samples: ['Riya', 'NH7 Weekender Pune', 'Sat, 5 Dec', 'NB7K2QXM'],
+        header: { image: 'public/og/wa-pass-v1.jpg' },
+        buttons: [pass('NB7K2QXM')],
+    },
     {
         name: 'guestlist_pending',
         body: "📝 *You're signed up, {{1}}*\n\n*Guestlist:* {{2}}\n*Date:* {{3}}\n*Coming:* {{4}}\n\nThe team checks every sign-up on this list. We'll message you here as soon as you're in.",
@@ -134,11 +144,13 @@ export const problemsWith = (t) => {
     return out;
 };
 
-export const payloadFor = (t) => ({
+// headerHandle: the uploaded sample picture's handle, for templates with an image header.
+export const payloadFor = (t, headerHandle = null) => ({
     name: t.name,
     language: 'en',
     category: 'UTILITY',
     components: [
+        ...(t.header?.image ? [{ type: 'HEADER', format: 'IMAGE', example: { header_handle: [headerHandle || 'HANDLE'] } }] : []),
         { type: 'BODY', text: t.body, example: { body_text: [t.samples] } },
         { type: 'FOOTER', text: t.footer || MEMBER_FOOTER },
         ...(t.buttons?.length ? [{ type: 'BUTTONS', buttons: t.buttons }] : []),
@@ -153,6 +165,21 @@ const readEnv = () => {
     }));
     const pick = (k) => process.env[k] || fromFile[k] || '';
     return { token: pick('WHATSAPP_ACCESS_TOKEN'), waba: pick('WHATSAPP_WABA_ID'), version: pick('WHATSAPP_API_VERSION') || 'v23.0' };
+};
+
+/* Meta wants a sample picture for an image header, uploaded through its resumable-upload API. */
+const uploadSample = async ({ token, version }, file) => {
+    const bytes = fs.readFileSync(file);
+    const type = /\.png$/i.test(file) ? 'image/png' : 'image/jpeg';
+    // The app id comes from the token itself, so there's nothing more to set.
+    const dbg = await (await fetch(`https://graph.facebook.com/${version}/debug_token?input_token=${encodeURIComponent(token)}`, { headers: { Authorization: `Bearer ${token}` } })).json();
+    const appId = dbg?.data?.app_id || process.env.WHATSAPP_APP_ID;
+    if (!appId) throw new Error('Could not find the Meta app id (set WHATSAPP_APP_ID).');
+    const session = await (await fetch(`https://graph.facebook.com/${version}/${appId}/uploads?file_length=${bytes.length}&file_type=${encodeURIComponent(type)}&file_name=${encodeURIComponent(file.split('/').pop())}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })).json();
+    if (!session.id) throw new Error(`Upload not started: ${session.error?.message || 'no session'}`);
+    const done = await (await fetch(`https://graph.facebook.com/${version}/${session.id}`, { method: 'POST', headers: { Authorization: `OAuth ${token}`, file_offset: '0', 'Content-Type': type }, body: bytes })).json();
+    if (!done.h) throw new Error(`Upload failed: ${done.error?.message || 'no handle'}`);
+    return done.h;
 };
 
 const main = async () => {
@@ -182,9 +209,15 @@ const main = async () => {
         process.exit(1);
     }
     const have = new Map((existing.data || []).map(x => [x.name, x.status]));
-    for (const t of TEMPLATES) {
+    // --only=pass_ticket_qr sends just that one.
+    const only = (process.argv.find(a => a.startsWith('--only=')) || '').slice(7);
+    for (const t of TEMPLATES.filter(x => !only || x.name === only)) {
         if (have.has(t.name)) { console.log(`– ${t.name}: already in Meta (${have.get(t.name)}), skipped`); continue; }
-        const res = await fetch(base, { method: 'POST', headers: { ...auth, 'Content-Type': 'application/json' }, body: JSON.stringify(payloadFor(t)) });
+        let handle = null;
+        if (t.header?.image) {
+            try { handle = await uploadSample({ token, version }, t.header.image); } catch (err) { console.log(`✗ ${t.name}: ${err.message}`); continue; }
+        }
+        const res = await fetch(base, { method: 'POST', headers: { ...auth, 'Content-Type': 'application/json' }, body: JSON.stringify(payloadFor(t, handle)) });
         const out = await res.json();
         console.log(res.ok ? `✓ ${t.name}: submitted (${out.status || 'PENDING'}, ${out.category || 'UTILITY'})` : `✗ ${t.name}: ${out.error?.error_user_msg || out.error?.message || res.status}`);
     }
