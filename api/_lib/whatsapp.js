@@ -167,13 +167,14 @@ const isHeaderMismatch = (err) => /title component|header: .*no parameters|^head
  * its own rate limit): a failure is logged as 'failed' and the daily worker
  * won't resend it. `retriable` says whether trying again could work.
  */
-export const sendTemplate = async ({ to, template, language, header: givenHeader, image = null, bodyParams = [], buttons = [], event = '', uid = null, ref = null, logId = null, autoRetry = true }) => {
+export const sendTemplate = async ({ to, template, language, header: givenHeader, softHeader = null, image = null, bodyParams = [], buttons = [], event = '', uid = null, ref = null, logId = null, autoRetry = true }) => {
     if (!isWhatsAppConfigured()) return { ok: false, status: 'skipped', error: 'WhatsApp is not set up' };
     const phone = toE164(to);
     if (!phone) return { ok: false, status: 'skipped', error: 'No valid WhatsApp number' };
 
     const name = templateName(template);
-    let header = givenHeader || (NO_HEADER.has(name) ? null : imageHeaderFor(template, image));
+    // softHeader (e.g. a ticket's QR code) is tried first and dropped if the approved template has no header.
+    let header = givenHeader || (NO_HEADER.has(name) ? null : (softHeader || imageHeaderFor(template, image)));
     const payloadWith = (h) => ({
         messaging_product: 'whatsapp',
         recipient_type: 'individual',

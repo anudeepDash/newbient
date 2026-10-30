@@ -135,7 +135,7 @@ const orderItems = (order) => (Array.isArray(order.items) && order.items.length
     : [{ name: order.tierName || 'Ticket', count: Number(order.quantity || order.count || 1), price: Number(order.totalAmount || 0) / Math.max(1, Number(order.quantity || 1)) }]);
 
 /** Shared with the checkout API: the email for a ticket order. */
-export const sendOrderEmail = async (orderId, { event: eventDoc = null } = {}) => {
+export const sendOrderEmail = async (orderId, { event: eventDoc = null, whatsappOnly = false } = {}) => {
     const db = getDb();
     const orderRef = db.collection('ticket_orders').doc(orderId);
     const snap = await orderRef.get();
@@ -146,8 +146,14 @@ export const sendOrderEmail = async (orderId, { event: eventDoc = null } = {}) =
     const template = confirmed ? 'pass-confirmed' : status === 'pending' ? 'order-received' : null;
     if (!template) throw new EventError('This order has nothing to send.', 409);
     const email = normalizeEmail(order.customerEmail || order.email);
-    if (!isValidEmail(email)) throw new EventError('This order has no email address.', 422);
-    if (!(await claimOnce(orderRef, template === 'pass-confirmed' ? 'passConfirmedAt' : 'orderReceivedAt'))) return { duplicate: true };
+    // Staff re-sending on WhatsApp: no email needed, and it is a deliberate repeat, so no once-only claim.
+    if (whatsappOnly) {
+        if (template !== 'pass-confirmed') throw new EventError('Only confirmed tickets can be sent on WhatsApp.', 409);
+        if (!String(order.customerPhone || '').trim()) throw new EventError('This order has no phone number.', 422);
+    } else {
+        if (!isValidEmail(email)) throw new EventError('This order has no email address.', 422);
+        if (!(await claimOnce(orderRef, template === 'pass-confirmed' ? 'passConfirmedAt' : 'orderReceivedAt'))) return { duplicate: true };
+    }
 
     let ev = eventDoc;
     if (!ev && order.eventId) {
@@ -178,6 +184,7 @@ export const sendOrderEmail = async (orderId, { event: eventDoc = null } = {}) =
     const delivery = await notify(template, order.userId || null, data, {
         to: { email, phone: order.customerPhone, name: order.customerName },
         ref: { collection: 'ticket_orders', id: orderId },
+        ...(whatsappOnly ? { skip: ['email', 'push', 'inApp'] } : {}),
     });
     // The ticketing team hears about every order that waits for a payment check.
     if (template === 'order-received') {
@@ -218,10 +225,10 @@ const orderDeclined = async ({ orderId }, caller) => {
     return { delivery };
 };
 
-const passFromOrder = async ({ orderId }, caller) => {
+const passFromOrder = async ({ orderId, channel }, caller) => {
     if (!idOk(orderId)) throw new EventError('Missing order.');
     if (!caller.staff) throw new EventError('Forbidden', 403);
-    return sendOrderEmail(orderId);
+    return sendOrderEmail(orderId, { whatsappOnly: channel === 'whatsapp' });
 };
 
 /* ---------- Creators ---------- */

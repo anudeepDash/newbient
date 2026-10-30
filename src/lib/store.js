@@ -3367,6 +3367,13 @@ export const useStore = create((set, get) => ({
         return { ok: true, emailed: Boolean(result?.success && (result.duplicate || result.delivery?.email?.status === 'sent')) };
     },
 
+    // Staff: send a confirmed order's ticket again on WhatsApp (QR code attached).
+    resendTicketWhatsApp: async (orderId) => {
+        const result = await notifyEvent('pass-confirmed', { orderId, channel: 'whatsapp' });
+        const wa = result?.delivery?.whatsapp;
+        return { ok: Boolean(result?.success && wa?.status === 'sent'), status: wa?.status || null, reason: wa?.reason || wa?.error || result?.error || '' };
+    },
+
     // Messages
     markMessageRead: async (id, status = 'read') => {
         await updateDoc(doc(db, 'messages', id), { status });

@@ -61,7 +61,7 @@ export const EVENTS = {
             template: (d) => (rsvpTemplate(d) ? 'guestlist_rsvp_confirmed' : 'pass_confirmed'),
             build: (d) => (rsvpTemplate(d)
                 ? { bodyParams: [firstName(d.name), short(d.eventName || 'your event'), formatDate(d.date) || 'See the guestlist', short(doorName(d), 80)] }
-                : { bodyParams: [firstName(d.name), short(d.eventName || 'your event'), formatDate(d.date) || 'See pass', d.ref || '-'], buttons: d.ref ? [{ index: 0, param: d.ref }] : [] }),
+                : { softHeader: d.ref && d.mode !== 'rsvp' ? { type: 'image', link: `${PASS_ORIGIN}/api/qr?text=${encodeURIComponent(d.ref)}&size=600&margin=4` } : undefined, bodyParams: [firstName(d.name), short(d.eventName || 'your event'), formatDate(d.date) || 'See pass', d.ref || '-'], buttons: d.ref ? [{ index: 0, param: d.ref }] : [] }),
         },
         push: (d) => ({ title: `Your pass for ${short(eventOf(d), 30)}`, body: `${join(when(d), d.venue) || 'Saved in the app'}. Show the QR code at the entrance.`, link: passLink(d), tag: `pass-${d.ref || d.eventName || ''}` }),
         inApp: (d) => ({ title: `Pass ready: ${eventOf(d)}`, message: `${join(when(d), d.venue) ? `${join(when(d), d.venue)}. ` : ''}Show the QR code at the entrance.`, type: 'ticket', link: passLink(d) }),
