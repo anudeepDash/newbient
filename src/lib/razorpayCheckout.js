@@ -6,8 +6,22 @@
  */
 let razorpayScript = null;
 
+/*
+ * Razorpay's window is a light page in an iframe. Under our dark colour scheme the browser paints an
+ * opaque white canvas behind it, hiding the dimmed site, so the frame is kept light (and see-through).
+ * Set here, not in a stylesheet, because each part of the site loads its own CSS.
+ */
+const keepFrameSeeThrough = () => {
+    if (document.getElementById('nb-razorpay-frame')) return;
+    const style = document.createElement('style');
+    style.id = 'nb-razorpay-frame';
+    style.textContent = '.razorpay-checkout-frame { color-scheme: light; }';
+    document.head.appendChild(style);
+};
+
 export const loadRazorpay = () => {
     if (typeof window === 'undefined') return Promise.reject(new Error('no window'));
+    keepFrameSeeThrough();
     if (window.Razorpay) return Promise.resolve(window.Razorpay);
     if (!razorpayScript) {
         razorpayScript = new Promise((resolve, reject) => {
@@ -38,7 +52,8 @@ export const razorpayMethodOptions = (method) => (PAY_METHODS.includes(method)
 
 /**
  * Newbi's look inside Razorpay's window: our logo, a near-black accent (its side panel and buttons
- * take this colour; Razorpay's window has no dark mode of its own) and a dimmed backdrop.
+ * take this colour; Razorpay's window has no dark mode of its own) and a dimmed backdrop, so it
+ * opens as a window over the site (keepFrameSeeThrough stops it sitting on white in dark mode).
  */
 export const razorpayBrand = (color = '#0b0b0d') => ({
     image: typeof window !== 'undefined' ? `${window.location.origin}/brand/newbi-icon-512.png` : undefined,
