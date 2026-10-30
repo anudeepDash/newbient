@@ -5,7 +5,7 @@ import { cn } from '../../lib/utils';
 import { generateNextProposalNumber, embedProposalNumberInPdf } from '../../lib/pdfStampUtils';
 import { guessFields, nameFromFileName, isPdfFile } from '../../lib/pdfInspect';
 import { todayKey } from '../../lib/invoicing';
-import { appendAttachmentsPage, removeLastPages, attachmentsKey, linkableAttachments } from '../../lib/pdfAttachmentsPage';
+import { appendAttachmentsPage, removeLastPages, attachmentsKey, linkableAttachments, APPENDIX_VERSION } from '../../lib/pdfAttachmentsPage';
 import Sheet from './Sheet';
 import { Button } from './ui';
 import {
@@ -56,10 +56,10 @@ const fromProposal = (p) => ({
     attachments: p.attachments || [],
 });
 
-const loadLogo = async (id) => {
+// The proposal paper's marks: the N. in the header, the black wordmark in the footer.
+const loadPng = async (path) => {
     try {
-        const brand = BRANDS.find(b => b.id === id) || BRANDS[0];
-        const res = await fetch(brand.path);
+        const res = await fetch(path);
         return res.ok ? new Uint8Array(await res.arrayBuffer()) : null;
     } catch {
         return null;
@@ -143,7 +143,8 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
             if (linkableAttachments(attachments).length) {
                 setSaving({ percent: 10, step: 'Adding the attachments page' });
                 try {
-                    const result = await appendAttachmentsPage(out, attachments, { proposalNumber: number, logo: await loadLogo(form.selectedLogo) });
+                    const [logo, footerLogo] = await Promise.all([loadPng('/brand/email/n-mark-light.png'), loadPng('/brand/newbi-logo-email-light.png')]);
+                    const result = await appendAttachmentsPage(out, attachments, { proposalNumber: number, logo, footerLogo });
                     out = result.bytes;
                     pagesAdded = result.pagesAdded;
                 } catch (pageErr) {
@@ -187,10 +188,10 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
                 number !== editingProposal.proposalNumber
                 || form.ourSignature !== (editingProposal.ourSignature || null)
                 || attachmentsKey(attachments) !== attachmentsKey(editingProposal.attachments)
-                || (form.selectedLogo !== editingProposal.selectedLogo && (appendixPages > 0 || linkableAttachments(attachments).length > 0))
+                || (linkableAttachments(attachments).length > 0 && editingProposal.appendixVersion !== APPENDIX_VERSION)
             )) {
-                // Number, signature or attachments changed on a saved PDF: take off the old
-                // attachments page, then restamp and add a fresh one.
+                // Number, signature or attachments changed on a saved PDF (or its attachments page
+                // is an older design): take off the old page, then restamp and add a fresh one.
                 try {
                     setSaving({ percent: 3, step: 'Updating the PDF' });
                     const resp = await fetch(editingProposal.fileUrl);
@@ -230,6 +231,7 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
                 pageCount: intake.info?.pages || editingProposal?.pageCount || null,
                 attachments,
                 appendixPages,
+                appendixVersion: appendixPages ? APPENDIX_VERSION : null,
                 items: editingProposal?.items || [],
                 updatedAt: new Date().toISOString(),
             };
