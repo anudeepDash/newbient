@@ -51,12 +51,12 @@ export const razorpayMethodOptions = (method) => (PAY_METHODS.includes(method)
     : {});
 
 /**
- * Newbi's look inside Razorpay's window: our logo, a near-black accent (its side panel and buttons
- * take this colour; Razorpay's window has no dark mode of its own) and a dimmed backdrop, so it
- * opens as a window over the site (keepFrameSeeThrough stops it sitting on white in dark mode).
+ * Razorpay's window over the site. Its colour and logo come from the Razorpay dashboard
+ * (Checkout styling), so neither is set here: anything passed in code would override it.
+ * Only the dimmed backdrop is ours, so it opens as a window over the site
+ * (keepFrameSeeThrough stops it sitting on white in dark mode).
  */
-export const razorpayBrand = (color = '#0b0b0d') => ({
-    image: typeof window !== 'undefined' ? `${window.location.origin}/brand/newbi-icon-512.png` : undefined,
-    theme: { color, backdrop_color: 'rgba(8, 8, 10, 0.72)' },
+export const razorpayBrand = () => ({
+    theme: { backdrop_color: 'rgba(8, 8, 10, 0.72)' },
     retry: { enabled: true, max_count: 3 },
 });
