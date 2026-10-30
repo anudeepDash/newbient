@@ -199,7 +199,8 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
 
     const sendWhatsApp = (o) => run(o.id, 'wa', async () => {
         const res = await resendTicketWhatsApp(o.id);
-        if (res.ok) addToast(`Ticket sent on WhatsApp to ${o.customerPhone || personName(o)}.`, 'success');
+        if (res.ok && res.noQr) addToast(`Sent to ${o.customerPhone || personName(o)}, but without the QR code. The pass_confirmed template in WhatsApp Manager has no image header yet.`, 'warning', { title: 'Sent without the QR code' });
+        else if (res.ok) addToast(`Ticket sent on WhatsApp to ${o.customerPhone || personName(o)}, with its QR code.`, 'success');
         else addToast(res.reason || 'WhatsApp didn’t go out.', 'warning', { title: 'WhatsApp ticket not sent', action: { label: 'Try again', onClick: () => sendWhatsApp(o) } });
     });
 

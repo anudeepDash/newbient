@@ -125,6 +125,7 @@ describe('sending', () => {
         const qr = { type: 'image', link: 'https://app.newbi.live/api/qr?text=ABC123&size=600&margin=4' };
         const res = await sendTemplate({ to: '+919876500001', template: 'pass_confirmed', softHeader: qr, bodyParams: ['Riya'] });
         expect(res.ok).toBe(true);
+        expect(res.droppedHeader).toBe(true);
         expect(headerOf(sent[0]).image.link).toBe(qr.link);
         expect(headerOf(sent[1])).toBeUndefined();
     });
