@@ -84,7 +84,7 @@ Mapped on 2026-10-19 from `src/` only. `api/` uses firebase-admin, which bypasse
 | giveaway_entries | staff | staff (entrants use the API) |
 
 **Staff-only collections:**
-- Finance: spends, other_incomes, finance_payees
+- Finance: spends, other_incomes, finance_payees, finance_bank_accounts (bank details saved from the invoice builder)
 - Documents: gen_documents, messages
 - Portfolio and concerts: portfolio, portfolio_categories, concerts
 - Creator content: past_clients, creator_testimonials, creator_groups

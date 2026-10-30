@@ -49,8 +49,8 @@ import DocumentSeal from '../../components/ui/DocumentSeal';
 import { accent, useAccent } from '../../components/admin/theme';
 import { InvoicePage, BRANDS, paginateInvoice, isBlankText } from '../../components/admin/invoices/builder/InvoicePaper';
 import {
-    GST_RATES, GST_STATES, cleanGstin, gstinProblem, stateOfGstin, invoiceTaxLines, placeOfSupply, isHttpsUrl, isEmail,
-    amountInWords,
+    GST_RATES, GST_STATES, cleanGstin, gstinProblem, stateOfGstin, invoiceTaxLines, placeOfSupply, isHttpsUrl, isIfsc, isEmail,
+    amountInWords, BANK_FIELDS, parseBankDetails, composeBankDetails, sameBankDetails, bankAccountLabel,
 } from '../../components/admin/invoices/builder/gst';
 import ThemedSelect from '../../components/admin/ThemedSelect';
 import '../../lib/documentFonts';
@@ -191,13 +191,15 @@ const SaveDefaultButton = ({ onClick, children = 'Save as default for new invoic
 );
 
 const InvoiceGenerator = () => {
-    useStoreSubscription(['invoices']);
+    useStoreSubscription(['invoices', 'bankAccounts']);
     const { id } = useParams();
     const navigate = useNavigate();
     const a = useAccent();
     const invoices = useStore(s => s.invoices) || [];
     const invoicesLoaded = useStore(s => Boolean(s.subscriptionsLoaded?.invoices));
     const siteSettings = useStore(s => s.siteSettings);
+    const bankAccounts = useStore(s => s.bankAccounts);
+    const bankAccountsLoaded = useStore(s => Boolean(s.subscriptionsLoaded?.bankAccounts));
     const user = useStore(s => s.user);
     const addToast = useStore(s => s.addToast);
 
@@ -218,6 +220,8 @@ const InvoiceGenerator = () => {
     const [newColumn, setNewColumn] = useState('');
     const [upload, setUpload] = useState(null); // { name, percent }
     const [linkDraft, setLinkDraft] = useState({ open: false, name: '', url: '' });
+    const [bankAsText, setBankAsText] = useState(false);
+    const [bankSaveName, setBankSaveName] = useState(null); // the name field while saving an account
     const [defaultsSource, setDefaultsSource] = useState('');
     const editorRef = useRef(null);
 
@@ -256,12 +260,12 @@ const InvoiceGenerator = () => {
                 senderContact: pick('senderContact', 'contact'),
                 senderEmail: pick('senderEmail', 'email'),
                 senderGst: pick('senderGst', 'gst'),
-                paymentDetails: real(profile.paymentDetails) || real(latest.paymentDetails) || '',
+                paymentDetails: real((bankAccounts || []).find(acc => acc.isDefault)?.details) || real(profile.paymentDetails) || real(latest.paymentDetails) || '',
                 upiId: real(profile.upiId) || real(latest.upiId) || '',
             },
             profile,
         };
-    }, [siteSettings, invoices]);
+    }, [siteSettings, invoices, bankAccounts]);
 
     const fillSellerGaps = (prev, values) => {
         const patch = {};
@@ -285,6 +289,8 @@ const InvoiceGenerator = () => {
             setItems([newItem()]);
             setCustomColumns([]);
             setStep('details');
+            setBankAsText(false);
+            setBankSaveName(null);
             initialDataLoadedRef.current = true;
         } else {
             initialDataLoadedRef.current = false;
@@ -315,18 +321,20 @@ const InvoiceGenerator = () => {
         });
         setItems(Array.isArray(invoice.items) && invoice.items.length ? invoice.items : [newItem()]);
         setCustomColumns(Array.isArray(invoice.customColumns) ? invoice.customColumns : []);
+        setBankAsText(parseBankDetails(invoice.paymentDetails) === null);
         // Invoices made from a proposal have no seller details yet: fill the gaps (and save them).
         setTimeout(() => {
             initialDataLoadedRef.current = true;
             const { values } = sellerDefaults(id);
             setFormData(prev => (real(prev.senderName) ? prev : fillSellerGaps(prev, values)));
+            setBankAsText(parseBankDetails(values.paymentDetails) === null);
         }, 200);
     }, [id, invoices]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // New invoices: the next number in the series, and your saved details.
     useEffect(() => {
         if (id || !invoicesLoaded) return;
-        if (!defaultsAppliedRef.current) {
+        if (!defaultsAppliedRef.current && bankAccountsLoaded) {
             defaultsAppliedRef.current = true;
             const { values, profile, source } = sellerDefaults();
             setDefaultsSource(source);
@@ -341,13 +349,14 @@ const InvoiceGenerator = () => {
                     note: isBlankText(next.note) && profile.terms ? profile.terms : next.note,
                 };
             });
+            setBankAsText(parseBankDetails(values.paymentDetails) === null);
         }
         // Until it's saved or typed over, follow the series (a colleague may have just used this number).
         if (numberAutoRef.current && !idRef.current && !createPromiseRef.current) {
             const next = nextInvoiceNumber(invoices);
             setFormData(prev => (prev.invoiceNumber === next ? prev : { ...prev, invoiceNumber: next }));
         }
-    }, [id, invoices, invoicesLoaded, sellerDefaults]);
+    }, [id, invoices, invoicesLoaded, bankAccountsLoaded, sellerDefaults]);
 
     // ── Money ──
     const amounts = useMemo(
@@ -384,9 +393,8 @@ const InvoiceGenerator = () => {
             clientGst: cleanGstin(formData.clientGst),
             advancePaid: advance,
             gstPercentage: Number(formData.gstPercentage) || 0,
-            // Razorpay is the only way to pay: no bank details, UPI QR or other payment link on invoices.
+            // Clients pay with Razorpay or by bank transfer: no UPI QR or other payment link on invoices.
             showUPI: false,
-            showPaymentDetails: false,
             showPaymentButton: false,
             paymentLink: '',
             items: items.map(it => ({
@@ -472,6 +480,8 @@ const InvoiceGenerator = () => {
     const numberClash = Boolean(norm(formData.invoiceNumber)) && !(createPromiseRef.current && !idRef.current) && invoices.some(inv => inv.id !== idRef.current && norm(inv.invoiceNumber) === norm(formData.invoiceNumber));
     const nextFreeNumber = useMemo(() => nextInvoiceNumber(invoices), [invoices]);
     const hasHsn = customColumns.some(c => c.id === HSN_COLUMN.id);
+    const bank = bankAsText ? null : parseBankDetails(formData.paymentDetails);
+    const showsBank = formData.showPaymentDetails !== false && !isBlankText(formData.paymentDetails);
 
     const issues = useMemo(() => {
         const list = [];
@@ -509,11 +519,15 @@ const InvoiceGenerator = () => {
         // Payment
         if (formData.showGst && !GST_RATES.includes(Number(formData.gstPercentage))) add('payment', 'warn', `${formData.gstPercentage || 0}% isn't a standard GST rate.`);
         if (formData.showAdvance && advance > amounts.total && amounts.total > 0) add('payment', 'error', 'The advance is more than the invoice total.');
+        if (formData.showPaymentDetails !== false && isBlankText(formData.paymentDetails)) add('payment', 'warn', 'Bank details are switched on but empty.');
+        if (showsBank && PLACEHOLDER.test(formData.paymentDetails || '')) add('payment', 'error', 'The bank details still have placeholder text.');
+        if (showsBank && bank?.ifsc && !isIfsc(bank.ifsc)) add('payment', 'warn', "The IFSC doesn't look right. It has 11 characters, like SBIN0001234.");
+        if (formData.onlinePayment === false && !showsBank) add('payment', 'warn', 'Online payment is off and there are no bank details, so the invoice gives the client no way to pay.');
         // Sign
         if (formData.showSignatures && !formData.providerSignature) add('sign', 'warn', 'The signature box is empty. Add the authorised signature.');
         if (!formData.showSignatures && !formData.showSeal) add('sign', 'warn', 'No signature or seal. Tax invoices are normally signed.');
         return list;
-    }, [formData, items, amounts.total, advance, numberClash, hasHsn]);
+    }, [formData, items, amounts.total, advance, numberClash, hasHsn, bank, showsBank]);
 
     const errors = issues.filter(i => i.level === 'error');
     const stepErrors = (stepId) => issues.filter(i => i.step === stepId && i.level === 'error').length;
@@ -524,7 +538,6 @@ const InvoiceGenerator = () => {
         advancePaid: advance,
         gstPercentage: Number(formData.gstPercentage) || 0,
         showUPI: false,
-        showPaymentDetails: false,
         paymentLink: '',
     };
     const pages = paginateInvoice(items, paperData);
@@ -694,6 +707,42 @@ const InvoiceGenerator = () => {
     };
 
     // ── Bank ──
+    const setBankField = (key, value) => set({ paymentDetails: composeBankDetails({ ...(bank || {}), [key]: value }) });
+    const savedAccounts = bankAccounts || [];
+    const savedBank = savedAccounts.find(acc => sameBankDetails(acc.details, formData.paymentDetails)) || null;
+    const pickBankAccount = (acc) => {
+        set({ paymentDetails: acc.details, showPaymentDetails: true });
+        setBankAsText(parseBankDetails(acc.details) === null);
+        setBankSaveName(null);
+    };
+    const bankFailed = (err, title) => {
+        console.error(err);
+        addToast(err?.code === 'permission-denied' ? 'Only founders and developers can change saved bank accounts.' : 'Check your connection and try again.', 'error', { title });
+    };
+    const saveBankAccount = async () => {
+        const label = String(bankSaveName || '').trim() || bankAccountLabel(formData.paymentDetails);
+        try {
+            // The first account saved becomes the one new invoices start with.
+            await useStore.getState().addBankAccount({ label, details: String(formData.paymentDetails || '').trim(), isDefault: !savedAccounts.length });
+            setBankSaveName(null);
+            addToast(`Pick "${label}" on any invoice to fill these details.`, 'success', { title: 'Bank account saved' });
+        } catch (err) { bankFailed(err, 'Bank account not saved'); }
+    };
+    const makeDefaultBank = async (acc) => {
+        try {
+            await useStore.getState().setDefaultBankAccount(acc.id);
+            addToast(`New invoices will start with ${acc.label}.`, 'success', { title: 'Default bank account set' });
+        } catch (err) { bankFailed(err, 'Default not changed'); }
+    };
+    const removeBankAccount = async (acc) => {
+        try {
+            await useStore.getState().deleteBankAccount(acc.id);
+            addToast('Invoices that already use it keep their details.', 'success', {
+                title: `${acc.label} removed`,
+                action: { label: 'Undo', onClick: () => useStore.getState().addBankAccount(acc).catch(err => bankFailed(err, 'Bank account not restored')) },
+            });
+        } catch (err) { bankFailed(err, 'Bank account not removed'); }
+    };
 
     // ── Images kept inside the invoice record ──
     const setSignature = (data) => {
@@ -1116,7 +1165,75 @@ const InvoiceGenerator = () => {
                                     <Toggle label="Let the client pay online with Razorpay" checked={formData.onlinePayment !== false} onChange={v => set({ onlinePayment: v })}
                                         hint={formData.onlinePayment !== false
                                             ? 'The invoice page and the printed invoice get a “Pay online” button (UPI, cards or netbanking). It is marked paid as soon as the payment goes through.'
-                                            : 'Off: no pay buttons and Razorpay can’t be used for this invoice. Record payments yourself in Invoices.'} />
+                                            : 'Off: no pay buttons and Razorpay can’t be used for this invoice. The client pays by bank transfer; record payments yourself in Invoices.'} />
+                                </BuilderCard>
+
+                                <BuilderCard title="Bank details" hint="For clients who pay by bank transfer" action={<span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', accent('violet').chip)}><Landmark size={16} /></span>}>
+                                    <Toggle label="Show bank details on the invoice" checked={formData.showPaymentDetails !== false} onChange={v => set({ showPaymentDetails: v })}
+                                        hint={formData.onlinePayment !== false ? 'The client can pay online or transfer to this account' : 'Online payment is off, so this is how the client pays'} />
+                                    {formData.showPaymentDetails !== false && (
+                                        <div className="mt-3 space-y-3">
+                                            {savedAccounts.length > 0 && (
+                                                <div>
+                                                    <p className="mb-1.5 text-[12px] font-bold text-gray-500">Saved accounts</p>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {savedAccounts.map(acc => (
+                                                            <Chip key={acc.id} active={savedBank?.id === acc.id} onClick={() => pickBankAccount(acc)}>
+                                                                {acc.label}{acc.isDefault && <span className="ml-1 font-medium opacity-60">· Default</span>}
+                                                            </Chip>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {bank ? (
+                                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                    {BANK_FIELDS.filter(f => !['upi', 'contact', 'accountType'].includes(f.key) || bank[f.key]).map(f => (
+                                                        <Field key={f.key} label={f.label} hint={f.key === 'ifsc' && bank.ifsc && !isIfsc(bank.ifsc) ? '11 characters, like SBIN0001234' : undefined}>
+                                                            <input
+                                                                className={cn(fieldCls, ['accountNumber', 'ifsc'].includes(f.key) && 'font-mono')}
+                                                                value={bank[f.key] || ''}
+                                                                inputMode={f.key === 'accountNumber' ? 'numeric' : undefined}
+                                                                autoCapitalize={f.key === 'ifsc' ? 'characters' : undefined}
+                                                                autoComplete="off"
+                                                                onChange={e => setBankField(f.key, f.key === 'ifsc' ? e.target.value.toUpperCase() : e.target.value)}
+                                                            />
+                                                        </Field>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <textarea aria-label="Bank details" className={cn(areaCls, 'font-mono text-[13px]')} rows={6} value={formData.paymentDetails} onChange={e => set({ paymentDetails: e.target.value })} placeholder="Account name, number, IFSC, branch" />
+                                            )}
+                                            <div className="flex flex-wrap items-center gap-1">
+                                                {bank ? (
+                                                    <button type="button" onClick={() => setBankAsText(true)} className="h-10 px-2 text-[12.5px] font-semibold text-gray-500 hover:text-gray-900 dark:hover:text-white">Write it as text instead</button>
+                                                ) : (
+                                                    <button type="button" onClick={() => { if (parseBankDetails(formData.paymentDetails)) setBankAsText(false); else addToast('Keep it as text, or clear it to use the form.', 'info', { title: "The form can't read some of these lines" }); }} className="h-10 px-2 text-[12.5px] font-semibold text-gray-500 hover:text-gray-900 dark:hover:text-white">Use the form</button>
+                                                )}
+                                                {savedBank ? (
+                                                    <>
+                                                        {!savedBank.isDefault && <SaveDefaultButton onClick={() => makeDefaultBank(savedBank)}>Start new invoices with this account</SaveDefaultButton>}
+                                                        <button type="button" onClick={() => removeBankAccount(savedBank)} className="inline-flex h-10 items-center gap-1.5 rounded-xl px-2 text-[12.5px] font-semibold text-gray-500 hover:text-red-600 dark:hover:text-red-400">
+                                                            <Trash2 size={13} /> Remove from saved
+                                                        </button>
+                                                    </>
+                                                ) : !isBlankText(formData.paymentDetails) && bankSaveName === null && (
+                                                    <SaveDefaultButton onClick={() => setBankSaveName(bankAccountLabel(formData.paymentDetails))}>Save this account</SaveDefaultButton>
+                                                )}
+                                            </div>
+                                            {bankSaveName !== null && !savedBank && (
+                                                <div className="flex flex-wrap items-end gap-2">
+                                                    <div className="min-w-[180px] flex-1">
+                                                        <Field label="Name this account">
+                                                            <input className={fieldCls} value={bankSaveName} onChange={e => setBankSaveName(e.target.value)} autoFocus maxLength={60}
+                                                                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); saveBankAccount(); } if (e.key === 'Escape') setBankSaveName(null); }} />
+                                                        </Field>
+                                                    </div>
+                                                    <Button variant="accent" onClick={saveBankAccount} className="h-11">Save</Button>
+                                                    <Button variant="ghost" onClick={() => setBankSaveName(null)} className="h-11">Cancel</Button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </BuilderCard>
 
                                 <BuilderCard title="Notes and terms" hint='Printed under "Additional note"'>
