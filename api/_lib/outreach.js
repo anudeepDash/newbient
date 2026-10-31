@@ -18,8 +18,9 @@
  *
  * Phase 3 (api/_lib/outreachDeliver.js, api/_lib/outreachInbox.js):
  *   public  outreach-deliverables, outreach-submit, outreach-upi, outreach-payout-details   (the creator's personal link)
+ *   public  outreach-payout-form, outreach-payout-form-submit   (the campaign's open payout form, api/_lib/outreachPayoutForm.js)
  *   admin   outreach-review, outreach-ticket, outreach-payout, outreach-resend-link, outreach-ask-payout, outreach-payout-links,
- *           outreach-wa-send (api/_lib/outreachBroadcast.js),
+ *           outreach-payout-form-admin, outreach-wa-send (api/_lib/outreachBroadcast.js),
  *           inbox-list, inbox-thread, inbox-reply, inbox-react, inbox-template, inbox-state, inbox-media
  *
  * Data (see docs/campaign-outreach.md):
@@ -53,6 +54,7 @@ import {
     handleCreatorDeliverables, handleCreatorSubmit, handleCreatorPayoutDetails, handleReview, handleTicket, handlePayout, handleResendLink,
     handleCreatorJoined, handleMine, handleAskPayout, handlePayoutLinks,
 } from './outreachDeliver.js';
+import { handlePayoutFormView, handlePayoutFormSubmit, handlePayoutFormAdmin } from './outreachPayoutForm.js';
 import {
     handleInboxList, handleInboxThread, handleInboxReply, handleInboxReact, handleInboxTemplate, handleInboxState, handleInboxMedia,
 } from './outreachInbox.js';
@@ -65,12 +67,13 @@ export const OUTREACH_ACTIONS = new Set([
     'outreach-send', 'outreach-cancel', 'outreach-queue-run',
     'outreach-deliverables', 'outreach-submit', 'outreach-upi', 'outreach-payout-details', 'outreach-joined', 'outreach-mine',
     'outreach-review', 'outreach-ticket', 'outreach-payout', 'outreach-resend-link', 'outreach-ask-payout', 'outreach-payout-links',
+    'outreach-payout-form', 'outreach-payout-form-submit', 'outreach-payout-form-admin',
     'inbox-list', 'inbox-thread', 'inbox-reply', 'inbox-react', 'inbox-template', 'inbox-state', 'inbox-media',
     'outreach-city-notify', 'outreach-wame', 'outreach-wa-send',
     // The admin WhatsApp center (api/_lib/whatsappCenter.js).
     ...WA_CENTER_ACTIONS,
 ]);
-const PUBLIC = new Set(['outreach-campaign', 'outreach-apply', 'outreach-deliverables', 'outreach-submit', 'outreach-upi', 'outreach-payout-details', 'outreach-joined', 'outreach-mine']);
+const PUBLIC = new Set(['outreach-campaign', 'outreach-apply', 'outreach-deliverables', 'outreach-submit', 'outreach-upi', 'outreach-payout-details', 'outreach-joined', 'outreach-mine', 'outreach-payout-form', 'outreach-payout-form-submit']);
 
 /* Personal data is for these roles only (narrower than the creator admin roles on purpose). */
 export const OUTREACH_ROLES = ['founder', 'super_admin', 'developer', 'admin'];
@@ -635,6 +638,8 @@ export const handleOutreachAction = async (action, req, res, { decodedToken, db 
         if (action === 'outreach-submit') return await handleCreatorSubmit(req, res, { db, rateLimit: checkRateLimit });
         if (action === 'outreach-upi' || action === 'outreach-payout-details') return await handleCreatorPayoutDetails(req, res, { db, rateLimit: checkRateLimit });
         if (action === 'outreach-joined') return await handleCreatorJoined(req, res, { db });
+        if (action === 'outreach-payout-form') return await handlePayoutFormView(req, res, { db });
+        if (action === 'outreach-payout-form-submit') return await handlePayoutFormSubmit(req, res, { db, rateLimit: checkRateLimit });
         if (action === 'outreach-mine') return await handleMine(req, res, { db, token: decodedToken });
         if (PUBLIC.has(action)) return send(res, 400, { success: false, error: 'Unknown action.' });
         if (action === 'outreach-queue-run' && isCronCall(req)) return await handleQueueRun(req, res, { db, cron: true });
@@ -657,6 +662,7 @@ export const handleOutreachAction = async (action, req, res, { decodedToken, db 
         if (action === 'outreach-resend-link') return await handleResendLink(req, res, withActor);
         if (action === 'outreach-ask-payout') return await handleAskPayout(req, res, withActor);
         if (action === 'outreach-payout-links') return await handlePayoutLinks(req, res, withActor);
+        if (action === 'outreach-payout-form-admin') return await handlePayoutFormAdmin(req, res, withActor);
         if (action === 'inbox-list') return await handleInboxList(req, res, withActor);
         if (action === 'inbox-thread') return await handleInboxThread(req, res, withActor);
         if (action === 'inbox-reply') return await handleInboxReply(req, res, withActor);

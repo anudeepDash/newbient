@@ -20,6 +20,7 @@ import {
 } from '../../../../lib/outreach/deliverables';
 import { callOutreach } from './outreachApi';
 import { StatusBadge, Handle, when } from './parts';
+import PayoutFormCard from './PayoutFormCard';
 
 /*
  * Per creator: deliverables progress, their ticket and their payout.
@@ -35,6 +36,8 @@ import { StatusBadge, Handle, when } from './parts';
  * notice; or copy each link, or export everyone's links in a sheet, to share
  * them yourself. Everyone approved (shortlisted onwards) is listed, so their
  * link can go out before the campaign message does; tickets still wait for it.
+ * Creators who never applied on the website use the campaign's open payout
+ * form instead (PayoutFormCard); once added they're listed here like anyone else.
  */
 
 const IN_PLAY = new Set(['message_sent', 'replied', 'joined', 'posted', 'paid']);
@@ -64,7 +67,9 @@ const PaySheet = ({ campaign, app, onClose, onDone }) => {
     const blocked = summary && summary.requiredCount > 0 && !summary.allRequiredApproved;
     const [form, setForm] = useState(() => ({
         amount: String(defaultPayoutAmount(campaign, app) || ''), method: app?.payoutDetails?.mode === 'bank' ? 'bank' : 'upi', accountType: 'newbi',
-        paidAt: today(), reference: '', note: '', override: false, overrideReason: '',
+        // Added from the payout form: their posts were never tracked here, so say so up front.
+        paidAt: today(), reference: '', note: '',
+        override: app?.addedVia === 'payout_form', overrideReason: app?.addedVia === 'payout_form' ? 'Approved off the website (payout form)' : '',
     }));
     const [errors, setErrors] = useState({});
     const [saving, setSaving] = useState(false);
@@ -284,13 +289,20 @@ const PayoutsPanel = ({ campaign, applications, onChanged }) => {
         };
     };
 
+    const formCard = <PayoutFormCard campaign={campaign} onChanged={onChanged} />;
     if (!rows.length) {
-        return <Card><EmptyState icon={Users} title="Nobody to pay or ticket yet" description="People show up here once they’re shortlisted." /></Card>;
+        return (
+            <div className="space-y-3">
+                {formCard}
+                <Card><EmptyState icon={Users} title="Nobody to pay or ticket yet" description="People show up here once they’re shortlisted, or when you add someone from the payout form." /></Card>
+            </div>
+        );
     }
     const paidTotal = rows.reduce((n, r) => n + (r.app.payout?.status === 'paid' ? Number(r.app.payout.amount) || 0 : 0), 0);
 
     return (
         <div className="space-y-3">
+            {formCard}
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-[13px] text-gray-500">{due.length} payout{due.length === 1 ? '' : 's'} due · ₹{paidTotal.toLocaleString('en-IN')} paid so far · {withDetails} of {rows.length} added payout details</p>
                 <div className="flex flex-wrap gap-2">
@@ -315,7 +327,7 @@ const PayoutsPanel = ({ campaign, applications, onChanged }) => {
                         <div key={app.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
                             <div className="min-w-[180px] flex-1">
                                 <p className="text-[14px] font-bold">{app.fullName}</p>
-                                <p className="text-[12.5px] text-gray-500"><Handle handle={app.instagramHandle} /> · {app.tier}</p>
+                                <p className="text-[12.5px] text-gray-500"><Handle handle={app.instagramHandle} /> · {app.addedVia === 'payout_form' ? 'From the payout form' : app.tier}</p>
                             </div>
                             <StatusBadge status={app.status} />
                             <span className="text-[12.5px] text-gray-500">{summary.requiredCount ? `${summary.requiredApproved}/${summary.requiredCount} approved` : 'No deliverables'}{summary.toReview ? ` · ${summary.toReview} to review` : ''}</span>

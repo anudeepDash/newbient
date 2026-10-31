@@ -56,7 +56,7 @@ const ApplicationSheet = ({ app, campaign, campaignId, onClose, onStatus, onMess
     const belowMin = Boolean(app && campaign && !isOnShortlist(app.status) && isBelowMinimum(app, campaign));
     const next = app ? (TRANSITIONS[app.status || 'applied'] || []).filter(s => !(belowMin && s === 'shortlisted')) : [];
     return (
-        <Sheet open={Boolean(app)} onClose={onClose} title={app?.fullName || ''} subtitle={app ? `Applied ${when(app.firstSubmittedAt)}` : ''} size="md">
+        <Sheet open={Boolean(app)} onClose={onClose} title={app?.fullName || ''} subtitle={app ? `${app.addedVia === 'payout_form' ? 'Sent payout details' : 'Applied'} ${when(app.firstSubmittedAt)}` : ''} size="md">
             {app && (
                 <div className="space-y-5">
                     <div className="flex flex-wrap items-center gap-2">
@@ -84,7 +84,8 @@ const ApplicationSheet = ({ app, campaign, campaignId, onClose, onStatus, onMess
                     )}
                     <dl className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
                         <Row label="Instagram"><Handle handle={app.instagramHandle} /></Row>
-                        <Row label="Followers">{`${formatCount(app.followerCount)} · ${app.tier}`}</Row>
+                        <Row label="Followers">{app.tier ? `${formatCount(app.followerCount)} · ${app.tier}` : null}</Row>
+                        <Row label="Added from">{app.addedVia === 'payout_form' ? 'The payout form (didn’t apply on the website)' : null}</Row>
                         <Row label="Phone"><a href={`tel:${app.phone}`} className="hover:underline">{app.phone}</a></Row>
                         <Row label="Email"><a href={`mailto:${app.email}`} className="hover:underline">{app.email}</a></Row>
                         <Row label="City">{app.city}</Row>
