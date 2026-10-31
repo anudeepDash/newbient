@@ -44,6 +44,7 @@ const CampaignApplyPage = lazy(() => import('./creator/campaign/apply/CampaignAp
 const DeliverablesPage = lazy(() => import('./creator/campaign/apply/DeliverablesPage'));
 const FeedbackPage = lazy(() => import('./creator/campaign/feedback/FeedbackPage'));
 const PayoutDetailsPage = lazy(() => import('./creator/campaign/payout/PayoutDetailsPage'));
+const PayoutFormPage = lazy(() => import('./creator/campaign/payout/PayoutFormPage'));
 
 export const APP_MODULES = [
     {
@@ -158,6 +159,8 @@ export const STANDALONE_ROUTES = [
     { path: 'f/:token', Component: FeedbackPage },
     // Where to pay them for a campaign, from the link the team sends or shares (no sign-in).
     { path: 'pay/:token', Component: PayoutDetailsPage },
+    // A campaign's open payout form: one link for every creator on it, shared by the team (no sign-in).
+    { path: 'pay/c/:token', Component: PayoutFormPage },
 ];
 
 /* Route definitions for the router, relative to the app root. */
