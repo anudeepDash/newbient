@@ -226,13 +226,15 @@ describe('story vs reel links', () => {
     it('uses the screenshot for stories and the posted link for reels', () => {
         const both = { contentLink: 'https://instagram.com/x/1', proofUrl: 'https://cdn.test/s.png', status: 'approved' };
         const c = { ...campaign, tasks: [
-            { id: 't1', title: 'Story', type: 'story', submissions: { a: both } },
-            { id: 't2', title: 'Reel', type: 'reel', submissions: { a: both } },
+            { id: 't1', title: 'Story', taskType: 'story', submissions: { a: both } },
+            { id: 't2', title: 'Reel', taskType: 'reel', submissions: { a: both } },
+            { id: 't3', title: '2 Instagram stories', taskType: 'custom', submissions: { a: both } },
         ] };
         const spec = deliverablesSheetSpec(c, applicantsFor(c, creators), helpers);
         const asha = spec.rows.find(r => r.creator.name === 'Asha');
         const cell = (h) => spec.columns.find(col => col.header === h).value(asha);
         expect(cell('1. Story · link')).toBe('https://cdn.test/s.png');
         expect(cell('2. Reel · link')).toBe('https://instagram.com/x/1');
+        expect(cell('3. 2 Instagram stories · link')).toBe('https://cdn.test/s.png');
     });
 });
