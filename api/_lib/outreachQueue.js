@@ -26,6 +26,7 @@ import { contactIdFor, appendThreadMessage, windowOpen } from './outreachThreads
 import { canTransition, canSystemTransition } from '../../src/lib/outreach/status.js';
 import { templateParamsFor, renderTemplatePreview, WA_TEMPLATES, STOP_PAYLOAD, toldInAppOnly } from '../../src/lib/outreach/whatsappTemplate.js';
 import { maskPhone } from '../../src/lib/outreach/normalize.js';
+import { taskWindow } from '../../src/lib/creator/tasks.js';
 
 export const BACKOFF_MIN = [1, 5, 30, 120];
 export const MAX_ATTEMPTS = BACKOFF_MIN.length + 1;
@@ -216,6 +217,12 @@ const KINDS = {
     post_due: { button: 'link' },
     post_overdue: { button: 'link' },
     posts_open: { button: 'link' },
+    // A deliverable made live, with its brief and links (data { taskIds: [id], taskTitle, details, links, dueAt }).
+    task_live: { button: 'link' },
+    // Sent by the team from Outreach → Send on WhatsApp. group_link: data { link } (else the campaign's group);
+    // update: data { note, link }.
+    group_link: { button: 'join' },
+    update: { button: 'stop' },
     // After the campaign (api/_lib/campaignFeedback.js): data { feedbackId }. URL button: their feedback form.
     feedback: { feedback: true },
     inbox_text: { text: true },
@@ -314,9 +321,11 @@ const loadContext = async (db, job) => {
         if (!['message_sent', 'replied'].includes(app.status) || app.joinedAt) return { skip: 'already_joined' };
     }
     if (job.kind === 'deliverables' && !(campaign.tasks || []).length) return { skip: 'no_deliverables' };
+    if (job.kind === 'group_link' && !groupLinkOf(job, settings, campaign)) return { skip: 'no_group_link' };
+    if (job.kind === 'task_live' && !(campaign.tasks || []).some(t => (job.data?.taskIds || []).includes(String(t.id)) && taskWindow(t) === 'open')) return { skip: 'task_closed' };
     if (spec.button === 'link' && !submitToken(job.campaignId, job.appId)) return { skip: 'no_link_secret' };
     // A deadline reminder (or posting-opens notice) is pointless once the posts it was about are in.
-    if (['post_due', 'post_overdue', 'posts_open'].includes(job.kind)
+    if (['post_due', 'post_overdue', 'posts_open', 'task_live'].includes(job.kind)
         && (job.data?.taskIds || []).every(id => ['submitted', 'approved'].includes(app.deliverables?.[id]?.status))) return { skip: 'posts_in' };
     return { campaign, settings, app };
 };
@@ -333,11 +342,15 @@ const SKIP_NOTE = {
     window_closed: 'More than 24 hours since their last message: WhatsApp only allows a template now.',
     opted_out: 'They asked to stop WhatsApp updates.',
     posts_in: 'Their posts came in before the reminder went out.',
+    task_closed: 'The task was closed (or no longer exists) before it went out.',
     answered: 'They answered the feedback form before it went out.',
     no_phone: 'No WhatsApp number on file.',
     unknown_kind: 'Unknown message type.',
     template_off: 'Its WhatsApp template isn’t switched on yet (WHATSAPP_TEMPLATE_<NAME> in Vercel).',
 };
+
+/* The group a message points to: the one the team pasted for this send, else Message setup's, else the campaign editor's. */
+const groupLinkOf = (job, settings = {}, campaign = {}) => String(job.data?.link || settings.whatsappGroupLink || campaign.whatsappLink || '').trim();
 
 const appRefOf = (db, job) => db.collection(appsPath(job.campaignId)).doc(job.appId);
 
@@ -410,7 +423,7 @@ export const sendJob = async (db, job, { now = Date.now() } = {}) => {
         const buttons = spec.button === 'join' ? [{ index: 0, payload: joinPayload(job.campaignId, job.appId) }, stop(1)]
             : spec.button === 'link' ? [{ index: 0, param: submitToken(job.campaignId, job.appId) }]
                 : spec.button === 'stop' ? [stop(0)] : [];
-        const tplCtx = { application: app, campaign, groupLink: settings.whatsappGroupLink, data: job.data || {} };
+        const tplCtx = { application: app, campaign, groupLink: groupLinkOf(job, settings, campaign), data: job.data || {} };
         text = renderTemplatePreview(job.kind, tplCtx);
         result = await sendTemplate({
             to: app.phone,
@@ -502,6 +515,9 @@ const afterSent = async (db, job, ctx, { at, messageId }) => {
         await appRefOf(db, job).update({ 'payoutDetailsRequest.whatsappSentAt': at, updatedAt: at }).catch(() => {});
     } else if (job.kind === 'feedback') {
         await ctx.fRef.set({ whatsappSentAt: at, updatedAt: at }, { merge: true }).catch(() => {});
+    } else if (['task_live', 'group_link', 'update'].includes(job.kind)) {
+        const note = { task_live: `Task sent: ${job.data?.taskTitle || 'a deliverable'}`, group_link: 'Group link sent', update: 'Update sent' }[job.kind];
+        await auditRef(db, job.campaignId).set({ appId: job.appId, field: job.kind, from: null, to: 'sent', source: 'whatsapp_api', note, ...SYSTEM_ACTOR, at });
     }
 };
 

@@ -26,6 +26,9 @@ const GROUPS = {
 // Ours that Meta doesn't have yet, so they can be sent for review from here when WhatsApp Manager won't open.
 const SUBMITTABLE = [
     { name: 'pass_ticket_qr_v2', title: 'Ticket with QR code', note: 'The ticket message with the QR code as its picture. Switch it on with WHATSAPP_TEMPLATE_PASS_TICKET_QR_V2 once Meta approves it.' },
+    { name: 'campaign_task_live', title: 'Task is live (with the brief)', note: 'Sent when you open a campaign task: what to do, its links and due date, with the creator’s task link. Switch it on with WHATSAPP_TEMPLATE_CAMPAIGN_TASK_LIVE once Meta approves it.' },
+    { name: 'campaign_group_link', title: 'Campaign group link', note: 'Sent from Outreach → Send on WhatsApp to approved creators, with a Joined button. Switch it on with WHATSAPP_TEMPLATE_CAMPAIGN_GROUP_LINK once Meta approves it.' },
+    { name: 'campaign_update', title: 'Campaign update with a link', note: 'Sent from Outreach → Send on WhatsApp: a short note and a link. Switch it on with WHATSAPP_TEMPLATE_CAMPAIGN_UPDATE once Meta approves it.' },
     { name: 'campaign_payout_details', title: 'Ask for payout details', note: 'Sent from a campaign’s Payouts with the creator’s link to add a UPI ID or bank account. Switch it on with WHATSAPP_TEMPLATE_CAMPAIGN_PAYOUT_DETAILS once Meta approves it.' },
 ];
 

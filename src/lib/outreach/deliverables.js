@@ -1,4 +1,5 @@
 import { isRequiredTask, taskWindow } from '../creator/tasks.js';
+import { plainBrief, taskLinksOf } from './taskBrief.js';
 
 /*
  * Outreach deliverables (Phase 3): what each creator posts, checked against
@@ -35,7 +36,9 @@ export const deliverablesFor = (campaign) => (Array.isArray(campaign?.tasks) ? c
     .map(t => ({
         id: String(t.id),
         title: String(t.title || 'Deliverable').trim(),
-        description: String(t.description || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 500),
+        // Plain text with its line breaks; the links (post to use, ticket sticker, form…) only once it's open.
+        description: plainBrief(t.description).slice(0, 1500),
+        links: taskWindow(t) === 'open' ? taskLinksOf(t) : [],
         taskType: t.taskType || 'custom',
         required: isRequiredTask(t),
         deadline: t.deadline || '',

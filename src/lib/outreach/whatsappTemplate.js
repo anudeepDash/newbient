@@ -75,6 +75,28 @@ export const WA_TEMPLATES = {
         placeholders: ['first_name', 'campaign_title', 'opens_at', 'what_to_post', 'due_at'],
         button: 'Send my posts',
     },
+    // When the team opens (makes live) a deliverable: the brief itself, so creators needn't open the group to find it
+    // (api/_lib/postsOpen.js). Also sent again by hand from Outreach → Send on WhatsApp. URL button: their posts link.
+    task_live: {
+        name: 'campaign_task_live',
+        body: "📌 *A new task is live, {{1}}*\n\n*Campaign:* {{2}}\n*Task:* {{3}}\n\n*What to do:* {{4}}\n\n*Links:* {{5}}\n\n*Due:* {{6}}\n\nTap *Open my task* for the full brief. Once your post is up, send it to us from the same page so we can check it.",
+        placeholders: ['first_name', 'campaign_title', 'task_title', 'task_details', 'task_links', 'due_at'],
+        button: 'Open my task',
+    },
+    // Sent by the team from Outreach → Send on WhatsApp, to approved creators: the campaign's group (or another
+    // group link they paste). Quick replies: Joined (signed, marks them joined) and Stop updates.
+    group_link: {
+        name: 'campaign_group_link',
+        body: "👥 *Your creators group, {{1}}*\n\nYou're on the creator list for *{{2}}*. Briefs, passes and updates for the campaign are shared in this WhatsApp group:\n{{3}}\n\nTap *Joined* once you're in.",
+        placeholders: ['first_name', 'campaign_title', 'group_link'],
+    },
+    // Sent by the team from Outreach → Send on WhatsApp: a short note about the campaign with a link (a brief,
+    // a Drive folder, a form, a location). Quick reply: Stop updates.
+    update: {
+        name: 'campaign_update',
+        body: "📣 *An update on your campaign, {{1}}*\n\n*Campaign:* {{2}}\n*Update:* {{3}}\n\n*Link:* {{4}}\n\nThis is about a campaign you’re on with Newbi. Reply here if you have any questions.",
+        placeholders: ['first_name', 'campaign_title', 'update_note', 'update_link'],
+    },
     // The day before a posting deadline, and the day after it if the posts still aren't in
     // (api/_lib/postReminders.js). URL button: their posts link, like campaign_deliverables.
     post_due: {
@@ -116,7 +138,7 @@ export const templateParamsFor = (kind, { application, campaign, groupLink, data
     const values = {
         first_name: firstNameOf(application?.fullName) || NAME_FALLBACK,
         campaign_title: String(campaign?.title || '').trim() || 'the campaign',
-        group_link: String(groupLink || '').trim(),
+        group_link: String(data.link || groupLink || '').trim(),
         deadline_line: deadlineLineFor(campaign) || DEADLINE_FALLBACK,
         task_title: String(data.taskTitle || 'your post').trim(),
         reason: String(data.reason || 'Please check the brief.').trim(),
@@ -129,6 +151,10 @@ export const templateParamsFor = (kind, { application, campaign, groupLink, data
         still_to_send: String(data.stillToSend || '').trim() || 'Your posts',
         opens_at: String(data.opensAt || '').trim() || 'today',
         what_to_post: String(data.whatToPost || '').trim() || 'Your posts',
+        task_details: String(data.details || '').trim() || 'The full brief is on your task page.',
+        task_links: String(data.links || '').trim() || 'None for this task.',
+        update_note: String(data.note || '').trim() || 'There’s a new update for you.',
+        update_link: String(data.link || '').trim(),
     };
     return (WA_TEMPLATES[kind] || WA_TEMPLATES.invite).placeholders.map(p => values[p]);
 };
