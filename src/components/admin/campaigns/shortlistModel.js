@@ -50,8 +50,15 @@ const deliverableLink = (sub) => [sub?.contentLink, sub?.proofUrl, sub?.screensh
 
 const deliverableScreenshot = (sub) => [sub?.proofUrl, sub?.screenshotUrl].find(l => /^https?:\/\//i.test(String(l || ''))) || '';
 
+// A story task, or a custom one titled as a story ("Story", "2 stories").
+const isStoryTask = (task) => {
+    const kind = String(task?.taskType || '').toLowerCase();
+    if (kind === 'story') return true;
+    return (!kind || kind === 'custom') && /\bstor(y|ies)\b/i.test(String(task?.title || ''));
+};
+
 // Stories vanish after a day, so they go by the screenshot; reels and posts go by the link the creator sent.
-const sheetLink = (task, sub) => (task?.type === 'story' ? deliverableScreenshot(sub) : deliverableLink(sub));
+const sheetLink = (task, sub) => (isStoryTask(task) ? deliverableScreenshot(sub) : deliverableLink(sub));
 
 // Done work says where it came from: the app, an uploaded sheet, or both.
 const deliverableStatus = (item, sheet) => {
@@ -99,7 +106,7 @@ export const deliverablesSheetSpec = (campaign, entries, { fileDate, exportSubti
                 const name = `${idx + 1}. ${task.title || `Deliverable ${idx + 1}`}`;
                 return [
                     { header: name, width: 18, value: a => deliverableStatus(item(a, idx), sheetMarkOf(task, a)) },
-                    { header: `${name} · link`, width: 18, type: 'link', label: task.type === 'story' ? 'Open screenshot' : 'Open link', value: a => sheetLink(task, item(a, idx).sub) },
+                    { header: `${name} · link`, width: 18, type: 'link', label: isStoryTask(task) ? 'Open screenshot' : 'Open link', value: a => sheetLink(task, item(a, idx).sub) },
                     { header: `${name} · sent on`, type: 'date', value: a => item(a, idx).sub?.submittedAt || null },
                 ];
             }),
