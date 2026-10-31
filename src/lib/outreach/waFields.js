@@ -54,6 +54,10 @@ export const FIELDS = {
     still_to_send: { label: 'Still to send', example: '1 reel' },
     opens_at: { label: 'Can go up from', example: 'tomorrow, Thursday, 12 November' },
     what_to_post: { label: 'Post', example: 'Reel and Story' },
+    task_details: { label: 'What to do', example: 'Repost the poster on your story · Tag @newbi.live' },
+    task_links: { label: 'Links', example: 'Ticket link: https://…' },
+    update_note: { label: 'Update', example: 'Passes are at the box office from 3 PM.' },
+    update_link: { label: 'Link', example: 'https://…' },
     orders_count: { label: 'Ticket orders to check', example: '3' },
     signups_count: { label: 'Guestlist sign-ups to review', example: '12' },
     posts_count: { label: 'Creator posts to review', example: '7' },
@@ -94,12 +98,12 @@ const OURS = {
     accounts_merged: { body: ['first_name', 'merged_in', 'moved_summary'] },
     ...Object.fromEntries(Object.values(WA_TEMPLATES).map(t => [t.name, {
         body: t.placeholders,
-        ...(['campaign_deliverables', 'campaign_deliverable_changes', 'campaign_post_due', 'campaign_post_overdue', 'campaign_posts_open'].includes(t.name) ? { button: 'submit_token' } : {}),
+        ...(['campaign_deliverables', 'campaign_deliverable_changes', 'campaign_post_due', 'campaign_post_overdue', 'campaign_posts_open', 'campaign_task_live'].includes(t.name) ? { button: 'submit_token' } : {}),
     }])),
 };
 
 /* The outreach templates whose quick reply is "Joined": sent to an applicant, it carries their signed payload. */
-export const JOIN_TEMPLATES = new Set([WA_TEMPLATES.invite.name, WA_TEMPLATES.reminder.name]);
+export const JOIN_TEMPLATES = new Set([WA_TEMPLATES.invite.name, WA_TEMPLATES.reminder.name, WA_TEMPLATES.group_link.name]);
 
 /**
  * The meaning of each variable of a template (as listed by Meta).

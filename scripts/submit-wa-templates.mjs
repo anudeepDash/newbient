@@ -129,6 +129,36 @@ export const TEMPLATES = [
         footer: 'Newbi Creators · app.newbi.live',
     },
     {
+        // When the team opens (makes live) a deliverable: its brief and links, so creators don't have to find it in the
+        // group (api/_lib/postsOpen.js, and Outreach → Send on WhatsApp). Image header: the deliverables card; the code
+        // sends the campaign's own picture when it has one.
+        name: 'campaign_task_live',
+        body: "📌 *A new task is live, {{1}}*\n\n*Campaign:* {{2}}\n*Task:* {{3}}\n\n*What to do:* {{4}}\n\n*Links:* {{5}}\n\n*Due:* {{6}}\n\nTap *Open my task* for the full brief. Once your post is up, send it to us from the same page so we can check it.",
+        samples: ['Riya', 'Pinnaca 2026', 'Instagram story 1', 'Repost the festival poster on your story · Visible tags: @pinnaca.in @newbi.live · Add the ticket link as a link sticker', 'Repost this poster: https://www.instagram.com/p/De1pFFnMQCG/ · Ticket link (story sticker): https://link.district.in/DSTRKT/t711e1bi', 'Sunday, 15 November'],
+        header: { image: 'public/og/wa-deliverables-v1.jpg' },
+        buttons: [{ type: 'URL', text: 'Open my task', url: `${APP}/d/{{1}}`, example: [`${APP}/d/sample-token`] }],
+        footer: 'Newbi Creators · app.newbi.live',
+    },
+    {
+        // Sent by the team (Outreach → Send on WhatsApp) to approved creators. "Joined" carries a signed payload
+        // that marks them joined; "Stop updates" opts the number out.
+        name: 'campaign_group_link',
+        body: "👥 *Your creators group, {{1}}*\n\nYou're on the creator list for *{{2}}*. Briefs, passes and updates for the campaign are shared in this WhatsApp group:\n{{3}}\n\nTap *Joined* once you're in.",
+        samples: ['Riya', 'Pinnaca 2026', 'https://chat.whatsapp.com/AbCdEfGhIjK123'],
+        header: { image: 'public/og/wa-shortlist-v1.jpg' },
+        buttons: [{ type: 'QUICK_REPLY', text: 'Joined' }, { type: 'QUICK_REPLY', text: 'Stop updates' }],
+        footer: 'Newbi Creators · app.newbi.live',
+    },
+    {
+        // Sent by the team (Outreach → Send on WhatsApp) to approved creators: a note about their campaign and a link.
+        name: 'campaign_update',
+        body: "📣 *An update on your campaign, {{1}}*\n\n*Campaign:* {{2}}\n*Update:* {{3}}\n\n*Link:* {{4}}\n\nThis is about a campaign you’re on with Newbi. Reply here if you have any questions.",
+        samples: ['Riya', 'Pinnaca 2026', 'Your passes are ready to collect at the box office on 19 December from 3 PM. Carry a photo ID.', 'https://maps.app.goo.gl/ekanaStadium'],
+        header: { image: 'public/og/wa-invite-v1.jpg' },
+        buttons: [{ type: 'QUICK_REPLY', text: 'Stop updates' }],
+        footer: 'Newbi Creators · app.newbi.live',
+    },
+    {
         // Asked per campaign from Payouts in the admin (outreach-ask-payout). Image header: the payout card,
         // like campaign_payout_sent; the code sends the campaign's own picture when it has one.
         name: 'campaign_payout_details',

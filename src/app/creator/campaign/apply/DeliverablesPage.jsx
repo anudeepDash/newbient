@@ -6,6 +6,7 @@ import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import Wallet from 'lucide-react/dist/esm/icons/wallet';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import Users from 'lucide-react/dist/esm/icons/users';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import { Button, TextInput, WhatsAppLogo } from '../../../../components/app';
 import { cn } from '../../../../lib/utils';
 import { isOnShortlist } from '../../../../lib/outreach/status';
@@ -155,7 +156,17 @@ const TaskCard = ({ token, task, onDone }) => {
                 </div>
                 <ToneChip tone={meta.tone === 'rose' ? 'red' : meta.tone} className="shrink-0 whitespace-nowrap">{t(meta.label)}</ToneChip>
             </div>
-            {isPresent(task.description) && <p className="text-[14px] text-gray-600 dark:text-zinc-400">{task.description}</p>}
+            {isPresent(task.description) && <p className="whitespace-pre-line break-words text-[14px] text-gray-600 dark:text-zinc-400">{task.description}</p>}
+            {task.links?.length > 0 && (
+                <div className="flex flex-col gap-2 pt-1">
+                    {task.links.map(l => (
+                        <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center justify-between gap-3 rounded-2xl bg-black/[0.04] px-4 py-2.5 text-[14px] font-semibold dark:bg-white/[0.06]">
+                            <span className="min-w-0 break-words">{l.label}</span>
+                            <ExternalLink size={15} className="shrink-0 text-gray-400" />
+                        </a>
+                    ))}
+                </div>
+            )}
             {task.status === 'rejected' && task.reason && <Notice tone="warn" title={t('What to change')}>{task.reason}</Notice>}
             {task.status === 'submitted' && !editing && (
                 <p className="text-[14px] text-gray-600 dark:text-zinc-400">

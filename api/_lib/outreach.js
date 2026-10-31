@@ -19,6 +19,7 @@
  * Phase 3 (api/_lib/outreachDeliver.js, api/_lib/outreachInbox.js):
  *   public  outreach-deliverables, outreach-submit, outreach-upi, outreach-payout-details   (the creator's personal link)
  *   admin   outreach-review, outreach-ticket, outreach-payout, outreach-resend-link, outreach-ask-payout, outreach-payout-links,
+ *           outreach-wa-send (api/_lib/outreachBroadcast.js),
  *           inbox-list, inbox-thread, inbox-reply, inbox-react, inbox-template, inbox-state, inbox-media
  *
  * Data (see docs/campaign-outreach.md):
@@ -57,6 +58,7 @@ import {
 } from './outreachInbox.js';
 import { ticketRuleOf, TICKET_RULES } from '../../src/lib/outreach/deliverables.js';
 import { WA_CENTER_ACTIONS, handleWhatsAppCenterAction } from './whatsappCenter.js';
+import { handleWaSend } from './outreachBroadcast.js';
 
 export const OUTREACH_ACTIONS = new Set([
     'outreach-campaign', 'outreach-apply', 'outreach-list', 'outreach-status', 'outreach-settings', 'outreach-audit',
@@ -64,7 +66,7 @@ export const OUTREACH_ACTIONS = new Set([
     'outreach-deliverables', 'outreach-submit', 'outreach-upi', 'outreach-payout-details', 'outreach-joined', 'outreach-mine',
     'outreach-review', 'outreach-ticket', 'outreach-payout', 'outreach-resend-link', 'outreach-ask-payout', 'outreach-payout-links',
     'inbox-list', 'inbox-thread', 'inbox-reply', 'inbox-react', 'inbox-template', 'inbox-state', 'inbox-media',
-    'outreach-city-notify', 'outreach-wame',
+    'outreach-city-notify', 'outreach-wame', 'outreach-wa-send',
     // The admin WhatsApp center (api/_lib/whatsappCenter.js).
     ...WA_CENTER_ACTIONS,
 ]);
@@ -664,6 +666,7 @@ export const handleOutreachAction = async (action, req, res, { decodedToken, db 
         if (action === 'inbox-media') return await handleInboxMedia(req, res, withActor);
         if (action === 'outreach-city-notify') return await handleCityNotify(req, res, withActor);
         if (action === 'outreach-wame') return await handleWame(req, res, withActor);
+        if (action === 'outreach-wa-send') return await handleWaSend(req, res, { ...withActor, startWorker });
         if (WA_CENTER_ACTIONS.has(action)) return await handleWhatsAppCenterAction(action, req, res, withActor);
         return send(res, 400, { success: false, error: 'Unknown action.' });
     } catch (err) {

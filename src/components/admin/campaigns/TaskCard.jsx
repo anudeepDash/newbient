@@ -151,7 +151,7 @@ const TaskCard = ({
                                 { value: 'closed', label: 'Closed', hint: 'Brief hidden; changes-needed can resend' },
                             ]}
                         />
-                        <span className="mt-1 block text-[11px] leading-snug text-gray-500">Open deliverables one at a time as the campaign goes, and close each when it’s done. The deadline doesn’t close it. Opening one tells the creators on WhatsApp.</span>
+                        <span className="mt-1 block text-[11px] leading-snug text-gray-500">Open deliverables one at a time as the campaign goes, and close each when it’s done. The deadline doesn’t close it. Opening one sends its brief and links to approved creators on WhatsApp (Outreach → Send on WhatsApp sends it again).</span>
                     </div>
                     {taskWindow(task) === 'upcoming' && (
                         <Field label="Opens on" optional>

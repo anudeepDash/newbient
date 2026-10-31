@@ -9,17 +9,23 @@
  * When the team opens a deliverable by hand (Deliverables tab or the editor), the
  * posts-opened event tells them straight away ("…can go up from today").
  *
+ * Once campaign_task_live is approved, a task opening today sends its brief
+ * instead (task, what to do, links, due date, "Open my task"), to every approved
+ * creator (shortlisted onwards) who hasn't sent it in, once per task.
+ *
  * Creators group = outreach applications that got the shortlist message (message
  * sent, replied or joined), as for the deadline reminders. One message per person
  * per opening day (the job id), through the outreach queue (rate limit, STOP
  * opt-outs; it skips itself if their posts are already in).
  */
 import { APP_URL, getDb, istDate } from './db.js';
-import { enqueueJob, kickWorker, runQueue } from './outreachQueue.js';
+import { enqueueJob, kickWorker, runQueue, kindLive } from './outreachQueue.js';
 import { formatDeadline } from '../../src/lib/outreach/template.js';
 import { approvedSummary } from '../../src/lib/outreach/whatsappTemplate.js';
 import { taskWindow, taskWindowFields } from '../../src/lib/creator/tasks.js';
 import { WAITING_ON_POSTS, IN, dayOf } from './postReminders.js';
+import { isOnShortlist } from '../../src/lib/outreach/status.js';
+import { briefLine, linksLine, taskLinksOf } from '../../src/lib/outreach/taskBrief.js';
 
 const DAY = 86_400_000;
 const MAX_CAMPAIGNS = 300;
@@ -31,9 +37,56 @@ const dueLine = (tasks, campaign) => {
     return days.length ? formatDeadline(days[0]) || days[0] : NO_DUE_DATE;
 };
 
-/** Queues the notice for everyone in the creators group still owing one of these posts. → how many */
+/* Approved creators (shortlisted onwards) still owing a post: who hears that a task is live. Paid means they're done. */
+export const getsTaskLive = (a) => isOnShortlist(a.status) && a.status !== 'paid' && Boolean(a.phone);
+
+/** The campaign_task_live variables for one task (its brief and links on one line each). */
+export const taskLiveData = (task, campaign) => ({
+    taskIds: [String(task.id)],
+    taskTitle: String(task.title || 'Deliverable').trim().slice(0, 80),
+    details: briefLine(task),
+    links: linksLine(taskLinksOf(task)),
+    dueAt: dueLine([task], campaign),
+});
+
+/*
+ * Queues "this task is live" (the brief itself) for each task, to every approved
+ * creator who hasn't sent that post in. One job per person per task (its id), so
+ * opening, closing and reopening doesn't send it twice; `again` sends it anyway
+ * (the team asked from Outreach → Send on WhatsApp). appIds narrows it to some people.
+ * → { queued, skipped: [{ id, reason }] }
+ */
+export const queueTaskLive = async ({ db = getDb(), campaignId, campaign, tasks, appIds = null, again = false, createdBy = 'Newbi app' }) => {
+    const out = { queued: 0, skipped: [] };
+    if (!tasks.length) return out;
+    const coll = db.collection('campaigns').doc(campaignId).collection('applications');
+    const docs = appIds
+        ? (await Promise.all(appIds.map(id => coll.doc(id).get()))).filter(d => d.exists)
+        : (await coll.get()).docs;
+    for (const app of docs) {
+        const a = app.data();
+        if (!getsTaskLive(a)) {
+            if (appIds) out.skipped.push({ id: app.id, reason: !a.phone ? 'no_phone' : 'not_approved' });
+            continue;
+        }
+        for (const t of tasks) {
+            if (IN.has(a.deliverables?.[String(t.id)]?.status)) { if (appIds) out.skipped.push({ id: app.id, reason: 'posts_in' }); continue; }
+            const jobKey = `task_live_${campaignId}_${app.id}_${t.id}`.slice(0, 140);
+            const id = await enqueueJob(db, { id: jobKey, campaignId, appId: app.id, kind: 'task_live', createdBy, again, data: taskLiveData(t, campaign) });
+            if (id) out.queued += 1;
+            else if (appIds) out.skipped.push({ id: app.id, reason: 'already_sent' });
+        }
+    }
+    return out;
+};
+
+/**
+ * Queues the notice for everyone in the creators group still owing one of these posts. → how many
+ * When a task opens today and campaign_task_live is approved, approved creators get the brief itself instead.
+ */
 export const queuePostsOpen = async ({ db = getDb(), campaignId, campaign, tasks, day, opensAt }) => {
     if (!tasks.length) return 0;
+    if (opensAt === 'today' && kindLive('task_live')) return (await queueTaskLive({ db, campaignId, campaign, tasks })).queued;
     const apps = await db.collection('campaigns').doc(campaignId).collection('applications').get();
     let queued = 0;
     for (const app of apps.docs) {

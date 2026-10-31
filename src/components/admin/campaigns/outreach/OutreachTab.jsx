@@ -28,6 +28,7 @@ import ApplicationSheet from './ApplicationSheet';
 import DeliverablesReview from './DeliverablesReview';
 import PayoutsPanel from './PayoutsPanel';
 import InboxPanel from './InboxPanel';
+import WhatsAppUpdatesPanel from './WhatsAppUpdatesPanel';
 import { deliverableSummary } from '../../../../lib/outreach/deliverables';
 
 /*
@@ -280,6 +281,7 @@ const OutreachTab = ({ campaign }) => {
                     items={[
                         { value: 'applications', label: 'Applications', count: apps.length },
                         { value: 'messages', label: 'Messages', count: counts.shortlisted + counts.message_queued || undefined, highlight: counts.shortlisted + counts.message_queued > 0 },
+                        { value: 'whatsapp', label: 'Send on WhatsApp' },
                         { value: 'deliverables', label: 'Review posts', count: toReview || undefined, highlight: toReview > 0 },
                         { value: 'payouts', label: 'Payouts and tickets' },
                         { value: 'inbox', label: 'Inbox' },
@@ -311,6 +313,7 @@ const OutreachTab = ({ campaign }) => {
             {view === 'setup' && (
                 <SetupPanel campaign={campaign} settings={data.settings} api={data.api} sampleApplication={shortlist[0] || apps[0]} onSaved={load} />
             )}
+            {view === 'whatsapp' && <WhatsAppUpdatesPanel campaign={campaign} applications={apps} settings={data.settings} api={data.api} onSent={() => { setRefreshKey(k => k + 1); load(); }} />}
             {view === 'deliverables' && <DeliverablesReview campaign={campaign} applications={apps} onChanged={() => { setRefreshKey(k => k + 1); load(); }} />}
             {view === 'payouts' && <PayoutsPanel campaign={campaign} applications={apps} onChanged={() => { setRefreshKey(k => k + 1); load(); }} />}
             {view === 'inbox' && <InboxPanel campaign={campaign} configured={Boolean(data.api?.configured)} />}
