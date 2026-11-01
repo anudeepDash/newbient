@@ -9,6 +9,7 @@ import Manifesto from '../home/Manifesto';
 import CaseStudies from '../home/CaseStudies';
 import JoinIn from '../home/JoinIn';
 import Faq from '../home/Faq';
+import Upcoming from '../home/Upcoming';
 import Wordmark from '../home/Wordmark';
 import EnquiryForm from '../components/EnquiryForm';
 import SectionHeading from '../components/SectionHeading';
@@ -40,6 +41,8 @@ export default function HomePage() {
     return (
         <div>
             <Hero onChooseAudience={setAudience} />
+            {/* What's coming up, right under the hero when there is something to show. */}
+            {!off('home_upcoming') && <Upcoming events={feed?.events || []} index={null} />}
             {/* For everyone first: creators and the community, then the nights we built. */}
             {!off('home_creators') && <JoinIn welcomePoints={feed?.settings?.creatorWelcomePoints} />}
             {!off('home_portfolio') && <CaseStudies items={feed?.caseStudies} />}

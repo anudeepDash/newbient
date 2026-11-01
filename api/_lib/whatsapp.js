@@ -42,6 +42,10 @@ const IMAGE_HEADERS = {
     campaign_task_live: 'wa-deliverables',
     campaign_group_link: 'wa-shortlist',
     campaign_update: 'wa-invite',
+    campaign_creator_invite: 'wa-invite',
+    campaign_group_join: 'wa-shortlist',
+    campaign_event_day: 'wa-pass',
+    campaign_brief_updated: 'wa-changes',
     campaign_feedback: 'wa-feedback',
     creator_city_group: 'wa-city',
     // Guestlists and events (image header added in WhatsApp Manager on 23 Oct 2026).

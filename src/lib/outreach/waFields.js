@@ -58,6 +58,12 @@ export const FIELDS = {
     task_links: { label: 'Links', example: 'Ticket link: https://…' },
     update_note: { label: 'Update', example: 'Passes are at the box office from 3 PM.' },
     update_link: { label: 'Link', example: 'https://…' },
+    campaign_city: { label: 'Campaign city', example: 'Lucknow' },
+    campaign_reward: { label: 'What they get', example: 'Free passes and ₹2,000 per reel' },
+    join_by: { label: 'Join by', example: 'Sat, 14 Nov' },
+    event_when: { label: 'When', example: 'Sat, 19 Dec, 2:00 PM' },
+    event_where: { label: 'Where', example: 'Ekana Stadium, Gate 3' },
+    event_note: { label: 'Note', example: 'Carry a photo ID' },
     orders_count: { label: 'Ticket orders to check', example: '3' },
     signups_count: { label: 'Guestlist sign-ups to review', example: '12' },
     posts_count: { label: 'Creator posts to review', example: '7' },
@@ -98,12 +104,12 @@ const OURS = {
     accounts_merged: { body: ['first_name', 'merged_in', 'moved_summary'] },
     ...Object.fromEntries(Object.values(WA_TEMPLATES).map(t => [t.name, {
         body: t.placeholders,
-        ...(['campaign_deliverables', 'campaign_deliverable_changes', 'campaign_post_due', 'campaign_post_overdue', 'campaign_posts_open', 'campaign_task_live'].includes(t.name) ? { button: 'submit_token' } : {}),
+        ...(['campaign_deliverables', 'campaign_deliverable_changes', 'campaign_post_due', 'campaign_post_overdue', 'campaign_posts_open', 'campaign_task_live', 'campaign_event_day', 'campaign_brief_updated'].includes(t.name) ? { button: 'submit_token' } : {}),
     }])),
 };
 
 /* The outreach templates whose quick reply is "Joined": sent to an applicant, it carries their signed payload. */
-export const JOIN_TEMPLATES = new Set([WA_TEMPLATES.invite.name, WA_TEMPLATES.reminder.name, WA_TEMPLATES.group_link.name]);
+export const JOIN_TEMPLATES = new Set([WA_TEMPLATES.invite.name, WA_TEMPLATES.reminder.name, WA_TEMPLATES.group_link.name, WA_TEMPLATES.group_join.name]);
 
 /**
  * The meaning of each variable of a template (as listed by Meta).

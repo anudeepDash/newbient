@@ -52,6 +52,18 @@ const sig = (campaignId, appId) => createHmac('sha256', secret()).update(`${camp
 /** "j1.<campaignId>.<appId>.<sig>": comes back in the webhook when they tap "Joined". */
 export const joinPayload = (campaignId, appId) => `j1.${campaignId}.${appId}.${sig(campaignId, appId)}`;
 
+/** "i1.<campaignId>.<appId>.<sig>": the "I'm interested" quick reply on a first reach-out (reach_out). */
+const interestSig = (campaignId, appId) => createHmac('sha256', secret()).update(`interest:${campaignId}:${appId}`).digest('base64url').slice(0, 16);
+export const interestPayload = (campaignId, appId) => `i1.${campaignId}.${appId}.${interestSig(campaignId, appId)}`;
+export const readInterestPayload = (payload) => {
+    const m = String(payload || '').match(/^i1\.([A-Za-z0-9_-]{1,120})\.([A-Za-z0-9_-]{1,120})\.([A-Za-z0-9_-]{16})$/);
+    if (!m) return null;
+    const expected = Buffer.from(interestSig(m[1], m[2]));
+    const given = Buffer.from(m[3]);
+    if (expected.length !== given.length || !timingSafeEqual(expected, given)) return null;
+    return { campaignId: m[1], appId: m[2] };
+};
+
 export const readJoinPayload = (payload) => {
     const m = String(payload || '').match(/^j1\.([A-Za-z0-9_-]{1,120})\.([A-Za-z0-9_-]{1,120})\.([A-Za-z0-9_-]{16})$/);
     if (!m) return null;
@@ -200,7 +212,7 @@ const finishJob = (ref, patch) => ref.set({ ...patch, nextAttemptAt: patch.nextA
  * What each kind of message is. Templates are approved in Meta (see
  * src/lib/outreach/whatsappTemplate.js); inbox_text is a free-text reply.
  *   button  'join': the signed "Joined" quick reply, then "Stop updates" · 'link': URL button with
- *           their submit link · 'stop': only "Stop updates"
+ *           their submit link · 'stop': only "Stop updates" · 'interest': the signed "I'm interested", then "Stop updates"
  *   badge   writes the delivery status onto the application (the main message only)
  * Every template checks the number hasn't opted out (STOP) first.
  */
@@ -223,6 +235,13 @@ const KINDS = {
     // update: data { note, link }.
     group_link: { button: 'join' },
     update: { button: 'stop' },
+    // Also from Outreach → Send on WhatsApp. reach_out: data { reward?, city? } (first message to an imported number);
+    // group_join: data { link, joinBy }; event_day: data { when, where, note }; brief_changed: data { note }.
+    reach_out: { button: 'interest' },
+    group_join: { button: 'join' },
+    event_day: { button: 'link' },
+    brief_changed: { button: 'link' },
+    not_selected: { button: 'stop' },
     // After the campaign (api/_lib/campaignFeedback.js): data { feedbackId }. URL button: their feedback form.
     feedback: { feedback: true },
     inbox_text: { text: true },
@@ -321,7 +340,8 @@ const loadContext = async (db, job) => {
         if (!['message_sent', 'replied'].includes(app.status) || app.joinedAt) return { skip: 'already_joined' };
     }
     if (job.kind === 'deliverables' && !(campaign.tasks || []).length) return { skip: 'no_deliverables' };
-    if (job.kind === 'group_link' && !groupLinkOf(job, settings, campaign)) return { skip: 'no_group_link' };
+    if (['group_link', 'group_join'].includes(job.kind) && !groupLinkOf(job, settings, campaign)) return { skip: 'no_group_link' };
+    if (job.kind === 'not_selected' && app.status !== 'applied') return { skip: 'status_changed' };
     if (job.kind === 'task_live' && !(campaign.tasks || []).some(t => (job.data?.taskIds || []).includes(String(t.id)) && taskWindow(t) === 'open')) return { skip: 'task_closed' };
     if (spec.button === 'link' && !submitToken(job.campaignId, job.appId)) return { skip: 'no_link_secret' };
     // A deadline reminder (or posting-opens notice) is pointless once the posts it was about are in.
@@ -422,7 +442,8 @@ export const sendJob = async (db, job, { now = Date.now() } = {}) => {
         const stop = (index) => ({ index, payload: STOP_PAYLOAD });
         const buttons = spec.button === 'join' ? [{ index: 0, payload: joinPayload(job.campaignId, job.appId) }, stop(1)]
             : spec.button === 'link' ? [{ index: 0, param: submitToken(job.campaignId, job.appId) }]
-                : spec.button === 'stop' ? [stop(0)] : [];
+                : spec.button === 'interest' ? [{ index: 0, payload: interestPayload(job.campaignId, job.appId) }, stop(1)]
+                    : spec.button === 'stop' ? [stop(0)] : [];
         const tplCtx = { application: app, campaign, groupLink: groupLinkOf(job, settings, campaign), data: job.data || {} };
         text = renderTemplatePreview(job.kind, tplCtx);
         result = await sendTemplate({
@@ -515,15 +536,28 @@ const afterSent = async (db, job, ctx, { at, messageId }) => {
         await appRefOf(db, job).update({ 'payoutDetailsRequest.whatsappSentAt': at, updatedAt: at }).catch(() => {});
     } else if (job.kind === 'feedback') {
         await ctx.fRef.set({ whatsappSentAt: at, updatedAt: at }, { merge: true }).catch(() => {});
-    } else if (['task_live', 'group_link', 'update'].includes(job.kind)) {
-        const note = { task_live: `Task sent: ${job.data?.taskTitle || 'a deliverable'}`, group_link: 'Group link sent', update: 'Update sent' }[job.kind];
+    } else if (BROADCAST_NOTES[job.kind]) {
+        const note = BROADCAST_NOTES[job.kind](job.data || {});
+        if (job.kind === 'reach_out') await appRefOf(db, job).set({ reachedOutAt: at, updatedAt: at }, { merge: true }).catch(() => {});
         await auditRef(db, job.campaignId).set({ appId: job.appId, field: job.kind, from: null, to: 'sent', source: 'whatsapp_api', note, ...SYSTEM_ACTOR, at });
     }
 };
 
+/* The audit line for each team-sent message. */
+const BROADCAST_NOTES = {
+    task_live: (d) => `Task sent: ${d.taskTitle || 'a deliverable'}`,
+    group_link: () => 'Group link sent',
+    group_join: () => 'Group invite sent',
+    update: () => 'Update sent',
+    reach_out: () => 'First message sent (imported number)',
+    event_day: () => 'Event-day details sent',
+    brief_changed: () => 'Brief change sent',
+    not_selected: () => 'Told they weren’t picked',
+};
+
 /* ── Queue any message ────────────────────────────────────────────────── */
 
-const ONCE = new Set(['invite', 'reminder', 'deliverables', 'payout', 'payout_details', 'city_group', 'all_approved']);
+const ONCE = new Set(['invite', 'reminder', 'deliverables', 'payout', 'payout_details', 'city_group', 'all_approved', 'reach_out', 'not_selected']);
 
 /**
  * Queues one message. Kinds that go once per person (invite, reminder,
@@ -783,6 +817,25 @@ export const onOutreachInbound = async (msg, { db = getDb(), now = nowIso(), nam
             ? 'Done. You won’t get campaign updates from Newbi on WhatsApp any more. You’ll still see them in the Newbi app. Reply START to turn WhatsApp updates back on.'
             : 'Welcome back! You’ll get campaign updates from Newbi on WhatsApp again. Reply STOP any time.').catch(() => null);
         return optOut ? 'stopped' : 'started';
+    }
+
+    const interest = payload ? readInterestPayload(payload) : null;
+    if (interest) {
+        const appRef = db.collection(appsPath(interest.campaignId)).doc(interest.appId);
+        const appSnap = await appRef.get();
+        if (!appSnap.exists || appSnap.data().phone !== from) {
+            console.warn(`[outreach] "I'm interested" from ${maskPhone(from)} doesn't match the application; ignored.`);
+            await store(null);
+            return null;
+        }
+        await store(interest);
+        const first = !appSnap.data().interestedAt;
+        await appRef.set({ interestedAt: appSnap.data().interestedAt || now, lastReplyAt: now, updatedAt: now }, { merge: true });
+        if (first) {
+            await auditRef(db, interest.campaignId).set({ appId: interest.appId, field: 'interest', from: null, to: 'interested', source: 'whatsapp_webhook', note: 'Tapped “I’m interested” in WhatsApp', ...SYSTEM_ACTOR, at: now });
+            await replyInThread(db, from, 'Thanks! The Newbi team will send you the details for this campaign here shortly.').catch(() => null);
+        }
+        return 'interested';
     }
 
     const joinTarget = payload ? readJoinPayload(payload) : null;

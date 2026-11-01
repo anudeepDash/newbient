@@ -29,6 +29,11 @@ const SUBMITTABLE = [
     { name: 'campaign_task_live', title: 'Task is live (with the brief)', note: 'Sent when you open a campaign task: what to do, its links and due date, with the creator’s task link. Switch it on with WHATSAPP_TEMPLATE_CAMPAIGN_TASK_LIVE once Meta approves it.' },
     { name: 'campaign_group_link', title: 'Campaign group link', note: 'Sent from Outreach → Send on WhatsApp to approved creators, with a Joined button. Switch it on with WHATSAPP_TEMPLATE_CAMPAIGN_GROUP_LINK once Meta approves it.' },
     { name: 'campaign_update', title: 'Campaign update with a link', note: 'Sent from Outreach → Send on WhatsApp: a short note and a link. Switch it on with WHATSAPP_TEMPLATE_CAMPAIGN_UPDATE once Meta approves it.' },
+    { name: 'campaign_group_join', title: 'Group invite (new wording)', note: 'Replaces the old group link message: what the group is for and a join-by date, with a Joined button. Switch it on with WHATSAPP_TEMPLATE_CAMPAIGN_GROUP_JOIN once Meta approves it.' },
+    { name: 'campaign_creator_invite', title: 'First message to an imported number', note: 'Outreach → WhatsApp → First reach-out: for numbers imported from a sheet, with an “I’m interested” button. Marketing category. Switch it on with WHATSAPP_TEMPLATE_CAMPAIGN_CREATOR_INVITE once Meta approves it.' },
+    { name: 'campaign_event_day', title: 'Event-day details', note: 'Outreach → WhatsApp → Event day: when, where and a note, with the creator’s page link. Switch it on with WHATSAPP_TEMPLATE_CAMPAIGN_EVENT_DAY once Meta approves it.' },
+    { name: 'campaign_brief_updated', title: 'The brief changed', note: 'Outreach → WhatsApp → Brief changed, with the creator’s task link. Switch it on with WHATSAPP_TEMPLATE_CAMPAIGN_BRIEF_UPDATED once Meta approves it.' },
+    { name: 'campaign_not_selected', title: 'Not picked this time', note: 'Outreach → WhatsApp → Not picked: closes the loop for applicants who weren’t shortlisted. Switch it on with WHATSAPP_TEMPLATE_CAMPAIGN_NOT_SELECTED once Meta approves it.' },
     { name: 'campaign_payout_details', title: 'Ask for payout details', note: 'Sent from a campaign’s Payouts with the creator’s link to add a UPI ID or bank account. Switch it on with WHATSAPP_TEMPLATE_CAMPAIGN_PAYOUT_DETAILS once Meta approves it.' },
 ];
 
