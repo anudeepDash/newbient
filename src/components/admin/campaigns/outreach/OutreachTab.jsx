@@ -4,15 +4,19 @@ import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import ClipboardPaste from 'lucide-react/dist/esm/icons/clipboard-paste';
 import Inbox from 'lucide-react/dist/esm/icons/inbox';
 import Star from 'lucide-react/dist/esm/icons/star';
-import Send from 'lucide-react/dist/esm/icons/send';
 import UserPlus from 'lucide-react/dist/esm/icons/user-plus';
 import Link2 from 'lucide-react/dist/esm/icons/link-2';
 import Copy from 'lucide-react/dist/esm/icons/copy';
 import TriangleAlert from 'lucide-react/dist/esm/icons/triangle-alert';
+import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import SlidersHorizontal from 'lucide-react/dist/esm/icons/sliders-horizontal';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import { cn } from '../../../../lib/utils';
 import { useStore } from '../../../../lib/store';
 import { copyToClipboard } from '../../../../lib/clipboard';
-import { Button, Card, EmptyState, SearchInput, Select, SegmentedTabs, StatTile, Badge } from '../../ui';
+import { Button, Card, EmptyState, SearchInput, Select, SegmentedTabs, Badge, Menu, MenuItem } from '../../ui';
 import ExportMenu from '../../ExportMenu';
 import { Spinner, ConfirmSheet } from '../parts';
 import { filterApplications, CATEGORIES, campaignCities, isBelowMinimum } from '../../../../lib/outreach/application';
@@ -29,16 +33,29 @@ import DeliverablesReview from './DeliverablesReview';
 import PayoutsPanel from './PayoutsPanel';
 import InboxPanel from './InboxPanel';
 import WhatsAppUpdatesPanel from './WhatsAppUpdatesPanel';
+import ImportSheet from './ImportSheet';
 import { deliverableSummary } from '../../../../lib/outreach/deliverables';
 
 /*
- * The campaign's Outreach tab: open-form applications → shortlist → WhatsApp
- * message by hand → joined / posted / paid. Everything is read and changed
+ * The campaign's Outreach tab: people (from the open form, or imported from a
+ * sheet) → shortlist → invite → joined / posted / paid, with WhatsApp messages
+ * for every step. Everything is read and changed
  * through api/_lib/outreach.js, which checks the admin role and writes the
  * audit log; phones and emails never come from Firestore in the browser.
  */
 
-const BLANK_FILTERS = { q: '', minFollowers: '', maxFollowers: '', category: 'all', city: 'all', registered: 'all', college: '', status: 'all' };
+const BLANK_FILTERS = { q: '', minFollowers: '', maxFollowers: '', category: 'all', city: 'all', registered: 'all', college: '', status: 'all', source: 'all', stage: 'all' };
+
+/* The pipeline across the top: each stage is a few statuses, and filters People when tapped. */
+const STAGES = [
+    { key: 'applied', label: 'Applied', statuses: ['applied'], tone: 'bg-sky-500' },
+    { key: 'shortlisted', label: 'Shortlisted', statuses: ['shortlisted', 'message_queued'], tone: 'bg-violet-500' },
+    { key: 'messaged', label: 'Invited', statuses: ['message_sent', 'replied'], tone: 'bg-emerald-500' },
+    { key: 'joined', label: 'In the group', statuses: ['joined'], tone: 'bg-pink-500' },
+    { key: 'posted', label: 'Posted', statuses: ['posted'], tone: 'bg-orange-500' },
+    { key: 'paid', label: 'Paid', statuses: ['paid'], tone: 'bg-teal-500' },
+];
+const stageOf = (status) => STAGES.find(s => s.statuses.includes(status || 'applied'))?.key || null;
 
 const OutreachTab = ({ campaign }) => {
     const addToast = useStore(s => s.addToast);
@@ -50,6 +67,8 @@ const OutreachTab = ({ campaign }) => {
     const [filters, setFilters] = useState(BLANK_FILTERS);
     const [selected, setSelected] = useState(() => new Set());
     const [pasteOpen, setPasteOpen] = useState(null); // 'handles' | 'phones'
+    const [importOpen, setImportOpen] = useState(false);
+    const [moreFilters, setMoreFilters] = useState(false);
     const [openId, setOpenId] = useState(null);
     const [confirmRemove, setConfirmRemove] = useState(null);
     const [refreshKey, setRefreshKey] = useState(0);
@@ -107,9 +126,12 @@ const OutreachTab = ({ campaign }) => {
     const apps = data.applications;
     const byId = useMemo(() => new Map(apps.map(a => [a.id, a])), [apps]);
     const nameOf = useCallback((id) => byId.get(id)?.fullName || null, [byId]);
-    const visible = useMemo(() => filterApplications(apps, filters), [apps, filters]);
+    const visible = useMemo(() => filterApplications(apps, filters).filter(a => filters.stage === 'all' || stageOf(a.status) === filters.stage), [apps, filters]);
     const shortlist = useMemo(() => apps.filter(a => isOnShortlist(a.status)), [apps]);
     const counts = useMemo(() => Object.fromEntries(STATUSES.map(s => [s, apps.filter(a => (a.status || 'applied') === s).length])), [apps]);
+    const stageCounts = useMemo(() => Object.fromEntries(STAGES.map(st => [st.key, st.statuses.reduce((n, s) => n + (counts[s] || 0), 0)])), [counts]);
+    const imported = useMemo(() => apps.filter(a => a.source === 'import').length, [apps]);
+    const interested = useMemo(() => apps.filter(a => a.interestedAt).length, [apps]);
     const cities = campaignCities(campaign);
     const toReview = useMemo(() => apps.reduce((n, a) => n + deliverableSummary(campaign, a).toReview, 0), [apps, campaign]);
     const setFilter = (patch) => { setFilters(f => ({ ...f, ...patch })); setSelected(new Set()); };
@@ -166,17 +188,28 @@ const OutreachTab = ({ campaign }) => {
         ? 'The open form is off. Turn it on in Edit → Open application form.'
         : String(campaign.status).toLowerCase() !== 'open' ? `The form is closed while the campaign is ${campaign.status || 'not Open'}.` : null;
 
+    const extraFilters = ['minFollowers', 'maxFollowers', 'category', 'city', 'registered', 'college'].filter(k => filters[k] !== BLANK_FILTERS[k]).length;
     const filterBar = (
-        <div className="flex flex-wrap items-center gap-2">
-            <SearchInput value={filters.q} onChange={(q) => setFilter({ q })} placeholder="Name or @handle" className="w-full sm:w-56" />
-            <input className="h-11 w-28 rounded-xl border border-black/10 bg-white px-3 text-[13px] font-semibold dark:border-white/10 dark:bg-white/[0.03]" inputMode="numeric" placeholder="Min followers" aria-label="Minimum followers" value={filters.minFollowers} onChange={(e) => setFilter({ minFollowers: e.target.value.replace(/\D/g, '') })} />
-            <input className="h-11 w-28 rounded-xl border border-black/10 bg-white px-3 text-[13px] font-semibold dark:border-white/10 dark:bg-white/[0.03]" inputMode="numeric" placeholder="Max followers" aria-label="Maximum followers" value={filters.maxFollowers} onChange={(e) => setFilter({ maxFollowers: e.target.value.replace(/\D/g, '') })} />
-            <Select label="Category" value={filters.category} onChange={(category) => setFilter({ category })} options={[{ value: 'all', label: 'All categories' }, ...CATEGORIES]} />
-            {cities.length > 1 && <Select label="City" value={filters.city} onChange={(city) => setFilter({ city })} options={[{ value: 'all', label: 'All cities' }, ...cities.map(c => ({ value: c, label: c }))]} />}
-            <Select label="Registered on Newbi" value={filters.registered} onChange={(registered) => setFilter({ registered })} options={[{ value: 'all', label: 'Registered: any' }, { value: 'yes', label: 'Registered' }, { value: 'no', label: 'Not registered' }]} />
-            <SearchInput value={filters.college} onChange={(college) => setFilter({ college })} placeholder="College or employer" className="w-full sm:w-52" />
-            <Select label="Status" value={filters.status} onChange={(status) => setFilter({ status })} options={[{ value: 'all', label: 'Any status' }, ...STATUSES.map(s => ({ value: s, label: STATUS_META[s].label }))]} />
-            {JSON.stringify(filters) !== JSON.stringify(BLANK_FILTERS) && <Button variant="ghost" onClick={() => setFilter(BLANK_FILTERS)}>Clear</Button>}
+        <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+                <SearchInput value={filters.q} onChange={(q) => setFilter({ q })} placeholder="Name, @handle or number" className="w-full sm:w-64" />
+                <Select label="Status" value={filters.status} onChange={(status) => setFilter({ status, stage: 'all' })} options={[{ value: 'all', label: 'Any status' }, ...STATUSES.map(s => ({ value: s, label: STATUS_META[s].label }))]} />
+                <Select label="Source" value={filters.source} onChange={(source) => setFilter({ source })} options={[{ value: 'all', label: 'Form and imported' }, { value: 'form', label: 'From the form' }, { value: 'import', label: `Imported (${imported})` }, { value: 'interested', label: `Interested (${interested})` }]} />
+                <Button variant={moreFilters || extraFilters ? 'secondary' : 'ghost'} onClick={() => setMoreFilters(v => !v)} className="h-11">
+                    <SlidersHorizontal size={14} /> Filters{extraFilters ? ` · ${extraFilters}` : ''}
+                </Button>
+                {JSON.stringify(filters) !== JSON.stringify(BLANK_FILTERS) && <Button variant="ghost" className="h-11" onClick={() => setFilter(BLANK_FILTERS)}>Clear all</Button>}
+            </div>
+            {moreFilters && (
+                <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-black/[0.02] p-2 dark:bg-white/[0.03]">
+                    <input className="h-11 w-28 rounded-xl border border-black/10 bg-white px-3 text-[13px] font-semibold dark:border-white/10 dark:bg-white/[0.03]" inputMode="numeric" placeholder="Min followers" aria-label="Minimum followers" value={filters.minFollowers} onChange={(e) => setFilter({ minFollowers: e.target.value.replace(/\D/g, '') })} />
+                    <input className="h-11 w-28 rounded-xl border border-black/10 bg-white px-3 text-[13px] font-semibold dark:border-white/10 dark:bg-white/[0.03]" inputMode="numeric" placeholder="Max followers" aria-label="Maximum followers" value={filters.maxFollowers} onChange={(e) => setFilter({ maxFollowers: e.target.value.replace(/\D/g, '') })} />
+                    <Select label="Category" value={filters.category} onChange={(category) => setFilter({ category })} options={[{ value: 'all', label: 'All categories' }, ...CATEGORIES]} />
+                    {cities.length > 1 && <Select label="City" value={filters.city} onChange={(city) => setFilter({ city })} options={[{ value: 'all', label: 'All cities' }, ...cities.map(c => ({ value: c, label: c }))]} />}
+                    <Select label="Registered on Newbi" value={filters.registered} onChange={(registered) => setFilter({ registered })} options={[{ value: 'all', label: 'Registered: any' }, { value: 'yes', label: 'Registered' }, { value: 'no', label: 'Not registered' }]} />
+                    <SearchInput value={filters.college} onChange={(college) => setFilter({ college })} placeholder="College or employer" className="w-full sm:w-52" />
+                </div>
+            )}
         </div>
     );
 
@@ -185,13 +218,23 @@ const OutreachTab = ({ campaign }) => {
             <span className="px-2 text-[13px] font-bold">{selected.size} selected</span>
             <Button variant="accent" size="sm" disabled={!canShortlist.length} onClick={() => addToShortlist(canShortlist.map(a => a.id))}><Star size={13} /> {canShortlist.length ? `Add ${canShortlist.length} to shortlist` : 'Add to shortlist'}</Button>
             <Button size="sm" disabled={!canRemove.length} onClick={() => setConfirmRemove(canRemove.map(a => a.id))}>{canRemove.length ? `Remove ${canRemove.length}` : 'Remove'}</Button>
-            {data.api?.configured && <Button size="sm" variant="success" onClick={() => messageOnWhatsApp([...selected])}><MessageCircle size={13} /> WhatsApp template</Button>}
+            <Button size="sm" variant="success" onClick={() => setView('whatsapp')}><MessageCircle size={13} /> Message on WhatsApp</Button>
+            {data.api?.configured && <Button size="sm" variant="ghost" onClick={() => messageOnWhatsApp([...selected])}>Any template</Button>}
             <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>Clear</Button>
         </div>
     );
 
     const rowCheck = (a) => (
         <input type="checkbox" checked={selected.has(a.id)} onChange={() => toggle(a.id)} onClick={(e) => e.stopPropagation()} aria-label={`Select ${a.fullName}`} className="h-4 w-4 accent-emerald-600" />
+    );
+    const tags = (a) => (
+        <>
+            {a.source === 'import' && <Badge tone="cyan">Imported</Badge>}
+            {a.interestedAt && <Badge tone="teal">Interested</Badge>}
+            {a.possibleDuplicateOf && <Badge tone="amber">Check duplicate</Badge>}
+            {a.whatsappOptOut && <Badge tone="gray">No WhatsApp</Badge>}
+            {!a.uid && a.source !== 'import' && <Badge tone="gray">No app account</Badge>}
+        </>
     );
 
     const table = (
@@ -202,25 +245,22 @@ const OutreachTab = ({ campaign }) => {
                     <thead className="border-b border-black/[0.06] text-[12px] text-gray-500 dark:border-white/[0.08]">
                         <tr>
                             <th className="w-10 px-4 py-3"><input type="checkbox" checked={allChecked} onChange={toggleAll} aria-label="Select all shown" className="h-4 w-4 accent-emerald-600" /></th>
-                            {['Name', 'Instagram', 'Followers', 'City', 'College or employer', 'Category', 'Registered', 'Phone', 'Status'].map(h => <th key={h} className="px-3 py-3 font-semibold">{h}</th>)}
+                            {['Name', 'Instagram', 'Followers', 'City', 'College or employer', 'Category', 'Phone', 'Status'].map(h => <th key={h} className="px-3 py-3 font-semibold">{h}</th>)}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
                         {visible.map(a => (
                             <tr key={a.id} onClick={() => setOpenId(a.id)} className={cn('cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.03]', selected.has(a.id) && 'bg-emerald-500/[0.05]')}>
                                 <td className="px-4 py-2.5">{rowCheck(a)}</td>
-                                <td className="max-w-[180px] px-3 py-2.5 font-semibold">
+                                <td className="max-w-[220px] px-3 py-2.5 font-semibold">
                                     <span className="block truncate">{a.fullName}</span>
-                                    {a.possibleDuplicateOf && <Badge tone="amber">Check duplicate</Badge>}
-                                    {a.whatsappOptOut && <Badge tone="gray">No WhatsApp</Badge>}
-                                    {!a.uid && <Badge tone="gray">No app account</Badge>}
+                                    <span className="flex flex-wrap gap-1">{tags(a)}</span>
                                 </td>
                                 <td className="px-3 py-2.5"><Handle handle={a.instagramHandle} /></td>
-                                <td className="px-3 py-2.5 tabular-nums">{followers(a.followerCount)} <span className="text-gray-400">{a.tier}</span></td>
+                                <td className="px-3 py-2.5 tabular-nums">{a.followerCount !== null && a.followerCount !== undefined ? <>{followers(a.followerCount)} <span className="text-gray-400">{a.tier}</span></> : <span className="text-gray-400">—</span>}</td>
                                 <td className="px-3 py-2.5">{a.city}</td>
                                 <td className="max-w-[180px] truncate px-3 py-2.5">{a.collegeOrEmployer}</td>
                                 <td className="max-w-[150px] truncate px-3 py-2.5">{a.category}</td>
-                                <td className="px-3 py-2.5">{a.registeredNewbiCreator ? (a.creatorId ? 'Yes, linked' : 'Yes') : 'No'}</td>
                                 <td className="whitespace-nowrap px-3 py-2.5 tabular-nums">{a.phone}</td>
                                 <td className="px-3 py-2.5"><StatusBadge status={a.status} /></td>
                             </tr>
@@ -241,52 +281,90 @@ const OutreachTab = ({ campaign }) => {
                                 <p className="truncate text-[14px] font-bold">{a.fullName}</p>
                                 <StatusBadge status={a.status} />
                             </div>
-                            <p className="truncate text-[12.5px] text-gray-500"><Handle handle={a.instagramHandle} /> · {followers(a.followerCount)} · {a.city}</p>
-                            <p className="truncate text-[12.5px] text-gray-500">{[a.collegeOrEmployer, a.category, a.registeredNewbiCreator ? 'On Newbi' : null].filter(Boolean).join(' · ')}</p>
+                            <p className="truncate text-[12.5px] text-gray-500">{[a.instagramHandle && `@${a.instagramHandle}`, a.followerCount != null && followers(a.followerCount), a.city].filter(Boolean).join(' · ') || a.phone}</p>
+                            <p className="flex flex-wrap gap-1">{tags(a)}</p>
                         </div>
                     </li>
                 ))}
             </ul>
-            {!visible.length && <EmptyState icon={Inbox} title={apps.length ? 'No one matches these filters' : 'No applications yet'} description={apps.length ? 'Clear a filter to see more.' : 'Share the open form link to start collecting applications.'} />}
+            {!visible.length && (
+                <EmptyState
+                    icon={Inbox}
+                    title={apps.length ? 'No one matches these filters' : 'No one here yet'}
+                    description={apps.length ? 'Clear a filter to see more.' : 'Share the open form, or import a sheet of creators you already have numbers for.'}
+                    action={!apps.length && <Button variant="accent" onClick={() => setImportOpen(true)}><FileSpreadsheet size={14} /> Import a sheet</Button>}
+                />
+            )}
         </Card>
     );
 
+    const total = apps.filter(a => a.status !== 'removed').length;
+    const pipeline = (
+        <Card className="overflow-hidden p-0">
+            <div className="flex flex-wrap items-start justify-between gap-3 p-4 pb-3">
+                <div className="min-w-0">
+                    <p className="font-heading text-[17px] font-extrabold">Creator outreach</p>
+                    <p className="text-[12.5px] text-gray-500">
+                        {total} {total === 1 ? 'person' : 'people'}{imported ? ` · ${imported} imported` : ''}{interested ? ` · ${interested} interested` : ''}{toReview ? ` · ${toReview} posts to review` : ''}
+                    </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    <Button variant="accent" onClick={() => setImportOpen(true)}><FileSpreadsheet size={14} /> Import a sheet</Button>
+                    <Button variant="success" onClick={() => setView('whatsapp')}><MessageCircle size={14} /> Send on WhatsApp</Button>
+                </div>
+            </div>
+            <div className="grid grid-cols-3 gap-px border-t border-black/[0.06] bg-black/[0.06] sm:grid-cols-6 dark:border-white/[0.08] dark:bg-white/[0.08]">
+                {STAGES.map(st => {
+                    const n = stageCounts[st.key];
+                    const on = view === 'applications' && filters.stage === st.key;
+                    return (
+                        <button
+                            key={st.key}
+                            type="button"
+                            aria-pressed={on}
+                            onClick={() => { setView('applications'); setFilter({ ...BLANK_FILTERS, stage: on ? 'all' : st.key }); }}
+                            className={cn('group relative bg-white px-4 py-3 text-left transition-colors hover:bg-black/[0.02] dark:bg-[#0f1116] dark:hover:bg-white/[0.04]', on && 'bg-emerald-500/[0.06] dark:bg-emerald-500/[0.08]')}
+                        >
+                            <span className="flex items-center gap-1.5 text-[11.5px] font-semibold text-gray-500"><span className={cn('h-2 w-2 rounded-full', st.tone)} />{st.label}</span>
+                            <span className="mt-0.5 block font-heading text-[22px] font-extrabold tabular-nums leading-tight">{n}</span>
+                            <span className="mt-1.5 block h-1 overflow-hidden rounded-full bg-black/[0.05] dark:bg-white/[0.06]">
+                                <span className={cn('block h-full rounded-full', st.tone)} style={{ width: `${total ? Math.max(n ? 4 : 0, Math.round((n / total) * 100)) : 0}%` }} />
+                            </span>
+                        </button>
+                    );
+                })}
+            </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-black/[0.06] px-4 py-2.5 text-[12.5px] dark:border-white/[0.08]">
+                <span className="flex items-center gap-1.5 font-semibold"><Link2 size={13} /> Open form</span>
+                {formUrl ? <span className="min-w-0 max-w-full truncate text-gray-500">{formUrl}</span> : <span className="text-gray-500">Set a link name in Edit → Open application form.</span>}
+                {formState && <span className="font-semibold text-amber-600 dark:text-amber-300">{formState}</span>}
+                {formUrl && (
+                    <span className="ml-auto flex gap-1.5">
+                        <Button size="sm" variant="ghost" onClick={copyForm}><Copy size={13} /> Copy</Button>
+                        <Button size="sm" variant="ghost" as="a" href={formUrl} target="_blank" rel="noopener noreferrer"><ExternalLink size={13} /> Open</Button>
+                    </span>
+                )}
+            </div>
+        </Card>
+    );
+
+    const toInvite = counts.shortlisted + counts.message_queued;
     return (
         <div className="space-y-4">
-            <Card className="flex flex-wrap items-center justify-between gap-3 p-4">
-                <div className="min-w-0">
-                    <p className="flex items-center gap-2 text-[13px] font-bold"><Link2 size={14} /> Open application form</p>
-                    {formUrl ? <p className="truncate text-[13px] text-gray-500">{formUrl}</p> : <p className="text-[13px] text-gray-500">Set a link name in Edit → Open application form.</p>}
-                    {formState && <p className="text-[12.5px] font-semibold text-amber-600 dark:text-amber-300">{formState}</p>}
-                </div>
-                {formUrl && (
-                    <div className="flex gap-2">
-                        <Button size="sm" onClick={copyForm}><Copy size={13} /> Copy link</Button>
-                        <Button size="sm" as="a" href={formUrl} target="_blank" rel="noopener noreferrer">Open</Button>
-                    </div>
-                )}
-            </Card>
-
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                <StatTile icon={Inbox} tone="blue" label="Applied" value={apps.length} hint={`${counts.applied} new`} active={view === 'applications' && filters.status === 'applied'} onClick={() => { setView('applications'); setFilter({ ...BLANK_FILTERS, status: 'applied' }); }} />
-                <StatTile icon={Star} tone="violet" label="Shortlist" value={shortlist.length} hint={`${counts.shortlisted + counts.message_queued} to message`} active={view === 'messages'} onClick={() => setView('messages')} />
-                <StatTile icon={Send} tone="green" label="Messaged" value={counts.message_sent + counts.replied + counts.joined + counts.posted + counts.paid} hint={`${counts.joined} joined`} />
-                <StatTile icon={UserPlus} tone="teal" label="Posted" value={counts.posted + counts.paid} hint={`${counts.paid} paid`} />
-            </div>
+            {pipeline}
 
             <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
                 <SegmentedTabs
                     value={view}
                     onChange={setView}
                     items={[
-                        { value: 'applications', label: 'Applications', count: apps.length },
-                        { value: 'messages', label: 'Messages', count: counts.shortlisted + counts.message_queued || undefined, highlight: counts.shortlisted + counts.message_queued > 0 },
-                        { value: 'whatsapp', label: 'Send on WhatsApp' },
+                        { value: 'applications', label: 'People', count: apps.length },
+                        { value: 'messages', label: 'Invite', count: toInvite || undefined, highlight: toInvite > 0 },
+                        { value: 'whatsapp', label: 'WhatsApp' },
                         { value: 'deliverables', label: 'Review posts', count: toReview || undefined, highlight: toReview > 0 },
                         { value: 'payouts', label: 'Payouts and tickets' },
                         { value: 'inbox', label: 'Inbox' },
-                        { value: 'setup', label: 'Message setup' },
-                        { value: 'activity', label: 'Activity' },
+                        { value: 'setup', label: 'Settings' },
                     ]}
                 />
             </div>
@@ -294,10 +372,19 @@ const OutreachTab = ({ campaign }) => {
             {view === 'applications' && (
                 <div className="space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-[13px] text-gray-500">{visible.length} of {apps.length} shown</p>
+                        <p className="text-[13px] text-gray-500">
+                            {visible.length} of {apps.length} shown
+                            {filters.stage !== 'all' && <> · <button type="button" className="font-semibold text-emerald-700 hover:underline dark:text-neon-green" onClick={() => setFilter({ stage: 'all' })}>{STAGES.find(s => s.key === filters.stage)?.label} only <span aria-hidden="true">×</span></button></>}
+                        </p>
                         <div className="flex flex-wrap gap-2">
-                            <Button onClick={() => setPasteOpen('handles')} className="h-11"><ClipboardPaste size={14} /> Paste handles</Button>
-                            <Button onClick={() => setPasteOpen('phones')} className="h-11"><ClipboardPaste size={14} /> Paste group members</Button>
+                            <Menu
+                                title="Add people"
+                                trigger={({ toggle }) => <Button onClick={toggle} className="h-11"><Plus size={14} /> Add people</Button>}
+                            >
+                                <MenuItem icon={FileSpreadsheet} hint="Paste from Google Sheets, or .xlsx / .csv" onClick={() => setImportOpen(true)}>Import a sheet</MenuItem>
+                                <MenuItem icon={ClipboardPaste} hint="Matched applicants go on the shortlist" onClick={() => setPasteOpen('handles')}>Paste Instagram handles</MenuItem>
+                                <MenuItem icon={UserPlus} hint="From the WhatsApp group’s members: marks them joined" onClick={() => setPasteOpen('phones')}>Paste group members</MenuItem>
+                            </Menu>
                             <ExportMenu label="Export shortlist" getSpec={() => exportSpecFor({ title: campaign.title, rows: shortlist })} hint="Everyone on the shortlist, every column" />
                             <ExportMenu label="Export shown" getSpec={() => exportSpecFor({ title: campaign.title, rows: visible, label: 'applications' })} />
                         </div>
@@ -311,15 +398,18 @@ const OutreachTab = ({ campaign }) => {
                 <MessagesPanel campaign={campaign} applications={apps} settings={data.settings} api={data.api} wame={data.wame} onStatus={changeStatus} onOpen={(a) => setOpenId(a.id)} onSetup={() => setView('setup')} onSendApi={sendWithApi} onStopApi={stopApi} onSentNow={() => { setRefreshKey(k => k + 1); load(); }} />
             )}
             {view === 'setup' && (
-                <SetupPanel campaign={campaign} settings={data.settings} api={data.api} sampleApplication={shortlist[0] || apps[0]} onSaved={load} />
+                <div className="space-y-4">
+                    <SetupPanel campaign={campaign} settings={data.settings} api={data.api} sampleApplication={shortlist[0] || apps[0]} onSaved={load} />
+                    <Card className="p-4">
+                        <p className="mb-3 flex items-center gap-1.5 text-[14px] font-bold">Activity <ChevronRight size={14} className="text-gray-400" /> <span className="font-medium text-gray-500">every change, by whom</span></p>
+                        <ActivityList campaignId={campaign.id} nameOf={nameOf} refreshKey={refreshKey} />
+                    </Card>
+                </div>
             )}
             {view === 'whatsapp' && <WhatsAppUpdatesPanel campaign={campaign} applications={apps} settings={data.settings} api={data.api} onSent={() => { setRefreshKey(k => k + 1); load(); }} />}
             {view === 'deliverables' && <DeliverablesReview campaign={campaign} applications={apps} onChanged={() => { setRefreshKey(k => k + 1); load(); }} />}
             {view === 'payouts' && <PayoutsPanel campaign={campaign} applications={apps} onChanged={() => { setRefreshKey(k => k + 1); load(); }} />}
             {view === 'inbox' && <InboxPanel campaign={campaign} configured={Boolean(data.api?.configured)} />}
-            {view === 'activity' && (
-                <Card className="p-4"><ActivityList campaignId={campaign.id} nameOf={nameOf} refreshKey={refreshKey} /></Card>
-            )}
 
             <PasteSheet
                 key={pasteOpen || 'closed'}
@@ -330,12 +420,20 @@ const OutreachTab = ({ campaign }) => {
                 onShortlist={addToShortlist}
                 onMark={(ids, to, source) => changeStatus(ids, to, { source })}
             />
+            <ImportSheet
+                open={importOpen}
+                onClose={() => setImportOpen(false)}
+                campaign={campaign}
+                applications={apps}
+                onImported={async () => { setRefreshKey(k => k + 1); await load(); setView('applications'); setFilter({ ...BLANK_FILTERS, source: 'import' }); }}
+                onShortlist={(ids) => addToShortlist(ids)}
+            />
             <ApplicationSheet app={openId ? byId.get(openId) : null} campaign={campaign} campaignId={campaign.id} onClose={() => setOpenId(null)} onStatus={changeStatus} onMessage={data.api?.configured ? messageOnWhatsApp : null} nameOf={nameOf} refreshKey={refreshKey} onChanged={() => { setRefreshKey(k => k + 1); load(); }} />
             <ConfirmSheet
                 open={Boolean(confirmRemove)}
                 onClose={() => setConfirmRemove(null)}
                 title={`Remove ${confirmRemove?.length || 0} from the shortlist?`}
-                message="They stay in the applications list as Removed, and you can add them back later."
+                message="They stay in the People list as Removed, and you can add them back later."
                 confirmLabel="Remove"
                 tone="danger"
                 onConfirm={async () => { await changeStatus(confirmRemove, 'removed'); setConfirmRemove(null); }}

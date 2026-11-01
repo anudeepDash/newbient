@@ -17,6 +17,7 @@ export const JOIN_BUTTON = 'Joined';
 export const STOP_BUTTON = 'Stop updates';
 /* The quick-reply payload of "Stop updates" (and texts like STOP) opts the number out of every template. */
 export const STOP_PAYLOAD = 'stop';
+export const INTERESTED_BUTTON = "I'm interested";
 
 export const WA_TEMPLATES = {
     invite: {
@@ -97,6 +98,42 @@ export const WA_TEMPLATES = {
         body: "📣 *An update on your campaign, {{1}}*\n\n*Campaign:* {{2}}\n*Update:* {{3}}\n\n*Link:* {{4}}\n\nThis is about a campaign you’re on with Newbi. Reply here if you have any questions.",
         placeholders: ['first_name', 'campaign_title', 'update_note', 'update_link'],
     },
+    // The first message to someone the team imported from a sheet (Outreach → Import), who gave Newbi their number
+    // for creator collaborations but never applied. Quick replies: "I'm interested" (signed, marks them interested)
+    // and "Stop updates". Category: Marketing (it's an invitation, not an update on something they did).
+    reach_out: {
+        name: 'campaign_creator_invite',
+        body: "👋 *Hi {{1}}, it's the Newbi team*\n\nWe're picking creators for *{{2}}* in {{3}}.\n\n*What you get:* {{4}}\n\nYou're getting this because you shared your number with Newbi for creator collaborations. Tap *I'm interested* and we'll send you the details here.",
+        placeholders: ['first_name', 'campaign_title', 'campaign_city', 'campaign_reward'],
+    },
+    // The group invite, reworded (replaces campaign_group_link once approved): what the group is for and a join-by date.
+    // Quick replies: Joined (signed, marks them joined) and Stop updates.
+    group_join: {
+        name: 'campaign_group_join',
+        body: "👥 *Hi {{1}}, join the {{2}} creators group*\n\nEverything for this campaign happens in the group: the brief, task dates, passes and quick updates from the Newbi team.\n\n*Group link:* {{3}}\n*Join by:* {{4}}\n\nTap *Joined* once you're in, so we know you've got it.",
+        placeholders: ['first_name', 'campaign_title', 'group_link', 'join_by'],
+    },
+    // The day before (or the morning of) the campaign's event, to approved creators: when, where, and anything to
+    // bring. URL button: their creator page (/d/), where their pass and tasks are.
+    event_day: {
+        name: 'campaign_event_day',
+        body: "🎬 *Hi {{1}}, see you at {{2}}*\n\n*When:* {{3}}\n*Where:* {{4}}\n*Note:* {{5}}\n\nShow your pass at the gate and ask for the Newbi crew. Tap *Open my page* for your pass and tasks.",
+        placeholders: ['first_name', 'campaign_title', 'event_when', 'event_where', 'event_note'],
+        button: 'Open my page',
+    },
+    // The team changed something in the brief. URL button: their task page with the brief.
+    brief_changed: {
+        name: 'campaign_brief_updated',
+        body: "📋 *The brief changed, {{1}}*\n\n*Campaign:* {{2}}\n*What's new:* {{3}}\n\nRead the full brief before you post. Already posted? Reply here and we'll tell you if anything needs changing.",
+        placeholders: ['first_name', 'campaign_title', 'update_note'],
+        button: 'Open my task',
+    },
+    // Closes the loop for applicants who weren't picked. Quick reply: Stop updates.
+    not_selected: {
+        name: 'campaign_not_selected',
+        body: "🙏 *Thanks for applying, {{1}}*\n\n*Campaign:* {{2}}\n\nThis one is full and we couldn't shortlist everyone. Your profile stays with us, and we'll message you when a campaign fits.",
+        placeholders: ['first_name', 'campaign_title'],
+    },
     // The day before a posting deadline, and the day after it if the posts still aren't in
     // (api/_lib/postReminders.js). URL button: their posts link, like campaign_deliverables.
     post_due: {
@@ -155,6 +192,12 @@ export const templateParamsFor = (kind, { application, campaign, groupLink, data
         task_links: String(data.links || '').trim() || 'None for this task.',
         update_note: String(data.note || '').trim() || 'There’s a new update for you.',
         update_link: String(data.link || '').trim(),
+        campaign_city: String(data.city || campaign?.targetCity || (Array.isArray(campaign?.cities) ? campaign.cities[0] : '') || application?.city || 'your city').trim(),
+        campaign_reward: String(data.reward || campaign?.reward || '').replace(/\s+/g, ' ').trim() || 'Details in the next message',
+        join_by: String(data.joinBy || '').trim() || 'As soon as you can',
+        event_when: String(data.when || '').trim() || 'Details on your page',
+        event_where: String(data.where || '').trim() || 'Details on your page',
+        event_note: String(data.note || '').trim() || 'Nothing extra, just bring your phone charged.',
     };
     return (WA_TEMPLATES[kind] || WA_TEMPLATES.invite).placeholders.map(p => values[p]);
 };

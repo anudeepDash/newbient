@@ -44,7 +44,9 @@ export const minFollowersFor = (campaign) => {
 };
 
 /** Whether an application is under the campaign's follower minimum, so it can't be shortlisted. */
-export const isBelowMinimum = (app, campaign) => (Number(app?.followerCount) || 0) < minFollowersFor(campaign);
+// Someone imported from a sheet without a follower count isn't held back by it: the team picked them.
+export const isBelowMinimum = (app, campaign) => !(app?.source === 'import' && (app.followerCount === null || app.followerCount === undefined))
+    && (Number(app?.followerCount) || 0) < minFollowersFor(campaign);
 
 /* ── Campaign rules the form needs ────────────────────────────────────── */
 
@@ -221,8 +223,11 @@ export const filterApplications = (apps, f = {}) => {
         if (f.registered === 'yes' && !a.registeredNewbiCreator) return false;
         if (f.registered === 'no' && a.registeredNewbiCreator) return false;
         if (f.status && f.status !== 'all' && a.status !== f.status) return false;
+        if (f.source === 'import' && a.source !== 'import') return false;
+        if (f.source === 'form' && a.source === 'import') return false;
+        if (f.source === 'interested' && !a.interestedAt) return false;
         if (college && !String(a.collegeOrEmployer || '').toLowerCase().includes(college)) return false;
-        if (q && !`${a.fullName} ${a.instagramHandle}`.toLowerCase().includes(q)) return false;
+        if (q && !`${a.fullName} ${a.instagramHandle} ${a.phone || ''}`.toLowerCase().includes(q)) return false;
         return true;
     });
 };

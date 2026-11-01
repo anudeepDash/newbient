@@ -159,6 +159,52 @@ export const TEMPLATES = [
         footer: 'Newbi Creators · app.newbi.live',
     },
     {
+        // The first message to a number imported from a sheet (Outreach → Import), from people who shared it with
+        // Newbi for creator collaborations. "I'm interested" carries a signed payload; an invitation, so Marketing.
+        name: 'campaign_creator_invite',
+        category: 'MARKETING',
+        body: "👋 *Hi {{1}}, it's the Newbi team*\n\nWe're picking creators for *{{2}}* in {{3}}.\n\n*What you get:* {{4}}\n\nYou're getting this because you shared your number with Newbi for creator collaborations. Tap *I'm interested* and we'll send you the details here.",
+        samples: ['Riya', 'Pinnaca 2026', 'Lucknow', 'Free passes for you and a friend, and ₹2,000 per reel'],
+        header: { image: 'public/og/wa-invite-v1.jpg' },
+        buttons: [{ type: 'QUICK_REPLY', text: "I'm interested" }, { type: 'QUICK_REPLY', text: 'Stop updates' }],
+        footer: 'Newbi Creators · app.newbi.live',
+    },
+    {
+        // The group invite, reworded (what the group is for, and a join-by date). Replaces campaign_group_link.
+        name: 'campaign_group_join',
+        body: "👥 *Hi {{1}}, join the {{2}} creators group*\n\nEverything for this campaign happens in the group: the brief, task dates, passes and quick updates from the Newbi team.\n\n*Group link:* {{3}}\n*Join by:* {{4}}\n\nTap *Joined* once you're in, so we know you've got it.",
+        samples: ['Riya', 'Pinnaca 2026', 'https://chat.whatsapp.com/AbCdEfGhIjK123', 'Sat, 14 Nov'],
+        header: { image: 'public/og/wa-shortlist-v1.jpg' },
+        buttons: [{ type: 'QUICK_REPLY', text: 'Joined' }, { type: 'QUICK_REPLY', text: 'Stop updates' }],
+        footer: 'Newbi Creators · app.newbi.live',
+    },
+    {
+        // Event day for approved creators: when, where, anything to bring. URL button: their creator page.
+        name: 'campaign_event_day',
+        body: "🎬 *Hi {{1}}, see you at {{2}}*\n\n*When:* {{3}}\n*Where:* {{4}}\n*Note:* {{5}}\n\nShow your pass at the gate and ask for the Newbi crew. Tap *Open my page* for your pass and tasks.",
+        samples: ['Riya', 'Pinnaca 2026', 'Sat, 19 Dec, 2:00 PM', 'Ekana Football Stadium, Gate 3', 'Carry a photo ID and come with your phone charged'],
+        header: { image: 'public/og/wa-pass-v1.jpg' },
+        buttons: [{ type: 'URL', text: 'Open my page', url: `${APP}/d/{{1}}`, example: [`${APP}/d/sample-token`] }],
+        footer: 'Newbi Creators · app.newbi.live',
+    },
+    {
+        // The brief changed. URL button: their task page.
+        name: 'campaign_brief_updated',
+        body: "📋 *The brief changed, {{1}}*\n\n*Campaign:* {{2}}\n*What's new:* {{3}}\n\nRead the full brief before you post. Already posted? Reply here and we'll tell you if anything needs changing.",
+        samples: ['Riya', 'Pinnaca 2026', 'Use the new audio from the group, and tag @pinnaca.in in the caption'],
+        header: { image: 'public/og/wa-changes-v1.jpg' },
+        buttons: [{ type: 'URL', text: 'Open my task', url: `${APP}/d/{{1}}`, example: [`${APP}/d/sample-token`] }],
+        footer: 'Newbi Creators · app.newbi.live',
+    },
+    {
+        // Applicants who weren't picked, so nobody is left waiting.
+        name: 'campaign_not_selected',
+        body: "🙏 *Thanks for applying, {{1}}*\n\n*Campaign:* {{2}}\n\nThis one is full and we couldn't shortlist everyone. Your profile stays with us, and we'll message you when a campaign fits.",
+        samples: ['Riya', 'Pinnaca 2026'],
+        buttons: [{ type: 'QUICK_REPLY', text: 'Stop updates' }],
+        footer: 'Newbi Creators · app.newbi.live',
+    },
+    {
         // Asked per campaign from Payouts in the admin (outreach-ask-payout). Image header: the payout card,
         // like campaign_payout_sent; the code sends the campaign's own picture when it has one.
         name: 'campaign_payout_details',
@@ -189,7 +235,7 @@ export const problemsWith = (t) => {
 export const payloadFor = (t, headerHandle = null) => ({
     name: t.name,
     language: 'en',
-    category: 'UTILITY',
+    category: t.category || 'UTILITY',
     components: [
         ...(t.header?.image ? [{ type: 'HEADER', format: 'IMAGE', example: { header_handle: [headerHandle || 'HANDLE'] } }] : []),
         { type: 'BODY', text: t.body, example: { body_text: [t.samples] } },

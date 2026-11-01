@@ -109,6 +109,16 @@ export class FakeFirestore {
         this.store.set(path, applyPaths(this.store.get(path), data));
     }
 
+    batch() {
+        const writes = [];
+        return {
+            set: (ref, data, opts) => { writes.push(() => this._write(ref.path, data, opts)); },
+            update: (ref, data) => { writes.push(() => this._update(ref.path, data)); },
+            delete: (ref) => { writes.push(() => this.store.delete(ref.path)); },
+            commit: async () => { writes.forEach(w => w()); },
+        };
+    }
+
     async runTransaction(fn) {
         const writes = [];
         let wrote = false;

@@ -1,6 +1,6 @@
 import { ArrowUpRight } from 'lucide-react';
 import SectionHeading from '../components/SectionHeading';
-import { APP_LINKS } from '../links';
+import { APP_LINKS, sizedImage } from '../links';
 import { useT } from '../../i18n';
 
 const parts = (iso) => {
@@ -12,7 +12,7 @@ const parts = (iso) => {
 
 const cta = (e) => (e.isTicketed ? 'Get tickets' : e.hasGuestlist ? 'Get on the list' : 'See event');
 
-// The next three public events, laid out like a tour-date list. Each row opens the event page.
+// The next three public events, laid out like a tour-date list with each poster. Each row opens the event page.
 export default function Upcoming({ events = [], index = '06' }) {
     const t = useT();
     if (!events.length) return null;
@@ -30,10 +30,15 @@ export default function Upcoming({ events = [], index = '06' }) {
                         const { day, mon, wd } = parts(e.date);
                         return (
                             <li key={e.id} className="nb-reveal border-b border-gray-950/10 dark:border-white/10">
-                                <a href={APP_LINKS.event(e.id)} className="group grid grid-cols-[auto_1fr_auto] items-center gap-4 md:gap-8 py-6 md:py-8 hover:bg-gray-950/[0.03] dark:hover:bg-white/[0.03] transition-colors -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
+                                <a href={APP_LINKS.event(e.id)} className="group grid grid-cols-[auto_auto_1fr_auto] items-center gap-4 md:gap-8 py-6 md:py-8 hover:bg-gray-950/[0.03] dark:hover:bg-white/[0.03] transition-colors -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
                                     <span className="w-16 md:w-24 text-gray-950 dark:text-white">
                                         <span className="block font-heading font-extrabold text-4xl md:text-6xl leading-none tracking-[-0.04em]">{day}</span>
                                         <span className="block mt-1 font-mono text-[11px] font-bold tracking-[0.2em] text-gray-500 dark:text-zinc-500">{mon} · {wd}</span>
+                                    </span>
+                                    <span className="relative block w-14 sm:w-20 md:w-24 aspect-[4/5] rounded-xl md:rounded-2xl overflow-hidden ring-1 ring-black/10 dark:ring-white/10" style={{ background: e.ambientColor || undefined }} aria-hidden="true">
+                                        {e.image
+                                            ? <img src={sizedImage(e.image, 240)} alt="" width="240" height="300" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                            : <span className="absolute inset-0 bg-gradient-to-br from-neon-green/40 to-sky-400/30" />}
                                     </span>
                                     <span className="min-w-0">
                                         <span className="block font-heading font-extrabold tracking-[-0.03em] text-2xl md:text-4xl leading-[0.95] text-gray-950 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-neon-green transition-colors">{e.title}</span>
