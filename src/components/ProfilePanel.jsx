@@ -19,6 +19,7 @@ import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { RecaptchaVerifier, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 import StudioSelect from './ui/StudioSelect';
 import CampaignDetailModal from './creator/CampaignDetailModal';
+import { sizedImage } from '../lib/image';
 
 const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
     const { 
@@ -488,7 +489,7 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
                                 <div className="absolute -inset-1 bg-gradient-to-r from-neon-green via-neon-blue to-neon-pink rounded-2xl blur-sm opacity-40 group-hover:opacity-70 transition duration-500" />
                                 <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-white/15 flex items-center justify-center overflow-hidden shadow-md">
                                     {avatarPic ? (
-                                        <img src={avatarPic} alt={user.displayName || 'User'} className="w-full h-full object-cover" />
+                                        <img src={sizedImage(avatarPic, 160)} alt={user.displayName || 'User'} className="w-full h-full object-cover" />
                                     ) : (
                                         <span className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white italic uppercase select-none">
                                             {avatarInitial}
@@ -1204,7 +1205,7 @@ const ParticipatedCampaignsSection = ({ participatedCampaigns = [], onOpenCampai
                                     <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-white/10 overflow-hidden shrink-0 relative flex items-center justify-center shadow-xs">
                                         {camp.thumbnail || camp.banner ? (
                                             <img
-                                                src={camp.thumbnail || camp.banner}
+                                                src={sizedImage(camp.thumbnail || camp.banner, 160)}
                                                 alt={camp.title}
                                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                             />
@@ -2283,7 +2284,7 @@ const CreatorProfileManager = ({
                 <div className="flex items-start gap-4">
                     <div className="w-16 h-16 rounded-2xl bg-gray-200 dark:bg-zinc-800 border border-gray-300 dark:border-white/15 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
                         {(creatorProfile.profilePicture || creatorProfile.instagramProfilePic || creatorProfile.profilePic || creatorProfile.photoURL) ? (
-                            <img src={creatorProfile.profilePicture || creatorProfile.instagramProfilePic || creatorProfile.profilePic || creatorProfile.photoURL} alt={creatorProfile.name} className="w-full h-full object-cover" />
+                            <img src={sizedImage(creatorProfile.profilePicture || creatorProfile.instagramProfilePic || creatorProfile.profilePic || creatorProfile.photoURL, 320)} alt={creatorProfile.name} className="w-full h-full object-cover" />
                         ) : (
                             <span className="text-2xl font-black text-gray-900 dark:text-white italic">{creatorProfile.name?.charAt(0) || 'C'}</span>
                         )}

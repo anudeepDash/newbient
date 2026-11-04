@@ -4,6 +4,7 @@ import {
     Calendar, MapPin, Share2, ArrowRight, X, Info, FileText, ExternalLink, Zap, Users, Ticket, Pin, Star, ClipboardList, Megaphone
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { sizedImage } from '../../lib/image';
 
 const CommunityCard = ({ item, type, handleShare, onAction }) => {
     const [isFlipped, setIsFlipped] = useState(false);
@@ -175,7 +176,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                                 whileHover={{ scale: isFlipped ? 1 : (transform.scale || 1.05) * 1.05 }}
                                 transition={{ duration: 1.5, ease: [0.23, 1, 0.32, 1] }}
                                 style={{ 
-                                    backgroundImage: `url(${item.image})`,
+                                    backgroundImage: `url(${sizedImage(item.image, 960)})`,
                                     backgroundPosition: `calc(50% + ${transform.x || 0}%) calc(50% + ${transform.y || 0}%)`
                                 }}
                             />

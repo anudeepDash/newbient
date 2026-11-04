@@ -34,6 +34,7 @@ import BadgeUnlock from '../badges/BadgeUnlock';
 import { BadgeShelf } from '../badges/BadgeParts';
 import { useBadges } from '../badges/useBadges';
 import { useConnectReady } from '../useInstagramConnect';
+import { sizedImage } from '../../../lib/image';
 
 /*
  * /creator: creator home. Openings, Deliverables, Referrals, Badges and
@@ -107,7 +108,7 @@ const CreatorHeader = ({ creator, profile, stats, badges }) => {
             <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex min-w-0 items-start gap-3 sm:items-center sm:gap-4">
                     {photo ? (
-                        <img src={photo} alt="" referrerPolicy="no-referrer" className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-neon-green/60 ring-offset-2 ring-offset-white dark:ring-offset-black sm:h-16 sm:w-16" />
+                        <img src={sizedImage(photo, 160)} alt="" referrerPolicy="no-referrer" className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-neon-green/60 ring-offset-2 ring-offset-white dark:ring-offset-black sm:h-16 sm:w-16" />
                     ) : (
                         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-neon-green font-heading text-[20px] font-extrabold text-black sm:h-16 sm:w-16 sm:text-[22px]" aria-hidden="true">
                             {(name || '?').trim().charAt(0).toUpperCase()}

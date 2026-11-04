@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Instagram, FileText, ArrowRight, Zap, MapPin, Users, Award, CheckCircle2, Flame } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { cn, getCampaignSpotsInfo } from '../../lib/utils';
+import { sizedImage } from '../../lib/image';
 
 const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
     const creators = useStore(state => state.creators);
@@ -79,12 +80,12 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                             <div
                                 className="hidden sm:block absolute -inset-8 bg-cover bg-center blur-xl opacity-80 scale-110 transform-gpu"
                                 style={{ 
-                                    backgroundImage: `url(${campaign.thumbnail})`,
+                                    backgroundImage: `url(${sizedImage(campaign.thumbnail, 480)})`,
                                     WebkitTransform: 'translate3d(0, 0, 0)',
                                 }}
                             />
                             <img
-                                src={campaign.thumbnail}
+                                src={sizedImage(campaign.thumbnail, 960)}
                                 alt={campaign.title}
                                 loading="lazy"
                                 decoding="async"
@@ -159,7 +160,7 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                     <div
                         className="hidden sm:block absolute top-0 inset-x-0 h-32 bg-cover bg-center blur-2xl opacity-20 pointer-events-none transform-gpu -z-0"
                         style={{ 
-                            backgroundImage: `url(${campaign.thumbnail})`,
+                            backgroundImage: `url(${sizedImage(campaign.thumbnail, 480)})`,
                             WebkitTransform: 'translate3d(0, 0, 0)'
                         }}
                     />
@@ -196,7 +197,7 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                         <div className="flex items-center gap-1.5 mb-1.5">
                             {campaign.brandLogo && (
                                 <img 
-                                    src={campaign.brandLogo} 
+                                    src={sizedImage(campaign.brandLogo, 96)} 
                                     alt={campaign.brand || 'Brand'} 
                                     className="w-4 h-4 rounded object-contain bg-white dark:bg-zinc-800 p-0.5 border border-black/10 dark:border-white/10 shrink-0" 
                                 />

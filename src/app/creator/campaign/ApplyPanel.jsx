@@ -10,6 +10,7 @@ import { cn } from '../../../lib/utils';
 import { GLASS } from '../../pages/parts';
 import { compactCount, creatorPassId } from '../format';
 import { useT, t as translateNow } from '../../../i18n';
+import { sizedImage } from '../../../lib/image';
 
 /*
  * How you apply to a campaign.
@@ -25,7 +26,7 @@ import { useT, t as translateNow } from '../../../i18n';
 
 const Avatar = ({ src, size = 'h-12 w-12' }) => (
     src
-        ? <img src={src} alt="" className={cn(size, 'shrink-0 rounded-full object-cover ring-2 ring-neon-green/70')} />
+        ? <img src={sizedImage(src, 160)} alt="" className={cn(size, 'shrink-0 rounded-full object-cover ring-2 ring-neon-green/70')} />
         : <span className={cn(size, 'flex shrink-0 items-center justify-center rounded-full bg-black/[0.06] text-gray-500 ring-2 ring-black/[0.06] dark:bg-white/[0.08] dark:text-zinc-400 dark:ring-white/10')}><UserRound size={18} /></span>
 );
 

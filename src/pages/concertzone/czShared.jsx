@@ -9,6 +9,7 @@ import { useStore } from '../../lib/store';
 import { useTheme } from '../../hooks/useTheme';
 import { cn } from '../../lib/utils';
 import { useConsent } from '../../lib/consent';
+import { sizedImage } from '../../lib/image';
 
 /*
  * ConcertZone is its own brand (its own header, wordmark and footer), so it
@@ -69,7 +70,7 @@ export function PostMedia({ post, video = false, eager = false, className = '' }
     const consent = useConsent();
     if (video && post.videoUrl && (isRawVideo(post.videoUrl) || consent?.media)) {
         return isRawVideo(post.videoUrl) ? (
-            <video src={post.videoUrl} poster={post.coverImage || undefined} autoPlay muted loop playsInline className={cn('w-full h-full object-cover', className)} />
+            <video src={post.videoUrl} poster={sizedImage(post.coverImage, 1280) || undefined} autoPlay muted loop playsInline className={cn('w-full h-full object-cover', className)} />
         ) : (
             <div className={cn('w-full h-full relative overflow-hidden pointer-events-none', className)}>
                 <iframe
@@ -85,7 +86,7 @@ export function PostMedia({ post, video = false, eager = false, className = '' }
     if (!post.coverImage) return <div className={cn('w-full h-full bg-gradient-to-br from-gray-300 to-gray-400 dark:from-zinc-800 dark:to-zinc-900', className)} />;
     return (
         <img
-            src={post.coverImage}
+            src={sizedImage(post.coverImage, 1280)}
             alt=""
             loading={eager ? 'eager' : 'lazy'}
             decoding="async"

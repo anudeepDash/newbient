@@ -11,6 +11,7 @@ import { cn } from '../../lib/utils';
 import { isPresent } from '../../lib/present';
 import BrandLayers, { BRAND_GLASS } from './BrandLayers';
 import { PosterGlow } from './AmbientBackdrop';
+import { sizedImage } from '../../lib/image';
 
 /*
  * The one card for the app: an aspect-video hero that fades into the body,
@@ -182,7 +183,7 @@ const Card = ({
                     {image ? (
                         <>
                             <img
-                                src={image}
+                                src={sizedImage(image, 960)}
                                 alt={imageAlt || title || ''}
                                 loading="lazy"
                                 decoding="async"
@@ -217,7 +218,7 @@ const Card = ({
                 <div className="relative z-10 mb-3.5">
                     {(isPresent(eyebrow) || eyebrowLogo) && (
                         <div className="mb-1.5 flex items-center gap-1.5">
-                            {eyebrowLogo && <img src={eyebrowLogo} alt="" className="h-4 w-4 shrink-0 rounded border border-black/10 bg-white object-contain p-0.5 dark:border-white/10 dark:bg-zinc-800" />}
+                            {eyebrowLogo && <img src={sizedImage(eyebrowLogo, 96)} alt="" className="h-4 w-4 shrink-0 rounded border border-black/10 bg-white object-contain p-0.5 dark:border-white/10 dark:bg-zinc-800" />}
                             {isPresent(eyebrow) && <span className="truncate text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-neon-green">{eyebrow}</span>}
                         </div>
                     )}

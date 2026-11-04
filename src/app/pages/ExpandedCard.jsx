@@ -9,6 +9,7 @@ import { cn } from '../../lib/utils';
 import { PageBody } from './PageHeader';
 import { EmptyState } from './parts';
 import { useT } from '../../i18n';
+import { sizedImage } from '../../lib/image';
 
 /*
  * A card, expanded: the campaign popup's look, shared by everything a card
@@ -34,7 +35,7 @@ export const ExpandedHero = ({ image, ambientColor, icon: Icon, chips = [] }) =>
             <div className="absolute inset-0" style={{ WebkitMaskImage: 'linear-gradient(to bottom, #000 65%, transparent 100%)', maskImage: 'linear-gradient(to bottom, #000 65%, transparent 100%)' }}>
                 {image ? (
                     <>
-                        <img src={image} alt="" className="relative h-full w-full object-cover" />
+                        <img src={sizedImage(image, 1280)} alt="" className="relative h-full w-full object-cover" />
                         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_50%,_rgba(0,0,0,0.35)_100%)]" />
                     </>
                 ) : Icon ? (

@@ -17,6 +17,7 @@ import { Button } from '../../../components/app';
 import { dueLabel } from '../format';
 import { ToneChip } from '../ui';
 import { useT } from '../../../i18n';
+import { sizedImage } from '../../../lib/image';
 
 /*
  * One deliverable: what to make, its links, and (for shortlisted creators) its status and submit buttons.
@@ -77,7 +78,7 @@ const YourSubmission = ({ submission }) => {
             )}
             {proof && (
                 <a href={proof} target="_blank" rel="noopener noreferrer" className="block w-fit">
-                    <img src={proof} alt={t('Your screenshot')} className="max-h-40 rounded-lg object-cover ring-1 ring-black/[0.06] dark:ring-white/[0.08]" />
+                    <img src={sizedImage(proof, 480)} alt={t('Your screenshot')} className="max-h-40 rounded-lg object-cover ring-1 ring-black/[0.06] dark:ring-white/[0.08]" />
                 </a>
             )}
             {note && <p className="whitespace-pre-line text-[13px] text-gray-700 dark:text-zinc-300">{note}</p>}

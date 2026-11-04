@@ -11,6 +11,7 @@ import { appPath } from '../host';
 import { isUpcomingPass } from './passCards';
 import { passWhen, venueLine } from './passParts';
 import { useT } from '../../i18n';
+import { sizedImage } from '../../lib/image';
 
 /*
  * A pass in a list, drawn as a ticket: the poster on top, the show, then a
@@ -86,7 +87,7 @@ const PassTicket = ({ pass, from = null, className }) => {
                 <div className="relative aspect-[2/1] w-full shrink-0 overflow-hidden">
                     {isPresent(event.image) ? (
                         <img
-                            src={event.image}
+                            src={sizedImage(event.image, 960)}
                             alt=""
                             decoding="async"
                             loading="lazy"

@@ -19,6 +19,7 @@ import { TEST_POSTS } from './concertzone/testPosts';
 import { isAdminRole } from '../constants/roles';
 import { isPostPublic } from '../components/admin/content/contentRules';
 import { CzShell, CzHeader, StoryCard, PostMedia, CategoryChip, Label, formatDate } from './concertzone/czShared';
+import { sizedImage } from '../lib/image';
 
 const isTest = (p) => String(p?.id || '').includes('-test');
 
@@ -201,7 +202,7 @@ const BlogPostDetail = () => {
                         <a href={post.sponsorLink || undefined} target="_blank" rel="noopener noreferrer sponsored" className="mt-8 flex items-center gap-4 rounded-2xl ring-1 ring-black/10 dark:ring-white/10 p-4 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors">
                             {post.sponsorLogo && (
                                 <span className="w-16 h-12 shrink-0 rounded-xl bg-white flex items-center justify-center p-2">
-                                    <img src={post.sponsorLogo} alt="" className="max-w-full max-h-full object-contain" />
+                                    <img src={sizedImage(post.sponsorLogo, 320)} alt="" className="max-w-full max-h-full object-contain" />
                                 </span>
                             )}
                             <span className="min-w-0">
