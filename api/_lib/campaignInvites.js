@@ -1,13 +1,15 @@
 /**
- * WhatsApp for a new campaign: every creator it was announced to (same city
- * match as the email) with a verified WhatsApp number gets the campaign_live_brief
+ * WhatsApp for a new campaign, sent only from Outreach → WhatsApp → Campaign
+ * open (api/_lib/outreachOpenCall.js) to the registered creators the team picked
+ * by its criteria. Announcing a campaign doesn't send WhatsApp (it did until
+ * 4 Nov 2026, to everyone in the campaign's city). Each one gets the campaign_live_brief
  * template ("View the brief" button) once it's switched on, else campaign_invite
  * (Apply button), with the campaign's picture. Both open app.newbi.live/c/<id>.
  *
  * The messages go through the outreach send queue (outreach_queue, kind
  * 'template'), so they keep to the number's rate limit and skip anyone who
- * replied STOP. One job per creator per campaign (its id), so announcing the
- * campaign again only re-sends when staff ask for it (`again`). Creators who
+ * replied STOP. One job per creator per campaign (its id), so sending again
+ * only re-sends when staff ask for it (`again`). Creators who
  * turned WhatsApp off in the app are left out. Nothing is queued until
  * WHATSAPP_TEMPLATE_CAMPAIGN_LIVE_BRIEF or WHATSAPP_TEMPLATE_CAMPAIGN_INVITE is set.
  */
@@ -32,11 +34,11 @@ const short = (s, n) => {
 /* The number to use: their verified WhatsApp (or phone). Unverified numbers could be anyone's, so they're used only when the team says so. */
 const whatsappOf = (c, verifiedOnly = true) => (c.isPhoneVerified || !verifiedOnly ? toE164(c.whatsapp || c.phone) : null);
 
-/* One job per creator per campaign, shared by the announcement and Outreach → Campaign open. */
+/* One job per creator per campaign (older jobs from the announcement share it, so they count as already told). */
 export const inviteJobId = (campaignId, uid, phone) => `invite_${campaignId}_${uid || String(phone || '').slice(1)}`.slice(0, 140);
 
 /**
- * creators: the docs the campaign was announced to (already city-matched).
+ * creators: the creator docs the team picked (already checked against the criteria).
  * → { queued, skipped: { noNumber, whatsappOff, already } }
  */
 export const queueCampaignInvites = async ({ db = getDb(), campaign, creators, again = false, createdBy = 'Newbi app', start = true, verifiedOnly = true }) => {

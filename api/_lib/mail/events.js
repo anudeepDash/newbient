@@ -18,7 +18,6 @@ import { deliverGuestlistPass, ensureOrderPass, passUrl, resolveGuestlist, advan
 import { isTemplateLive, sendTemplate } from '../whatsapp.js';
 import { sendTeamAlert, TICKET_TEAM, contactForAdmin, roleLabel } from '../teamAlerts.js';
 import { tellPassHolders, countPassHolders } from '../passHolders.js';
-import { queueCampaignInvites } from '../campaignInvites.js';
 import { tellPostsOpened } from '../postsOpen.js';
 import { isRequiredTask } from '../../../src/lib/creator/tasks.js';
 import { approvedSummary } from '../../../src/lib/outreach/whatsappTemplate.js';
@@ -320,10 +319,11 @@ const campaignInvite = async ({ campaignId, again = false }, caller) => {
         pushed += res.filter(r => r.ok).length;
     }
 
-    // WhatsApp to the same creators (verified numbers only), through the rate-limited send queue.
-    const whatsapp = await queueCampaignInvites({ db, campaign, creators, again: again === true, createdBy: caller.email || 'Newbi team' })
-        .catch((err) => { console.warn('[MAIL] campaign WhatsApp invites not queued:', err.message); return null; });
-    return { emailCampaignId: queued?.campaignId || null, emailed: queued?.queued || 0, pushed, whatsapp: whatsapp?.queued || 0 };
+    // No WhatsApp here. Announcing goes to everyone in the campaign's city ("Any" = every creator) with no
+    // follower or niche check, and on 4 Nov 2026 that queued ~850 WhatsApps nobody meant to send. Campaign
+    // WhatsApps go only from Outreach → WhatsApp → Campaign open, where the team sets the criteria and sees
+    // exactly who gets it (api/_lib/outreachOpenCall.js).
+    return { emailCampaignId: queued?.campaignId || null, emailed: queued?.queued || 0, pushed, whatsapp: 0 };
 };
 
 // Campaign pages live in the app (app.newbi.live/c/:id); the URL button suffix is the campaign id.

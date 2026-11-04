@@ -9,7 +9,9 @@ import { Button, Card, Badge, Select, SearchInput } from '../../ui';
 import { Field, fieldCls } from '../../uploads/UploadKit';
 import { Spinner, ConfirmSheet } from '../parts';
 import { firstNameOf } from '../../../../lib/outreach/normalize';
-import { activeCriteria, matchesCriteria } from '../../../../lib/outreach/openAudience';
+import { activeCriteria, cleanCities, inCities, matchesCriteria } from '../../../../lib/outreach/openAudience';
+import { PREDEFINED_CITIES, normalizeCity } from '../../../../lib/constants';
+import MultiSelectFilter from '../../filters/MultiSelectFilter';
 import { LIVE_BRIEF_BODY, LIVE_BRIEF_TEMPLATE } from '../../../../lib/outreach/whatsappTemplate';
 import { callOutreach } from './outreachApi';
 import { Handle, Bubble, followers } from './parts';
@@ -20,7 +22,8 @@ import { Handle, Bubble, followers } from './parts';
  * button to its page in the app) once it's switched on, else campaign_invite
  * (Apply button). Starts with everyone who matches the campaign (its cities
  * and follower minimum), hasn't applied and hasn't been told; the team can
- * add the campaign's niches, choose all or any of the criteria, widen it,
+ * pick other cities (or all), like the creator admin's city filter, add the
+ * campaign's niches, choose all or any of the criteria, widen it,
  * untick people, and send. Server: api/_lib/outreachOpenCall.js.
  */
 
@@ -32,7 +35,8 @@ const CampaignOpenPanel = ({ campaign, live }) => {
     const addToast = useStore(s => s.addToast);
     const [state, setState] = useState({ loading: true, error: '', creators: [], criteria: { cities: [], minFollowers: 0, niches: [] }, open: true, template: null });
     const [templates, setTemplates] = useState([]);
-    const [match, setMatch] = useState('campaign');
+    // The cities picked: starts with the campaign's once it loads; empty = all cities.
+    const [pickedCities, setPickedCities] = useState(null);
     const [niche, setNiche] = useState('any');
     const [mode, setMode] = useState('all');
     const [minFollowers, setMinFollowers] = useState('');
@@ -49,6 +53,7 @@ const CampaignOpenPanel = ({ campaign, live }) => {
         if (!r.ok) { setState(s => ({ ...s, loading: false, error: r.error })); return; }
         setState({ loading: false, error: '', creators: r.data.creators, criteria: { niches: [], ...r.data.criteria }, open: r.data.open, template: r.data.template || null });
         setMinFollowers(m => (m === '' ? String(r.data.criteria.minFollowers || 0) : m));
+        setPickedCities(list => list ?? cleanCities(r.data.criteria.cities));
     };
     useEffect(() => { load(); }, [campaign.id]); // eslint-disable-line react-hooks/exhaustive-deps
     // The approved text from Meta, for the preview.
@@ -64,7 +69,20 @@ const CampaignOpenPanel = ({ campaign, live }) => {
     const min = Math.max(0, Number(String(minFollowers).replace(/[,\s]/g, '')) || 0);
     const cities = state.criteria.cities || [];
     const niches = state.criteria.niches || [];
-    const criteria = useMemo(() => activeCriteria({ city: match, min, niche }, { cities, niches }), [match, min, niche, cities, niches]);
+    const chosenCities = useMemo(() => pickedCities ?? cleanCities(cities), [pickedCities, cities]);
+    const criteria = useMemo(() => activeCriteria({ cities: chosenCities, min, niche }, { cities, niches }), [chosenCities, min, niche, cities, niches]);
+    // Every city a registered creator gave, plus the usual list and the campaign's, with how many creators can be reached there.
+    const cityOptions = useMemo(() => {
+        const byKey = new Map();
+        [...cleanCities(cities), ...PREDEFINED_CITIES, ...state.creators.map(c => c.city)].forEach((name) => {
+            const label = cleanCities([name])[0];
+            const key = label && normalizeCity(label);
+            if (key && !byKey.has(key)) byKey.set(key, label);
+        });
+        const reach = state.creators.filter(c => c.phone && !c.optedOut && !c.whatsappOff && !c.applied);
+        return [...byKey.values()].map(label => ({ value: label, label, count: reach.filter(c => inCities([label], c.city)).length }));
+    }, [state.creators, cities]);
+    const sameAsCampaign = chosenCities.length === cleanCities(cities).length && chosenCities.every(c => cleanCities(cities).includes(c));
     const meets = (c) => matchesCriteria(c, criteria, mode);
     const reachable = useMemo(() => state.creators.filter(c => c.phone && !c.optedOut && !c.whatsappOff && !c.applied), [state.creators]);
     const audience = useMemo(() => reachable.filter(c => matchesCriteria(c, criteria, mode)
@@ -94,7 +112,7 @@ const CampaignOpenPanel = ({ campaign, live }) => {
         setSending(true);
         const r = await callOutreach('outreach-open-send', {
             campaignId: campaign.id, creatorIds: recipients.map(c => c.id), includeUnverified: withUnverified, again: withTold,
-            criteria: { city: match, min, niche, mode },
+            criteria: { cities: chosenCities, min, niche, mode },
         });
         setSending(false);
         setConfirm(false);
@@ -121,11 +139,11 @@ const CampaignOpenPanel = ({ campaign, live }) => {
                 )}
                 {!state.loading && !criteria.length && (
                     <p className="flex items-start gap-2 rounded-xl bg-amber-500/10 p-3 text-[13px] font-medium text-amber-700 dark:text-amber-300">
-                        <TriangleAlert size={15} className="mt-0.5 shrink-0" /> Set at least one criterion: the campaign’s cities, a follower minimum or its niches. This only goes to creators who fit, never to everyone registered.
+                        <TriangleAlert size={15} className="mt-0.5 shrink-0" /> Set at least one criterion: some cities, a follower minimum or the campaign’s niches. This only goes to creators who fit, never to everyone registered.
                     </p>
                 )}
                 <p className="text-[13px] leading-snug text-gray-500">
-                    For creators registered on the creator portal who haven’t applied yet, and only the ones who fit the criteria below. Each person gets it once per campaign (the announcement from Campaigns counts too). Only WhatsApp: email and push go out when you announce the campaign.
+                    For creators registered on the creator portal who haven’t applied yet, and only the ones who fit the criteria below. Each person gets it once per campaign. This is the only place campaign WhatsApps go from: announcing a campaign sends email and push only.
                 </p>
 
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -141,11 +159,22 @@ const CampaignOpenPanel = ({ campaign, live }) => {
                             ...(niches.length ? [{ value: 'campaign', label: `This campaign’s niches (${niches.join(', ')})` }] : []),
                         ]} />
                     </Field>
-                    <Field label="City">
-                        <Select label="City" value={match} onChange={setMatch} className="w-full" options={[
-                            { value: 'campaign', label: cities.length ? `This campaign’s cities (${cities.join(', ')})` : 'Any city (the campaign has none set)' },
-                            { value: 'any', label: 'Any city' },
-                        ]} />
+                    <Field label="Cities" hint={(
+                        <span>
+                            {chosenCities.length ? `Creators in ${chosenCities.length === 1 ? chosenCities[0] : `any of ${chosenCities.length} cities`}.` : 'All cities.'}
+                            {!sameAsCampaign && cities.length > 0 && <> <button type="button" onClick={() => setPickedCities(cleanCities(cities))} className="font-semibold underline">Use the campaign’s ({cities.join(', ')})</button></>}
+                        </span>
+                    )}>
+                        <MultiSelectFilter
+                            label="Cities"
+                            allLabel="All cities"
+                            noun="city"
+                            nounPlural="cities"
+                            options={cityOptions}
+                            value={chosenCities}
+                            onChange={setPickedCities}
+                            className="w-full"
+                        />
                     </Field>
                     <Field label="At least this many followers" hint={state.criteria.minFollowers ? `The campaign’s minimum is ${followers(state.criteria.minFollowers)}.` : 'The campaign has no minimum.'}>
                         <input className={fieldCls} inputMode="numeric" value={minFollowers} onChange={(e) => setMinFollowers(e.target.value)} placeholder="0" />

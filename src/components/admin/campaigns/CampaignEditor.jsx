@@ -756,7 +756,7 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
                             )}
                             <div className="py-2"><Toggle label="Pin to the top" hint="Shows first in lists" checked={form.isPinned} onChange={(v) => set({ isPinned: v })} /></div>
                             {goingLive && (
-                                <div className="py-2"><Toggle label="Tell matching creators" hint="Email and app notification to creators in the target city when it goes live" checked={announce} onChange={setAnnounce} /></div>
+                                <div className="py-2"><Toggle label="Tell matching creators" hint="Email and app notification to creators in the target city when it goes live. WhatsApp goes from Outreach → WhatsApp → Campaign open, to the creators you pick." checked={announce} onChange={setAnnounce} /></div>
                             )}
                         </div>
                     </BuilderCard>

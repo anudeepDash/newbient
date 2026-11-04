@@ -6,7 +6,7 @@ import { runQueue, joinPayload } from '../../api/_lib/outreachQueue.js';
 import { handleOutreachAction } from '../../api/_lib/outreach.js';
 import { queueCityWelcome } from '../../api/_lib/creatorWelcome.js';
 import { WA_TEMPLATES, WELCOME_CITY_BODY, LIVE_BRIEF_BODY, groupCodeOf, STOP_PAYLOAD } from '../../src/lib/outreach/whatsappTemplate.js';
-import { activeCriteria, matchesCriteria } from '../../src/lib/outreach/openAudience.js';
+import { activeCriteria, cleanCities, inCities, matchesCriteria } from '../../src/lib/outreach/openAudience.js';
 import { fieldsFor } from '../../src/lib/outreach/waFields.js';
 import { defaultPayoutAmount } from '../../src/lib/outreach/deliverables.js';
 import { parseAmount, detectColumns, parseDelimited, rowsFromTable } from '../../src/lib/outreach/importSheet.js';
@@ -225,6 +225,31 @@ describe('the campaign-live message with a View the brief button', () => {
         expect([by.cr1.nicheMatch, by.cr2.nicheMatch]).toEqual([false, true]);
         const res = await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr1', 'cr2'], criteria: { city: 'any', niche: 'campaign' } });
         expect(res.body).toMatchObject({ queued: 1, skipped: { notMatching: 1 } });
+    });
+
+    it('sends to the cities picked, like the creator admin’s city filter', async () => {
+        // Delhi only: Meera (Lucknow) is left out, Dev (Delhi) gets it.
+        let res = await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr1', 'cr2'], criteria: { cities: ['Delhi'], min: 0 } });
+        expect(res.body).toMatchObject({ queued: 1, skipped: { notMatching: 1 } });
+        await drain();
+        expect(sent.map(m => m.to)).toEqual(['919876500012']);
+        // All cities (none picked) with nothing else set is no criterion, and so is a word that means everywhere.
+        expect((await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr1'], criteria: { cities: [], min: 0 } })).statusCode).toBe(400);
+        expect((await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr1'], criteria: { cities: ['Others', 'Pan-India'] } })).statusCode).toBe(400);
+        // All cities but a follower minimum: fine.
+        res = await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr1'], criteria: { cities: [], min: 10000 } });
+        expect(res.body.queued).toBe(1);
+    });
+
+    it('matches city spellings the way the creator admin does', () => {
+        expect(inCities(['Bengaluru'], 'Bangalore')).toBe(true);
+        expect(inCities(['Delhi NCR'], 'New Delhi')).toBe(true);
+        expect(inCities(['Lucknow', 'Pune'], 'Mumbai')).toBe(false);
+        expect(inCities(['Lucknow'], '')).toBe(false);
+        expect(cleanCities([' Pune ', 'Pune', 'Others', '', null])).toEqual(['Pune']);
+        const crit = activeCriteria({ cities: ['Pune'], city: 'any' }, { cities: ['Lucknow'] });
+        expect(matchesCriteria({ city: 'Pune', cityMatch: false }, crit)).toBe(true);
+        expect(matchesCriteria({ city: 'Lucknow', cityMatch: true }, crit)).toBe(false);
     });
 
     it('reads all or any of the criteria that are set', () => {
