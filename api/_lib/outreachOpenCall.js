@@ -5,7 +5,9 @@
  * the campaign's picture and opens app.newbi.live/c/<id>.
  *
  *   outreach-open-audience { campaignId }
- *     → { creators: [{ id, name, handle, city, followers, niches, phone, verified, cityMatch, nicheMatch, applied, told, whatsappOff, optedOut }],
+ *     → { creators: [{ id, name, handle, city, followers, niches, phone, verified, cityMatch, nicheMatch, applied, told,
+ *                      message: { status: queued|sent|delivered|read|failed, at, error, replied, repliedAt } | null,
+ *                      whatsappOff, optedOut }],
  *         criteria: { cities, minFollowers, niches }, open, live, template }
  *   outreach-open-send { campaignId, creatorIds, criteria: { cities, min, niche, mode }, includeUnverified?, again? }
  *     (cities: the cities picked, empty = all; older pages send city: 'campaign'|'any' instead)
@@ -56,11 +58,58 @@ export const cityMatches = (campaign, city) => {
     return !cities.length || cities.some(cc => isCampaignCityMatch(cc, city));
 };
 
-/* What the campaign already knows: who applied (by account and number) and who was told (queued or sent). */
-const campaignState = async (db, campaignId) => {
+const RECEIPTS = new Set(['delivered', 'read', 'failed']);
+
+/*
+ * How each of this campaign's messages went, by job id: the queue job (queued, sent, failed; a cancelled one was
+ * never sent), then WhatsApp's receipts on the send log (delivered, read, or failed after sending), then whether
+ * they wrote back to the Newbi number after it went (outreach_inbox lastInboundAt).
+ */
+const messageStates = async (db, jobs) => {
+    const out = new Map();
+    jobs.forEach((d) => {
+        const j = d.data();
+        const status = j.status === 'sending' ? 'queued' : j.status;
+        if (!['queued', 'sent', 'failed'].includes(status)) return;
+        out.set(d.id, {
+            status, at: j.sentAt || j.createdAt || null, error: status === 'failed' ? j.lastError || null : null,
+            messageId: j.messageId || null, phone: j.data?.phone || null, sentAt: j.sentAt || null, replied: false, repliedAt: null,
+        });
+    });
+    const sent = [...out.values()].filter(m => m.status === 'sent');
+    const byMessage = new Map(sent.filter(m => m.messageId).map(m => [m.messageId, m]));
+    const ids = [...byMessage.keys()];
+    for (let i = 0; i < ids.length; i += 30) {
+        const snap = await db.collection('message_log').where('messageId', 'in', ids.slice(i, i + 30)).select('messageId', 'status', 'statusTimes', 'error').get().catch(() => ({ docs: [] }));
+        snap.docs.forEach((d) => {
+            const l = d.data();
+            const m = byMessage.get(l.messageId);
+            if (!m || !RECEIPTS.has(l.status)) return;
+            m.status = l.status;
+            m.at = l.statusTimes?.[l.status] || m.at;
+            if (l.status === 'failed') m.error = l.error || null;
+        });
+    }
+    const phones = [...new Set(sent.map(m => m.phone).filter(Boolean))];
+    const lastIn = new Map();
+    for (let i = 0; i < phones.length; i += 100) {
+        const chunk = phones.slice(i, i + 100);
+        const snaps = await db.getAll(...chunk.map(p => db.collection('outreach_inbox').doc(contactIdFor(p)))).catch(() => []);
+        snaps.forEach((s, k) => { if (s.exists && s.data().lastInboundAt) lastIn.set(chunk[k], s.data().lastInboundAt); });
+    }
+    sent.forEach((m) => {
+        const t = lastIn.get(m.phone);
+        if (t && m.sentAt && Date.parse(t) >= Date.parse(m.sentAt)) { m.replied = true; m.repliedAt = t; }
+    });
+    return out;
+};
+
+/* What the campaign already knows: who applied (by account and number) and how each message went. */
+const campaignState = async (db, campaignId, { receipts = false } = {}) => {
     const [apps, jobs] = await Promise.all([
         db.collection('campaigns').doc(campaignId).collection('applications').select('uid', 'phone', 'creatorId').get(),
-        db.collection('outreach_queue').where('campaignId', '==', campaignId).where('kind', '==', 'template').select('status').get(),
+        db.collection('outreach_queue').where('campaignId', '==', campaignId).where('kind', '==', 'template')
+            .select('status', 'messageId', 'sentAt', 'createdAt', 'lastError', 'data.phone').get(),
     ]);
     const appliedUids = new Set();
     const appliedPhones = new Set();
@@ -71,7 +120,8 @@ const campaignState = async (db, campaignId) => {
         if (a.phone) appliedPhones.add(toE164(a.phone));
     });
     const told = new Map(jobs.docs.map(d => [d.id, d.data().status]));
-    return { appliedUids, appliedPhones, told };
+    const messages = receipts ? await messageStates(db, jobs.docs) : new Map();
+    return { appliedUids, appliedPhones, told, messages };
 };
 
 const applied = (state, c, phone) => state.appliedUids.has(c.uid) || state.appliedUids.has(c.id) || (phone && state.appliedPhones.has(phone));
@@ -84,13 +134,13 @@ export const handleOpenAudience = async (req, res, { db }) => {
     const campaign = { id: campaignId, ...campSnap.data() };
     const [creatorsSnap, state, optSnap] = await Promise.all([
         db.collection('creators').get(),
-        campaignState(db, campaignId),
+        campaignState(db, campaignId, { receipts: true }),
         db.collection('creator_contacts').where('whatsappOptOut.at', '>', '').select().get().catch(() => ({ docs: [] })),
     ]);
     const optedOut = new Set(optSnap.docs.map(d => d.id));
     const creators = creatorsSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(eligible).map((c) => {
         const phone = numberOf(c);
-        const status = state.told.get(inviteJobId(campaignId, c.uid || c.id, phone));
+        const m = state.messages.get(inviteJobId(campaignId, c.uid || c.id, phone)) || null;
         return {
             id: c.id,
             name: String(c.displayName || c.name || '').trim() || 'Unnamed creator',
@@ -103,7 +153,8 @@ export const handleOpenAudience = async (req, res, { db }) => {
             cityMatch: cityMatches(campaign, c.city),
             nicheMatch: nicheMatches(campaign, c),
             applied: applied(state, c, phone),
-            told: status === 'sent' ? 'sent' : ['queued', 'sending'].includes(status) ? 'queued' : status === 'failed' ? 'failed' : null,
+            told: !m ? null : m.status === 'failed' ? 'failed' : m.status === 'queued' ? 'queued' : 'sent',
+            message: m ? { status: m.status, at: m.at, error: m.error, replied: m.replied, repliedAt: m.repliedAt } : null,
             whatsappOff: c.channelPrefs?.whatsapp === false,
             optedOut: Boolean(phone && optedOut.has(contactIdFor(phone))),
         };

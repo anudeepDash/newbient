@@ -6,7 +6,8 @@ import { runQueue, joinPayload } from '../../api/_lib/outreachQueue.js';
 import { handleOutreachAction } from '../../api/_lib/outreach.js';
 import { queueCityWelcome } from '../../api/_lib/creatorWelcome.js';
 import { WA_TEMPLATES, WELCOME_CITY_BODY, LIVE_BRIEF_BODY, groupCodeOf, STOP_PAYLOAD } from '../../src/lib/outreach/whatsappTemplate.js';
-import { activeCriteria, cleanCities, inCities, matchesCriteria } from '../../src/lib/outreach/openAudience.js';
+import { activeCriteria, cleanCities, inCities, matchesCriteria, statusOf, needsMessage, hasMessage } from '../../src/lib/outreach/openAudience.js';
+import { contactIdFor } from '../../api/_lib/outreachThreads.js';
 import { fieldsFor } from '../../src/lib/outreach/waFields.js';
 import { defaultPayoutAmount } from '../../src/lib/outreach/deliverables.js';
 import { parseAmount, detectColumns, parseDelimited, rowsFromTable } from '../../src/lib/outreach/importSheet.js';
@@ -261,6 +262,58 @@ describe('the campaign-live message with a View the brief button', () => {
         expect(matchesCriteria(a, crit, 'any')).toBe(true);
         expect(activeCriteria({ city: 'campaign', min: 0, niche: 'campaign' }, { cities: [], niches: [] })).toEqual([]);
         expect(matchesCriteria(a, [], 'all')).toBe(true);
+    });
+});
+
+describe('Campaign open shows where each creator stands', () => {
+    const CITY = { cities: ['Lucknow', 'Delhi'], min: 0 };
+
+    it('reports queued, sent, delivered, read, replied and didn’t go from the queue, receipts and replies', async () => {
+        // Four creators get it; then WhatsApp's receipts and a reply come in.
+        db.store.set('creators/cr6', { uid: 'u6', displayName: 'Isha', city: 'Lucknow', instagramFollowers: '6000', phone: '+919876500016', isPhoneVerified: true });
+        db.store.set('creators/cr7', { uid: 'u7', displayName: 'Kiran', city: 'Lucknow', instagramFollowers: '6000', phone: '+919876500017', isPhoneVerified: true });
+        const res = await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr1', 'cr2', 'cr6', 'cr7'], criteria: CITY });
+        expect(res.body.queued).toBe(4);
+        await drain();
+        const jobOf = (uid) => db.store.get(`outreach_queue/invite_c1_${uid}`);
+        const logFor = (uid, status, extra = {}) => db.store.set(`message_log/${uid}`, { channel: 'whatsapp', messageId: jobOf(uid).messageId, status, statusTimes: { [status]: '2026-11-05T10:00:00.000Z' }, ...extra });
+        logFor('u1', 'read');
+        logFor('u2', 'delivered');
+        logFor('u6', 'failed', { error: 'Number not on WhatsApp' });
+        db.store.set(`outreach_inbox/${contactIdFor('+919876500017')}`, { lastInboundAt: new Date(Date.now() + 60_000).toISOString() });
+        // Someone else's message is still waiting.
+        db.store.set('creators/cr8', { uid: 'u8', displayName: 'Noor', city: 'Lucknow', instagramFollowers: '6000', phone: '+919876500018', isPhoneVerified: true });
+        db.store.set('outreach_queue/invite_c1_u8', { campaignId: 'c1', kind: 'template', status: 'queued', data: { phone: '+919876500018' }, createdAt: new Date().toISOString() });
+        // And a cancelled one was never sent.
+        db.store.set('creators/cr9', { uid: 'u9', displayName: 'Om', city: 'Lucknow', instagramFollowers: '6000', phone: '+919876500019', isPhoneVerified: true });
+        db.store.set('outreach_queue/invite_c1_u9', { campaignId: 'c1', kind: 'template', status: 'cancelled', data: { phone: '+919876500019' } });
+
+        const by = Object.fromEntries((await call('outreach-open-audience', { campaignId: 'c1' })).body.creators.map(c => [c.id, c]));
+        expect(by.cr1.message).toMatchObject({ status: 'read', at: '2026-11-05T10:00:00.000Z', replied: false });
+        expect(by.cr2.message.status).toBe('delivered');
+        expect(by.cr6.message).toMatchObject({ status: 'failed', error: 'Number not on WhatsApp' });
+        expect(by.cr6.told).toBe('failed');
+        expect(by.cr7.message).toMatchObject({ status: 'sent', replied: true });
+        expect(by.cr8.message.status).toBe('queued');
+        expect(by.cr9.message).toBeNull();
+        expect(Object.fromEntries(Object.entries(by).map(([id, c]) => [id, statusOf(c)]))).toMatchObject({
+            cr1: 'read', cr2: 'delivered', cr6: 'failed', cr7: 'replied', cr8: 'queued', cr9: 'new', cr4: 'applied',
+        });
+
+        // A message that went but wasn't delivered can be sent again (only to the people picked).
+        const again = await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr6'], criteria: CITY, again: true });
+        expect(again.body.queued).toBe(1);
+    });
+
+    it('ticks only people who still need it', () => {
+        expect(statusOf({ applied: true, phone: '+91…' })).toBe('applied');
+        expect(statusOf({ phone: '' })).toBe('blocked');
+        expect(statusOf({ phone: '+91…', optedOut: true, message: { status: 'read' } })).toBe('blocked');
+        expect(statusOf({ phone: '+91…', message: { status: 'failed', replied: true } })).toBe('failed');
+        expect(['new', 'failed'].every(needsMessage)).toBe(true);
+        expect(['queued', 'sent', 'read', 'replied', 'applied', 'blocked'].some(needsMessage)).toBe(false);
+        expect(hasMessage('queued')).toBe(false);
+        expect(['sent', 'delivered', 'read', 'replied'].every(hasMessage)).toBe(true);
     });
 });
 

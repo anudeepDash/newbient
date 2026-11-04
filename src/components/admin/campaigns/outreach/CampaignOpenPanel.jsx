@@ -9,7 +9,7 @@ import { Button, Card, Badge, Select, SearchInput } from '../../ui';
 import { Field, fieldCls } from '../../uploads/UploadKit';
 import { Spinner, ConfirmSheet } from '../parts';
 import { firstNameOf } from '../../../../lib/outreach/normalize';
-import { activeCriteria, cleanCities, inCities, matchesCriteria } from '../../../../lib/outreach/openAudience';
+import { activeCriteria, cleanCities, hasMessage, inCities, matchesCriteria, needsMessage, statusOf, STATUS_ORDER } from '../../../../lib/outreach/openAudience';
 import { PREDEFINED_CITIES, normalizeCity } from '../../../../lib/constants';
 import MultiSelectFilter from '../../filters/MultiSelectFilter';
 import { LIVE_BRIEF_BODY, LIVE_BRIEF_TEMPLATE } from '../../../../lib/outreach/whatsappTemplate';
@@ -29,6 +29,20 @@ import { Handle, Bubble, followers } from './parts';
 
 const fill = (body, params) => String(body || '').replace(/\{\{(\d+)\}\}/g, (_, n) => params[Number(n) - 1] ?? '');
 const FALLBACK_BODY = "*A new campaign is open, {{1}}*\n\n{{2}} is taking applications on Newbi. Tap *Apply* to see the details and apply.";
+/* Each creator's status for this campaign: its badge, and its filter pill. */
+const STATUS_UI = {
+    new: { pill: 'To send' },
+    queued: { pill: 'Queued', badge: 'Queued', tone: 'gray' },
+    sent: { pill: 'Sent', badge: 'Sent', tone: 'blue' },
+    delivered: { pill: 'Delivered', badge: 'Delivered', tone: 'indigo' },
+    read: { pill: 'Read', badge: 'Read', tone: 'green' },
+    replied: { pill: 'Replied', badge: 'Replied', tone: 'violet' },
+    failed: { pill: 'Didn’t go', badge: 'Didn’t go', tone: 'rose' },
+    applied: { pill: 'Applied', badge: 'Applied', tone: 'teal' },
+    blocked: { pill: 'Can’t message', tone: 'amber' },
+};
+const blockedLabel = (c) => (!c.phone ? 'No number' : c.optedOut ? 'Replied STOP' : 'WhatsApp off');
+const when = (iso) => (iso ? new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '');
 const FALLBACK_BUTTONS = { [LIVE_BRIEF_TEMPLATE]: ['↗ View the brief', 'Stop updates'], campaign_invite: ['↗ Apply'] };
 
 const CampaignOpenPanel = ({ campaign, live }) => {
@@ -42,6 +56,7 @@ const CampaignOpenPanel = ({ campaign, live }) => {
     const [minFollowers, setMinFollowers] = useState('');
     const [withUnverified, setWithUnverified] = useState(false);
     const [withTold, setWithTold] = useState(false);
+    const [statusFilter, setStatusFilter] = useState('all');
     const [q, setQ] = useState('');
     const [picked, setPicked] = useState(() => new Set());
     const [confirm, setConfirm] = useState(false);
@@ -84,27 +99,30 @@ const CampaignOpenPanel = ({ campaign, live }) => {
     }, [state.creators, cities]);
     const sameAsCampaign = chosenCities.length === cleanCities(cities).length && chosenCities.every(c => cleanCities(cities).includes(c));
     const meets = (c) => matchesCriteria(c, criteria, mode);
-    const reachable = useMemo(() => state.creators.filter(c => c.phone && !c.optedOut && !c.whatsappOff && !c.applied), [state.creators]);
-    // Everyone who fits, including people already sent this campaign's message (in any earlier batch): they stay
-    // in the list marked Sent (or Queued), unticked, and can only be ticked with "Send again to people already sent".
-    // A message that didn't go (Meta refused it) never reached them, so they stay pickable.
-    const audience = useMemo(() => reachable.filter(c => matchesCriteria(c, criteria, mode)
-        && (withUnverified || c.verified)), [reachable, criteria, mode, withUnverified]);
-    const canPick = useCallback((c) => !c.told || c.told === 'failed' || withTold, [withTold]);
+    // Everyone registered who fits the criteria, each with where they stand for this campaign (statusOf): not
+    // messaged yet, queued, sent, delivered, read, replied, didn't go, applied, or can't be messaged. Only "to send"
+    // and "didn't go" are ticked; people who already have the message can be ticked with "Send again to people
+    // already sent". Unverified numbers are left out unless included.
+    const audience = useMemo(() => state.creators
+        .filter(c => matchesCriteria(c, criteria, mode) && (withUnverified || c.verified))
+        .map(c => ({ ...c, status: statusOf(c) })), [state.creators, criteria, mode, withUnverified]);
+    const canPick = useCallback((c) => needsMessage(c.status) || (withTold && hasMessage(c.status)), [withTold]);
     useEffect(() => { setPicked(new Set(audience.filter(canPick).map(c => c.id))); }, [audience, canPick]);
+    const counts = useMemo(() => audience.reduce((m, c) => ({ ...m, [c.status]: (m[c.status] || 0) + 1 }), {}), [audience]);
     const query = q.trim().toLowerCase().replace(/^@/, '');
-    const shown = query ? audience.filter(c => `${c.name} ${c.handle} ${c.city} ${c.phone}`.toLowerCase().includes(query)) : audience;
+    const shown = audience
+        .filter(c => statusFilter === 'all' || c.status === statusFilter)
+        .filter(c => !query || `${c.name} ${c.handle} ${c.city} ${c.phone}`.toLowerCase().includes(query));
     const recipients = audience.filter(c => picked.has(c.id) && canPick(c));
     const pickable = shown.filter(canPick);
-    const alreadySent = audience.filter(c => c.told === 'sent' || c.told === 'queued').length;
+    const alreadySent = audience.filter(c => hasMessage(c.status)).length;
     const allShownPicked = pickable.length > 0 && pickable.every(c => picked.has(c.id));
+    // A message that went but WhatsApp then reported as not delivered is replaced only with `again` (just for those picked).
+    const again = withTold || recipients.some(c => c.status === 'failed');
 
     const left = {
-        applied: state.creators.filter(c => c.applied).length,
-        noNumber: state.creators.filter(c => !c.phone).length,
-        stopped: state.creators.filter(c => c.phone && (c.optedOut || c.whatsappOff)).length,
-        unverified: reachable.filter(c => !c.verified && meets(c)).length,
-        told: reachable.filter(c => (c.told === 'sent' || c.told === 'queued') && meets(c) && (withUnverified || c.verified)).length,
+        unverified: state.creators.filter(c => !c.verified && meets(c) && needsMessage(statusOf(c))).length,
+        told: audience.filter(c => hasMessage(c.status)).length,
     };
     const sample = recipients[0] || audience[0];
     const params = [firstNameOf(sample?.name) || 'Riya', campaign.title || 'the campaign'];
@@ -116,7 +134,7 @@ const CampaignOpenPanel = ({ campaign, live }) => {
     const sendNow = async () => {
         setSending(true);
         const r = await callOutreach('outreach-open-send', {
-            campaignId: campaign.id, creatorIds: recipients.map(c => c.id), includeUnverified: withUnverified, again: withTold,
+            campaignId: campaign.id, creatorIds: recipients.map(c => c.id), includeUnverified: withUnverified, again,
             criteria: { cities: chosenCities, min, niche, mode },
         });
         setSending(false);
@@ -202,13 +220,30 @@ const CampaignOpenPanel = ({ campaign, live }) => {
                         <div className="flex flex-wrap items-center gap-2 border-b border-black/[0.06] px-3 py-2 dark:border-white/[0.06]">
                             <label className="flex items-center gap-2.5 text-[12px] font-semibold text-gray-500">
                                 <input type="checkbox" checked={allShownPicked} disabled={!pickable.length} onChange={() => setPicked(s => { const n = new Set(s); pickable.forEach(c => (allShownPicked ? n.delete(c.id) : n.add(c.id))); return n; })} className="h-4 w-4 accent-emerald-600" />
-                                {recipients.length} of {audience.length} picked{alreadySent > 0 && ` · ${alreadySent} already sent`}
+                                {recipients.length} picked of {audience.length}{alreadySent > 0 && ` · ${alreadySent} already sent`}
                             </label>
                             <button type="button" onClick={load} className="flex items-center gap-1 text-[12px] font-semibold text-gray-500 hover:text-gray-800 dark:hover:text-white" aria-label="Refresh the list">
                                 <RefreshCw size={12} className={cn(state.loading && 'animate-spin')} /> Refresh
                             </button>
                             {audience.length > 8 && <SearchInput value={q} onChange={setQ} placeholder="Find someone" className="ml-auto w-full sm:w-48" />}
                         </div>
+                        {audience.length > 0 && (
+                            <div className="flex gap-1.5 overflow-x-auto border-b border-black/[0.06] px-3 py-2 dark:border-white/[0.06]" role="tablist" aria-label="Filter by status">
+                                {['all', ...STATUS_ORDER.filter(k => counts[k])].map(k => (
+                                    <button
+                                        key={k}
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={statusFilter === k}
+                                        onClick={() => setStatusFilter(k)}
+                                        className={cn('shrink-0 rounded-full px-2.5 py-1 text-[12px] font-semibold',
+                                            statusFilter === k ? 'bg-gray-900 text-white dark:bg-white dark:text-black' : 'bg-black/[0.04] text-gray-600 dark:bg-white/[0.06] dark:text-zinc-300')}
+                                    >
+                                        {k === 'all' ? 'All' : STATUS_UI[k].pill} <span className="tabular-nums opacity-70">{(k === 'all' ? audience.length : counts[k]).toLocaleString('en-IN')}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                         {state.loading ? (
                             <p className="flex items-center justify-center gap-2 px-4 py-8 text-[13px] text-gray-500"><Spinner /> Finding creators…</p>
                         ) : state.error ? (
@@ -217,24 +252,30 @@ const CampaignOpenPanel = ({ campaign, live }) => {
                             <ul className="max-h-96 divide-y divide-black/[0.05] overflow-y-auto dark:divide-white/[0.06]">
                                 {shown.slice(0, 500).map(c => (
                                     <li key={c.id}>
-                                        <label className={cn('flex items-center gap-3 px-4 py-2.5', canPick(c) ? 'cursor-pointer' : 'cursor-not-allowed opacity-60')} title={canPick(c) ? undefined : 'Already sent this campaign’s message. Tick “Send again to people already sent” to include them.'}>
+                                        <label className={cn('flex items-center gap-3 px-4 py-2.5', canPick(c) ? 'cursor-pointer' : 'cursor-not-allowed opacity-60')} title={canPick(c) ? undefined : hasMessage(c.status) ? 'Already sent this campaign’s message. Tick “Send again to people already sent” to include them.' : c.status === 'queued' ? 'Their message is waiting to go out.' : c.status === 'applied' ? 'Already applied to this campaign.' : 'Can’t be messaged on WhatsApp.'}>
                                             <input type="checkbox" checked={picked.has(c.id) && canPick(c)} disabled={!canPick(c)} onChange={() => setPicked(s => { const n = new Set(s); if (n.has(c.id)) n.delete(c.id); else n.add(c.id); return n; })} className="h-4 w-4 accent-emerald-600" />
                                             <span className="min-w-0 flex-1">
                                                 <span className="block truncate text-[13.5px] font-semibold">{c.name}</span>
                                                 <span className="block truncate text-[12px] text-gray-500">{c.handle ? <><Handle handle={c.handle} /> · </> : null}{followers(c.followers)} · {c.city || 'No city'}</span>
                                             </span>
                                             {!c.verified && <Badge tone="amber">Not verified</Badge>}
-                                            {c.told && <Badge tone={c.told === 'sent' ? 'green' : c.told === 'failed' ? 'rose' : 'gray'}>{c.told === 'sent' ? 'Sent' : c.told === 'queued' ? 'Queued' : 'Didn’t go'}</Badge>}
+                                            {c.status !== 'new' && (
+                                                <span className="flex shrink-0 flex-col items-end gap-0.5" title={c.message?.error || undefined}>
+                                                    <Badge tone={STATUS_UI[c.status].tone}>{c.status === 'blocked' ? blockedLabel(c) : STATUS_UI[c.status].badge}</Badge>
+                                                    {(c.status === 'replied' ? c.message?.repliedAt : c.message?.at) && !['applied', 'blocked'].includes(c.status) && (
+                                                        <span className="text-[10.5px] text-gray-400">{when(c.status === 'replied' ? c.message.repliedAt : c.message.at)}</span>
+                                                    )}
+                                                </span>
+                                            )}
                                         </label>
                                     </li>
                                 ))}
                             </ul>
                         ) : (
-                            <p className="px-4 py-6 text-center text-[13px] text-gray-500">{audience.length ? 'Nobody matches that search.' : 'Nobody matches. Try any city, a lower follower count, or include unverified numbers.'}</p>
+                            <p className="px-4 py-6 text-center text-[13px] text-gray-500">{audience.length ? (query ? 'Nobody matches that search.' : 'Nobody with this status.') : 'Nobody matches. Try more cities, a lower follower count, or include unverified numbers.'}</p>
                         )}
                     </div>
                     {shown.length > 500 && <p className="text-[11.5px] text-gray-500">Showing 500 of {shown.length.toLocaleString('en-IN')}; everyone picked is sent to.</p>}
-                    {!state.loading && <p className="text-[11.5px] text-gray-500">Not listed: {left.applied} who already applied, {left.noNumber} with no number, {left.stopped} who turned WhatsApp off or replied STOP.</p>}
                 </div>
             </Card>
 
