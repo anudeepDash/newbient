@@ -1,3 +1,4 @@
+import { QUOTA_ERROR, isQuotaError } from './_lib/quota.js';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
@@ -319,6 +320,7 @@ const isAdminCaller = async (decodedToken) => {
         const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
         if (userDoc.exists && CREATOR_ADMIN_ROLES.includes(userDoc.data()?.role)) return true;
     } catch (e) {
+        if (isQuotaError(e)) throw e;
         console.warn('[API/CREATOR-JOIN] Admin check notice:', e.message);
     }
     return false;
@@ -510,7 +512,12 @@ export default async function handler(req, res) {
 
     let callerIsAdmin = false;
     if (ADMIN_ONLY_ACTIONS.has(action)) {
-        callerIsAdmin = await isAdminCaller(decodedToken);
+        try {
+            callerIsAdmin = await isAdminCaller(decodedToken);
+        } catch (e) {
+            if (isQuotaError(e)) return res.status(503).json({ success: false, error: QUOTA_ERROR });
+            throw e;
+        }
         if (!callerIsAdmin) {
             return res.status(403).json({ success: false, error: 'Admin access required.' });
         }
@@ -855,6 +862,7 @@ export default async function handler(req, res) {
             });
         } catch (err) {
             console.error('[API/CREATOR-JOIN] Creator update error:', err);
+            if (isQuotaError(err)) return res.status(503).json({ success: false, error: QUOTA_ERROR });
             return res.status(500).json({ success: false, error: err.message });
         }
     }
@@ -1494,6 +1502,7 @@ export default async function handler(req, res) {
 
     } catch (err) {
         console.error('[API/CREATOR-JOIN] Submission error:', err);
+        if (isQuotaError(err)) return res.status(503).json({ success: false, error: QUOTA_ERROR });
         return res.status(500).json({
             success: false,
             error: err.message || 'Internal server error while submitting application.'

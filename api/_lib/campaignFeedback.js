@@ -35,6 +35,7 @@
  *   POST ?action=feedback-run      { campaignId }                 send emails still waiting
  *   POST ?action=feedback-publish  { campaignId, id, publish, quote? }  show on / take off the /creator page
  */
+import { QUOTA_ERROR, isQuotaError } from './quota.js';
 import { createHash } from 'node:crypto';
 import { FieldValue, getDb, nowIso, istDate } from './db.js';
 import { readSignedToken } from './linkSign.js';
@@ -576,6 +577,7 @@ export const handleFeedbackAction = async (action, req, res, { decodedToken, db 
     } catch (err) {
         // Never log request bodies: they carry names and quotes.
         console.error(`[feedback] ${action} failed:`, err?.message || err, req.body?.phone ? maskPhone(String(req.body.phone)) : '');
+        if (isQuotaError(err)) return send(res, 503, { success: false, error: QUOTA_ERROR });
         return send(res, err?.status || 500, { success: false, error: err?.status === 404 ? err.message : 'Something went wrong. Please try again.' });
     }
 };
