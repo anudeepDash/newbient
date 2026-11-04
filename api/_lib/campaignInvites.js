@@ -23,20 +23,23 @@ const short = (s, n) => {
     return v.length > n ? `${v.slice(0, n - 1).trimEnd()}…` : v;
 };
 
-/* The number to use: their verified WhatsApp (or phone). Unverified numbers could be anyone's. */
-const whatsappOf = (c) => (c.isPhoneVerified ? toE164(c.whatsapp || c.phone) : null);
+/* The number to use: their verified WhatsApp (or phone). Unverified numbers could be anyone's, so they're used only when the team says so. */
+const whatsappOf = (c, verifiedOnly = true) => (c.isPhoneVerified || !verifiedOnly ? toE164(c.whatsapp || c.phone) : null);
+
+/* One job per creator per campaign, shared by the announcement and Outreach → Campaign open. */
+export const inviteJobId = (campaignId, uid, phone) => `invite_${campaignId}_${uid || String(phone || '').slice(1)}`.slice(0, 140);
 
 /**
  * creators: the docs the campaign was announced to (already city-matched).
  * → { queued, skipped: { noNumber, whatsappOff, already } }
  */
-export const queueCampaignInvites = async ({ db = getDb(), campaign, creators, again = false, createdBy = 'Newbi app', start = true }) => {
+export const queueCampaignInvites = async ({ db = getDb(), campaign, creators, again = false, createdBy = 'Newbi app', start = true, verifiedOnly = true }) => {
     const out = { queued: 0, skipped: { noNumber: 0, whatsappOff: 0, already: 0 } };
     if (!isWhatsAppConfigured() || !isTemplateLive(INVITE_TEMPLATE) || !campaign?.id) return { ...out, off: true };
     const header = imageHeaderFor(INVITE_TEMPLATE, campaignImageOf(campaign));
     const seen = new Set();
     for (const c of creators.slice(0, MAX_INVITES)) {
-        const phone = whatsappOf(c);
+        const phone = whatsappOf(c, verifiedOnly);
         if (!phone || seen.has(phone)) { out.skipped.noNumber += phone ? 0 : 1; continue; }
         seen.add(phone);
         const uid = c.uid || c.id;
@@ -46,7 +49,7 @@ export const queueCampaignInvites = async ({ db = getDb(), campaign, creators, a
         const name = c.displayName || c.name || '';
         const bodyParams = [firstName(name), short(campaign.title || 'a new campaign', 80)];
         const id = await enqueueJob(db, {
-            id: `invite_${campaign.id}_${uid || phone.slice(1)}`.slice(0, 140),
+            id: inviteJobId(campaign.id, uid, phone),
             campaignId: campaign.id,
             kind: 'template',
             again,

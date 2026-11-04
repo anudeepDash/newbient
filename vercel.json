@@ -22,6 +22,11 @@
     ],
     "redirects": [
         {
+            "source": "/wa/g/:code([A-Za-z0-9]{10,40})",
+            "destination": "https://chat.whatsapp.com/:code",
+            "permanent": false
+        },
+        {
             "source": "/unsubscribe",
             "destination": "/api/track?type=unsubscribe",
             "permanent": false

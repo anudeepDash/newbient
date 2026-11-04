@@ -10,6 +10,7 @@
  *                (campaign_group_link), with the signed "Joined" quick reply.
  *   update       a short note and a link (campaign_update).
  *   group_join   the reworded group invite with a join-by date (campaign_group_join).
+ *   group_invite the group invite with a "Join the group" button instead of a pasted link (campaign_group_invite).
  *   reach_out    the first message to an imported number (campaign_creator_invite), "I'm interested".
  *   event_day    when, where and a note for the event (campaign_event_day), with their page link.
  *   brief_changed what changed in the brief (campaign_brief_updated), with their task link.
@@ -26,6 +27,7 @@ import { queueTaskLive } from './postsOpen.js';
 import { isWhatsAppConfigured } from './whatsapp.js';
 import { isOnShortlist } from '../../src/lib/outreach/status.js';
 import { taskWindow } from '../../src/lib/creator/tasks.js';
+import { groupCodeOf } from '../../src/lib/outreach/whatsappTemplate.js';
 
 /*
  * Who each message can go to. Most are for approved creators (shortlisted onwards); a first
@@ -36,6 +38,7 @@ const AUDIENCE = {
     task_live: (a) => isOnShortlist(a.status),
     group_link: (a) => isOnShortlist(a.status),
     group_join: (a) => isOnShortlist(a.status),
+    group_invite: (a) => isOnShortlist(a.status),
     update: (a) => isOnShortlist(a.status),
     event_day: (a) => isOnShortlist(a.status),
     brief_changed: (a) => isOnShortlist(a.status),
@@ -80,11 +83,13 @@ export const handleWaSend = async (req, res, { db, actor, startWorker }) => {
         result = await queueTaskLive({ db, campaignId, campaign, tasks: [task], appIds: ids, again: true, createdBy });
     } else {
         let data;
-        if (kind === 'group_link' || kind === 'group_join') {
+        if (kind === 'group_link' || kind === 'group_join' || kind === 'group_invite') {
             const priv = await campRef.collection('private').doc('outreach').get();
             const link = httpsUrl(b.link) || str(priv.data()?.whatsappGroupLink, 500) || str(campaign.whatsappLink, 500);
             if (!link) return send(res, 400, { success: false, error: 'Paste the group link (or add it in Settings).' });
-            data = kind === 'group_join' ? { link, joinBy: oneLine(b.joinBy, 60) } : { link };
+            // The button carries only the invite code, so it has to be a chat.whatsapp.com link.
+            if (kind === 'group_invite' && !groupCodeOf(link)) return send(res, 400, { success: false, error: 'Use the group’s invite link (https://chat.whatsapp.com/…).' });
+            data = kind === 'group_link' ? { link } : { link, joinBy: oneLine(b.joinBy, 60) };
         } else if (kind === 'update') {
             const note = oneLine(b.note, 400);
             const link = httpsUrl(b.link);

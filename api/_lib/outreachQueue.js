@@ -24,7 +24,7 @@ import { sendTemplate, sendText, isWhatsAppConfigured, isTemplateLive, campaignI
 import { makeSignedToken } from './linkSign.js';
 import { contactIdFor, appendThreadMessage, windowOpen } from './outreachThreads.js';
 import { canTransition, canSystemTransition } from '../../src/lib/outreach/status.js';
-import { templateParamsFor, renderTemplatePreview, WA_TEMPLATES, STOP_PAYLOAD, toldInAppOnly } from '../../src/lib/outreach/whatsappTemplate.js';
+import { templateParamsFor, renderTemplatePreview, WA_TEMPLATES, STOP_PAYLOAD, toldInAppOnly, groupCodeOf } from '../../src/lib/outreach/whatsappTemplate.js';
 import { maskPhone } from '../../src/lib/outreach/normalize.js';
 import { taskWindow } from '../../src/lib/creator/tasks.js';
 
@@ -239,6 +239,8 @@ const KINDS = {
     // group_join: data { link, joinBy }; event_day: data { when, where, note }; brief_changed: data { note }.
     reach_out: { button: 'interest' },
     group_join: { button: 'join' },
+    // group_invite: data { link, joinBy }. Buttons: "Join the group" (URL, the group's invite code), Joined, Stop updates.
+    group_invite: { button: 'group' },
     event_day: { button: 'link' },
     brief_changed: { button: 'link' },
     not_selected: { button: 'stop' },
@@ -341,6 +343,7 @@ const loadContext = async (db, job) => {
     }
     if (job.kind === 'deliverables' && !(campaign.tasks || []).length) return { skip: 'no_deliverables' };
     if (['group_link', 'group_join'].includes(job.kind) && !groupLinkOf(job, settings, campaign)) return { skip: 'no_group_link' };
+    if (job.kind === 'group_invite' && !groupCodeOf(groupLinkOf(job, settings, campaign))) return { skip: 'no_group_link' };
     if (job.kind === 'not_selected' && app.status !== 'applied') return { skip: 'status_changed' };
     if (job.kind === 'task_live' && !(campaign.tasks || []).some(t => (job.data?.taskIds || []).includes(String(t.id)) && taskWindow(t) === 'open')) return { skip: 'task_closed' };
     if (spec.button === 'link' && !submitToken(job.campaignId, job.appId)) return { skip: 'no_link_secret' };
@@ -443,7 +446,8 @@ export const sendJob = async (db, job, { now = Date.now() } = {}) => {
         const buttons = spec.button === 'join' ? [{ index: 0, payload: joinPayload(job.campaignId, job.appId) }, stop(1)]
             : spec.button === 'link' ? [{ index: 0, param: submitToken(job.campaignId, job.appId) }]
                 : spec.button === 'interest' ? [{ index: 0, payload: interestPayload(job.campaignId, job.appId) }, stop(1)]
-                    : spec.button === 'stop' ? [stop(0)] : [];
+                    : spec.button === 'group' ? [{ index: 0, param: groupCodeOf(groupLinkOf(job, settings, campaign)) }, { index: 1, payload: joinPayload(job.campaignId, job.appId) }, stop(2)]
+                        : spec.button === 'stop' ? [stop(0)] : [];
         const tplCtx = { application: app, campaign, groupLink: groupLinkOf(job, settings, campaign), data: job.data || {} };
         text = renderTemplatePreview(job.kind, tplCtx);
         result = await sendTemplate({
@@ -548,6 +552,7 @@ const BROADCAST_NOTES = {
     task_live: (d) => `Task sent: ${d.taskTitle || 'a deliverable'}`,
     group_link: () => 'Group link sent',
     group_join: () => 'Group invite sent',
+    group_invite: () => 'Group invite sent (Join button)',
     update: () => 'Update sent',
     reach_out: () => 'First message sent (imported number)',
     event_day: () => 'Event-day details sent',

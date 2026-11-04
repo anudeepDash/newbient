@@ -31,7 +31,7 @@ import { maskPhone, firstNameOf } from '../../src/lib/outreach/normalize.js';
 import { deadlineLineFor } from '../../src/lib/outreach/template.js';
 import { fillTokens, missingTokens, FIELDS, JOIN_TEMPLATES } from '../../src/lib/outreach/waFields.js';
 import { loadTeam } from './teamAlerts.js';
-import { STOP_PAYLOAD } from '../../src/lib/outreach/whatsappTemplate.js';
+import { STOP_PAYLOAD, groupCodeOf } from '../../src/lib/outreach/whatsappTemplate.js';
 import { APP_ORIGIN, OG_IMAGES } from '../../src/app/seo.js';
 import { TEMPLATES as OUR_TEMPLATES, payloadFor, uploadHeaderSample } from '../../scripts/submit-wa-templates.mjs';
 
@@ -122,6 +122,7 @@ const valuesFor = ({ name, campaign, application, appId }) => ({
     ...(campaign ? {
         campaign_title: String(campaign.title || '').trim(),
         group_link: campaign.groupLink,
+        group_code: groupCodeOf(campaign.groupLink || campaign.whatsappLink),
         deadline_line: deadlineLineFor(campaign) || 'Details are in the group.',
         campaign_id: campaign.id,
     } : {}),

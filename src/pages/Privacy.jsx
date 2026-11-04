@@ -9,7 +9,7 @@ import LegalDoc, { P, UL, H3, Rows, A } from './legal/LegalDoc';
  * Meta as the app's data-deletion instructions.
  */
 
-const UPDATED = '29 October 2026';
+const UPDATED = '4 November 2026';
 const PRIVACY = <A href="mailto:privacy@newbi.live">privacy@newbi.live</A>;
 
 const sections = [
@@ -101,8 +101,8 @@ const sections = [
             <>
                 <P>
                     We send WhatsApp messages from our business number through Meta’s WhatsApp Business Platform:
-                    sign-in and verification codes when you ask for one on WhatsApp, tickets and passes, order and guestlist updates, and, if you’re a creator who opted in, campaign updates (shortlists,
-                    group invites, reminders, deliverable requests, payouts and a feedback request after the campaign). Meta processes these messages under its own terms
+                    sign-in and verification codes when you ask for one on WhatsApp, tickets and passes, order and guestlist updates, and, if you’re a creator who opted in, campaign updates (a welcome with your city’s creators community when you register, new campaigns that match you, shortlists,
+                    group invites, reminders, deliverable requests, payout details requests, payouts and a feedback request after the campaign). Meta processes these messages under its own terms
                     and policies.
                 </P>
                 <UL items={[

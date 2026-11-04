@@ -21,6 +21,8 @@ export const IMPORT_FIELDS = [
     { key: 'email', label: 'Email', aliases: ['email', 'e-mail', 'mail', 'email address'] },
     { key: 'collegeOrEmployer', label: 'College', aliases: ['college', 'university', 'employer', 'company', 'organisation', 'organization', 'institute', 'college or employer'] },
     { key: 'category', label: 'Category', aliases: ['category', 'niche', 'genre', 'content type'] },
+    // For a payout sheet: what was agreed for them (pre-fills "Mark paid").
+    { key: 'agreedAmount', label: 'Amount (₹)', aliases: ['amount', 'payout', 'payout amount', 'fee', 'payment', 'agreed amount'] },
 ];
 export const MAX_IMPORT_ROWS = 1000;
 
@@ -94,6 +96,16 @@ export const detectColumns = (table) => {
     return { columns, hasHeader };
 };
 
+/* "₹2,000", "2000/-", "2k" → 2000; null when it isn't an amount. */
+export const parseAmount = (v) => {
+    const raw = String(v ?? '').toLowerCase().replace(/rs\.?|inr|₹|\/-|,|\s/g, '');
+    if (!raw) return null;
+    const m = raw.match(/^(\d+(?:\.\d+)?)(k)?$/);
+    if (!m) return null;
+    const n = Math.round(Number(m[1]) * (m[2] ? 1000 : 1));
+    return n > 0 && n <= 10_000_000 ? n : null;
+};
+
 const categoryOf = (v) => {
     const n = norm(v);
     if (!n) return null;
@@ -113,6 +125,7 @@ export const cleanImportRow = (raw = {}) => {
         email: normalizeEmail(raw.email),
         collegeOrEmployer: String(raw.collegeOrEmployer ?? '').replace(/\s+/g, ' ').trim().slice(0, 120) || null,
         category: categoryOf(raw.category),
+        agreedAmount: parseAmount(raw.agreedAmount),
     };
     const problem = !String(raw.phone ?? '').trim() ? 'No phone number' : !phone ? 'Not a mobile number' : null;
     return { value, problem };
