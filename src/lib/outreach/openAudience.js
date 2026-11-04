@@ -41,3 +41,29 @@ export const matchesCriteria = (creator, criteria = [], mode = 'all') => {
     if (!criteria.length) return true;
     return mode === 'any' ? criteria.some(test => test(creator)) : criteria.every(test => test(creator));
 };
+
+/*
+ * Where each creator stands for this campaign, for the Campaign open list (one status each, most telling first):
+ *   applied   they applied to the campaign (left alone)
+ *   blocked   can't be messaged: no number, replied STOP, or turned WhatsApp off
+ *   replied   wrote back after the message
+ *   read · delivered · sent · queued   how the message went (WhatsApp's receipts)
+ *   failed    the message didn't go (can be sent again)
+ *   new       not messaged yet
+ */
+export const STATUS_ORDER = ['new', 'queued', 'sent', 'delivered', 'read', 'replied', 'failed', 'applied', 'blocked'];
+
+export const statusOf = (c) => {
+    if (c.applied) return 'applied';
+    if (!c.phone || c.optedOut || c.whatsappOff) return 'blocked';
+    const m = c.message;
+    if (!m) return 'new';
+    if (m.replied && m.status !== 'failed') return 'replied';
+    return STATUS_ORDER.includes(m.status) ? m.status : 'new';
+};
+
+/* Ticked by default, and tickable without "send again": nobody has it yet, or it didn't go. */
+export const needsMessage = (status) => status === 'new' || status === 'failed';
+
+/* Already has it (or it's on its way): tickable only with "send again", except queued, which is still going out. */
+export const hasMessage = (status) => ['sent', 'delivered', 'read', 'replied'].includes(status);
