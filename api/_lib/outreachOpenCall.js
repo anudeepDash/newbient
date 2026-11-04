@@ -7,7 +7,8 @@
  *   outreach-open-audience { campaignId }
  *     → { creators: [{ id, name, handle, city, followers, niches, phone, verified, cityMatch, nicheMatch, applied, told, whatsappOff, optedOut }],
  *         criteria: { cities, minFollowers, niches }, open, live, template }
- *   outreach-open-send { campaignId, creatorIds, criteria: { city, min, niche, mode }, includeUnverified?, again? }
+ *   outreach-open-send { campaignId, creatorIds, criteria: { cities, min, niche, mode }, includeUnverified?, again? }
+ *     (cities: the cities picked, empty = all; older pages send city: 'campaign'|'any' instead)
  *     → { queued, skipped: { noNumber, whatsappOff, already, notEligible, notMatching } }
  *
  * Who's listed: every creator registered on the portal (the creators collection)
@@ -134,12 +135,17 @@ export const handleOpenSend = async (req, res, { db, actor }) => {
     // Only the creators who fit what the team set, never everyone registered.
     const cr = b.criteria || {};
     const criteria = activeCriteria(
-        { city: cr.city === 'any' ? 'any' : 'campaign', min: Math.max(0, Number(cr.min) || 0), niche: cr.niche === 'campaign' ? 'campaign' : 'any' },
+        {
+            cities: Array.isArray(cr.cities) ? cr.cities : null,
+            city: cr.city === 'any' ? 'any' : 'campaign',
+            min: Math.max(0, Number(cr.min) || 0),
+            niche: cr.niche === 'campaign' ? 'campaign' : 'any',
+        },
         { cities: campaignCities(campaign), niches: wantedNiches(campaign) },
     );
-    if (!criteria.length) return send(res, 400, { success: false, error: 'Set at least one criterion (city, followers or niche), so this goes only to creators who fit.' });
+    if (!criteria.length) return send(res, 400, { success: false, error: 'Set at least one criterion (cities, followers or niche), so this goes only to creators who fit.' });
     const mode = cr.mode === 'any' ? 'any' : 'all';
-    const fits = (c) => matchesCriteria({ cityMatch: cityMatches(campaign, c.city), nicheMatch: nicheMatches(campaign, c), followers: followersOf(c) }, criteria, mode);
+    const fits = (c) => matchesCriteria({ city: c.city, cityMatch: cityMatches(campaign, c.city), nicheMatch: nicheMatches(campaign, c), followers: followersOf(c) }, criteria, mode);
 
     const state = await campaignState(db, campaignId);
     const snaps = [];
