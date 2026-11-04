@@ -52,10 +52,11 @@ const threadOut = (d) => {
 export const handleInboxList = async (req, res, { db }) => {
     const campaignId = str(req.body?.campaignId, 120);
     const state = ['open', 'done'].includes(req.body?.state) ? req.body.state : 'all';
-    let q = db.collection('outreach_inbox');
-    if (campaignId) q = q.where('campaignIds', 'array-contains', campaignId);
-    // Sorted here, not in the query, so no composite index is needed.
-    const snap = await q.limit(1000).get();
+    // One campaign's threads are filtered by the query itself; the whole inbox reads
+    // only the newest few hundred (single-field order, no composite index needed).
+    const snap = campaignId
+        ? await db.collection('outreach_inbox').where('campaignIds', 'array-contains', campaignId).limit(1000).get()
+        : await db.collection('outreach_inbox').orderBy('lastMessageAt', 'desc').limit(MAX_THREADS + 100).get();
     const threads = snap.docs.map(threadOut)
         .filter(t => state === 'all' || t.state === state)
         .sort((a, b) => String(b.lastMessageAt || '').localeCompare(String(a.lastMessageAt || '')))
@@ -69,7 +70,13 @@ export const handleInboxThread = async (req, res, { db }) => {
     const tRef = db.collection('outreach_inbox').doc(threadId);
     const tSnap = await tRef.get();
     if (!tSnap.exists) return send(res, 404, { success: false, error: 'Conversation not found.' });
-    const msgs = await tRef.collection('inbox_messages').orderBy('at', 'desc').limit(MAX_MESSAGES).get();
+    // A poll sends `since` (the newest message it has): only messages from then on, and
+    // none of the application lookups, so an open chat costs a read or two per poll.
+    const since = typeof req.body?.since === 'string' && !Number.isNaN(Date.parse(req.body.since)) ? req.body.since : null;
+    const msgQuery = since
+        ? tRef.collection('inbox_messages').where('at', '>=', since).orderBy('at', 'desc').limit(MAX_MESSAGES)
+        : tRef.collection('inbox_messages').orderBy('at', 'desc').limit(MAX_MESSAGES);
+    const msgs = await msgQuery.get();
     const messages = msgs.docs.map(d => {
         const m = d.data();
         return {
@@ -80,8 +87,18 @@ export const handleInboxThread = async (req, res, { db }) => {
         };
     }).reverse();
 
-    // Who it is: their applications in each campaign (by phone), and the creator profile when linked.
     const thread = tSnap.data();
+    if (since) {
+        if (Number(thread.unread || 0) > 0 && messages.length) await tRef.set({ unread: 0, readAt: nowIso() }, { merge: true });
+        return send(res, 200, {
+            success: true,
+            partial: true,
+            thread: { ...threadOut(tSnap), unread: 0, windowClosesAt: thread.lastInboundAt ? new Date(Date.parse(thread.lastInboundAt) + WINDOW_MS).toISOString() : null },
+            messages,
+        });
+    }
+
+    // Who it is: their applications in each campaign (by phone), and the creator profile when linked.
     const [contactSnap, ...appSnaps] = await Promise.all([
         db.collection('creator_contacts').doc(threadId).get(),
         ...(thread.campaignIds || []).slice(-10).map(async (campaignId) => {

@@ -1454,24 +1454,36 @@ export const useStore = create((set, get) => ({
             set({ notifications: merged, unreadNotificationsCount: merged.filter(n => !n.isRead).length });
         };
 
-        const unsubOwn = onSnapshot(
-            query(collection(db, 'notifications'), where('userId', '==', uid)),
-            (snapshot) => {
-                own = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
-                publish();
-            },
-            (error) => console.error("Error fetching notifications:", error)
-        );
-        const unsubGlobal = onSnapshot(
-            query(collection(db, 'notifications'), where('userId', '==', null)),
-            (snapshot) => {
-                globals = snapshot.docs.map(d => ({ ...d.data(), id: d.id, isGlobal: true }));
-                publish();
-            },
-            (error) => console.error("Error fetching global notifications:", error)
-        );
+        // Only the newest 50 are shown, so only the newest 50 are read (every global one
+        // ever sent was read per signed-in visit before). Needs the composite index
+        // notifications (userId ↑, createdAt ↓); until it exists, the unlimited query.
+        let stopped = false;
+        const listen = (userId, onDocs, label) => {
+            let unsub = null;
+            const open = (limited) => {
+                const q = limited
+                    ? query(collection(db, 'notifications'), where('userId', '==', userId), orderBy('createdAt', 'desc'), limit(50))
+                    : query(collection(db, 'notifications'), where('userId', '==', userId));
+                unsub = onSnapshot(q, (snapshot) => onDocs(snapshot.docs), (error) => {
+                    if (limited && error?.code === 'failed-precondition' && !stopped) { open(false); return; }
+                    console.error(`Error fetching ${label}:`, error);
+                });
+            };
+            open(true);
+            return () => unsub?.();
+        };
+
+        const unsubOwn = listen(uid, (docs) => {
+            own = docs.map(d => ({ ...d.data(), id: d.id }));
+            publish();
+        }, 'notifications');
+        const unsubGlobal = listen(null, (docs) => {
+            globals = docs.map(d => ({ ...d.data(), id: d.id, isGlobal: true }));
+            publish();
+        }, 'global notifications');
 
         return () => {
+            stopped = true;
             unsubOwn();
             unsubGlobal();
         };
@@ -5539,7 +5551,7 @@ export const useStore = create((set, get) => ({
     },
 
     syncAuthUsers: async (options = {}) => {
-        const { silent = false } = (typeof options === 'boolean') ? { silent: options } : options;
+        const { silent = false, full = !silent } = (typeof options === 'boolean') ? { silent: options } : options;
         if (get().isSyncingUsers) return;
 
         set({ isSyncingUsers: true, authSyncError: null });
@@ -5560,7 +5572,8 @@ export const useStore = create((set, get) => ({
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
-                }
+                },
+                body: JSON.stringify({ full }),
             });
 
             if (response.status === 404) {

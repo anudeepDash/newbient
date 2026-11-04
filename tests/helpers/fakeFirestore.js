@@ -59,6 +59,7 @@ class Query {
     limit(n) { return new Query(this.db, this.path, this.filters, this.order, n); }
     // Field masks don't matter here: every field comes back.
     select() { return this; }
+    count() { return { get: async () => { const snap = await this.get(); return { data: () => ({ count: snap.size }) }; } }; }
     async get() {
         const prefix = `${this.path}/`;
         let docs = [...this.db.store.entries()]

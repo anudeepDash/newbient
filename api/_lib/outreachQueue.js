@@ -641,8 +641,9 @@ export const runQueue = async ({ db = getDb(), deadline = Date.now() + 45_000, s
         if (report.capped || report.more || report.blocked || !progressed) break;
     }
     if (report.blocked) return report;
-    const left = await db.collection('outreach_queue').where('nextAttemptAt', '<=', iso(clock())).get();
-    report.dueLeft = left.docs.filter(d => d.data().status === 'queued').length;
+    // A count, not a read of every due job (they pile up while the daily cap holds them).
+    const left = await db.collection('outreach_queue').where('nextAttemptAt', '<=', iso(clock())).count().get();
+    report.dueLeft = left.data().count;
     if (report.dueLeft && !report.capped) report.more = true;
     return report;
 };

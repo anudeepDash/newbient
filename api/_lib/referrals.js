@@ -101,3 +101,90 @@ export function buildCreatorReferrals(all, callerUid, now = Date.now()) {
         monthStart: new Date(monthStart).toISOString(),
     };
 }
+
+/*
+ * Only creators that take part in referrals matter to the answer: whoever names a
+ * referrer, and whoever is named. The pool keeps just those, with just the fields
+ * buildCreatorReferrals reads, so it can be cached instead of reading every
+ * creator per request. A caller outside the pool is added back from their own doc.
+ */
+const POOL_FIELDS = ['id', 'uid', 'creatorId', 'instagram', 'linkedin', 'referredBy', 'referralVoid', 'profileStatus',
+    'createdAt', 'joinedAt', 'name', 'displayName', 'profilePicture', 'instagramProfilePic', 'profilePic', 'photoURL'];
+
+const slim = (c) => {
+    const out = {};
+    POOL_FIELDS.forEach(k => {
+        let v = c[k];
+        if (v === undefined || v === null || v === '') return;
+        if (k === 'createdAt' || k === 'joinedAt') v = toMillis(v) || undefined;
+        if (v !== undefined) out[k] = v;
+    });
+    return out;
+};
+
+export function referralPool(all) {
+    const uidMap = new Map();
+    const creatorIdMap = new Map();
+    const instagramMap = new Map();
+    const linkedinMap = new Map();
+    all.forEach(c => {
+        uidMap.set(c.uid, c);
+        if (c.creatorId) creatorIdMap.set(String(c.creatorId).toUpperCase(), c);
+        if (c.instagram) instagramMap.set(String(c.instagram).toLowerCase().replace(/^@/, ''), c);
+        if (c.linkedin) linkedinMap.set(String(c.linkedin).toLowerCase(), c);
+    });
+    const keep = new Map();
+    all.forEach(c => {
+        const ref = String(c.referredBy || '').trim();
+        if (!ref) return;
+        keep.set(c.id, c);
+        const referrer = uidMap.get(ref) || creatorIdMap.get(ref.toUpperCase())
+            || instagramMap.get(ref.toLowerCase().replace(/^@/, '')) || linkedinMap.get(ref.toLowerCase());
+        if (referrer) keep.set(referrer.id, referrer);
+    });
+    return [...keep.values()].map(slim);
+}
+
+const POOL_TTL_MS = 10 * 60 * 1000;
+const POOL_MAX_BYTES = 900 * 1024;
+let memoryPool = { at: 0, pool: null };
+
+/*
+ * The referral pool, built from every creator at most once per ten minutes:
+ * kept in this instance's memory and in system_stats/creator_referrals for the
+ * others.
+ */
+export async function loadReferralPool(db, { now = Date.now() } = {}) {
+    const ttl = POOL_TTL_MS;
+    if (memoryPool.pool && now - memoryPool.at < ttl) return memoryPool.pool;
+    const ref = db.collection('system_stats').doc('creator_referrals');
+    try {
+        const snap = await ref.get();
+        const d = snap.exists ? snap.data() : null;
+        if (d?.pool && now - (d.builtAt || 0) < ttl) {
+            const pool = JSON.parse(d.pool);
+            memoryPool = { at: d.builtAt, pool };
+            return pool;
+        }
+    } catch (e) {
+        console.warn('[referrals] cached pool:', e.message);
+    }
+    const creatorsSnap = await db.collection('creators').get();
+    const pool = referralPool(creatorsSnap.docs.map(d => ({ ...d.data(), id: d.id, uid: d.data().uid || d.id })));
+    memoryPool = { at: now, pool };
+    const json = JSON.stringify(pool);
+    if (json.length < POOL_MAX_BYTES) await ref.set({ builtAt: now, pool: json }).catch(e => console.warn('[referrals] save pool:', e.message));
+    return pool;
+}
+
+export const resetReferralPoolForTests = () => { memoryPool = { at: 0, pool: null }; };
+
+/* The caller's creator doc, in the shape the pool keeps (null when they aren't a creator). */
+export async function callerForReferrals(db, uid) {
+    const own = await db.collection('creators').doc(uid).get();
+    if (own.exists) return slim({ ...own.data(), id: own.id, uid: own.data().uid || own.id });
+    const q = await db.collection('creators').where('uid', '==', uid).limit(1).get();
+    if (q.empty) return null;
+    const d = q.docs[0];
+    return slim({ ...d.data(), id: d.id, uid: d.data().uid || d.id });
+}

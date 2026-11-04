@@ -39,6 +39,10 @@ import { waText } from '../../whatsapp/waText';
  */
 
 export const POLL_MS = 20_000;
+// The chat list reads every thread, so it refreshes less often than an open chat.
+const LIST_POLL_MS = 60_000;
+// An open chat polls only its newest messages; the full read (ticks, their campaigns) runs this often.
+const FULL_THREAD_MS = 2 * 60_000;
 const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 const EMOJIS = ['😀', '😂', '😊', '😍', '🥳', '😎', '🤩', '😅', '🙂', '😉', '🤔', '😮', '😢', '🙏', '👍', '👏', '🙌', '💪', '🔥', '✨', '🎉', '❤️', '✅', '📍'];
 
@@ -325,14 +329,33 @@ export const Conversation = ({ threadId, onBack, onChanged, onCompose }) => {
     const scrollRef = useRef(null);
     const inputRef = useRef(null);
     const nearBottom = useRef(true);
-    const load = useCallback(async () => {
-        const r = await callOutreach('inbox-thread', { threadId });
-        if (r.ok) setData(r.data);
+    const dataRef = useRef(null);
+    const fullAt = useRef(0);
+    const load = useCallback(async ({ poll = false } = {}) => {
+        const have = dataRef.current?.messages || [];
+        const since = poll && Date.now() - fullAt.current < FULL_THREAD_MS && have.length ? have[have.length - 1].at : null;
+        const r = await callOutreach('inbox-thread', since ? { threadId, since } : { threadId });
+        if (!r.ok) return;
+        if (!r.data.partial) {
+            fullAt.current = Date.now();
+            dataRef.current = r.data;
+            setData(r.data);
+            return;
+        }
+        const prev = dataRef.current;
+        if (!prev || prev.thread?.id !== r.data.thread?.id) return;
+        const fresh = new Map(r.data.messages.map(m => [m.id, m]));
+        const kept = prev.messages.filter(m => !fresh.has(m.id));
+        const next = { ...prev, thread: { ...prev.thread, ...r.data.thread }, messages: [...kept, ...r.data.messages] };
+        dataRef.current = next;
+        setData(next);
     }, [threadId]);
     useEffect(() => {
         setData(null);
+        dataRef.current = null;
+        fullAt.current = 0;
         load();
-        const t = setInterval(() => { if (!document.hidden) load(); }, POLL_MS);
+        const t = setInterval(() => { if (!document.hidden) load({ poll: true }); }, POLL_MS);
         return () => clearInterval(t);
     }, [load]);
     // Stay at the bottom as messages arrive, unless they scrolled up to read.
@@ -581,7 +604,7 @@ export const useThreads = ({ campaignId, filter }) => {
     }, [campaignId, state]);
     useEffect(() => {
         load();
-        const t = setInterval(() => { if (!document.hidden) load(); }, POLL_MS);
+        const t = setInterval(() => { if (!document.hidden) load(); }, LIST_POLL_MS);
         return () => clearInterval(t);
     }, [load]);
     return [data, load];

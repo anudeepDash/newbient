@@ -138,7 +138,7 @@ const AdminManager = ({ view = 'team' }) => {
     useEffect(() => { setSearch(''); setPage(1); }, [tab]);
     useEffect(() => { setPage(1); }, [search, memberFilter, activeWindow, roleFilter]);
 
-    // ── keep the account list fresh (silent sync every 3 minutes, as before) ──
+    // ── keep the account list fresh: a silent sync of new sign-ins every 15 minutes while the tab is in view ──
     const [, setTick] = useState(0);
     useEffect(() => {
         const id = setInterval(() => setTick(t => t + 1), 30000);
@@ -147,14 +147,15 @@ const AdminManager = ({ view = 'team' }) => {
     useEffect(() => {
         const canSync = ['developer', 'founder', 'super_admin', 'content_admin'].includes(role);
         if (!canSync) return undefined;
-        const THREE_MINUTES = 3 * 60 * 1000;
-        if (Date.now() - (useStore.getState().lastAuthUsersSyncedAt || 0) > THREE_MINUTES) syncAuthUsers({ silent: true }).catch(() => {});
-        const interval = setInterval(() => syncAuthUsers({ silent: true }).catch(() => {}), THREE_MINUTES);
-        const onVisible = () => {
-            if (document.visibilityState === 'visible' && Date.now() - (useStore.getState().lastAuthUsersSyncedAt || 0) > THREE_MINUTES) {
-                syncAuthUsers({ silent: true }).catch(() => {});
-            }
+        const EVERY = 15 * 60 * 1000;
+        const syncIfDue = () => {
+            if (document.visibilityState === 'hidden') return;
+            if (Date.now() - (useStore.getState().lastAuthUsersSyncedAt || 0) < EVERY) return;
+            syncAuthUsers({ silent: true }).catch(() => {});
         };
+        syncIfDue();
+        const interval = setInterval(syncIfDue, 60 * 1000);
+        const onVisible = () => { if (document.visibilityState === 'visible') syncIfDue(); };
         document.addEventListener('visibilitychange', onVisible);
         return () => { clearInterval(interval); document.removeEventListener('visibilitychange', onVisible); };
     }, [role, syncAuthUsers]);

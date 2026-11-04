@@ -175,18 +175,36 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, leaderboard: [], totalEntries: 0, winner: null });
         }
         try {
-            const snap = await adminDb.collection('giveaway_entries').where('campaignId', '==', giveawayId).get();
-            const entries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            const leaderboard = entries
-                .sort((a, b) => (b.entryScore || 0) - (a.entryScore || 0))
-                .slice(0, 10)
-                .map(e => ({ id: e.id, name: e.name || 'Participant', entryScore: e.entryScore || 0 }));
-            const winnerEntry = entries.find(e => e.isWinner);
-            res.setHeader('Cache-Control', 's-maxage=15, stale-while-revalidate=60');
+            // Top 10, the count and the winner as three small queries instead of every entry.
+            // The top-10 query needs the giveaway_entries (campaignId ↑, entryScore ↓) index;
+            // until it exists, the old read of every entry.
+            const col = adminDb.collection('giveaway_entries').where('campaignId', '==', giveawayId);
+            const toRow = (e) => ({ id: e.id, name: e.name || 'Participant', entryScore: e.entryScore || 0 });
+            let leaderboard;
+            let totalEntries;
+            let winnerEntry;
+            try {
+                const [top, count, won] = await Promise.all([
+                    col.orderBy('entryScore', 'desc').limit(10).get(),
+                    col.count().get(),
+                    col.where('isWinner', '==', true).limit(1).get(),
+                ]);
+                leaderboard = top.docs.map(d => toRow({ id: d.id, ...d.data() }));
+                totalEntries = count.data().count;
+                winnerEntry = won.empty ? null : { id: won.docs[0].id, ...won.docs[0].data() };
+            } catch (indexErr) {
+                if (indexErr?.code !== 9 && !/index/i.test(String(indexErr?.message || ''))) throw indexErr;
+                const snap = await col.get();
+                const entries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                leaderboard = entries.sort((a, b) => (b.entryScore || 0) - (a.entryScore || 0)).slice(0, 10).map(toRow);
+                totalEntries = entries.length;
+                winnerEntry = entries.find(e => e.isWinner) || null;
+            }
+            res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
             return res.status(200).json({
                 success: true,
                 leaderboard,
-                totalEntries: entries.length,
+                totalEntries,
                 winner: winnerEntry ? { id: winnerEntry.id, name: winnerEntry.name || 'Participant' } : null
             });
         } catch (err) {
@@ -217,7 +235,7 @@ export default async function handler(req, res) {
                 return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
             });
 
-            res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+            res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
             return res.status(200).json({ success: true, forms });
         }
 
@@ -397,6 +415,8 @@ export default async function handler(req, res) {
             }
         }
 
+        // Kept at the edge too: a dead or mistyped link would otherwise scan every form on each hit.
+        res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
         return res.status(404).json({ success: false, message: 'Form not found' });
     } catch (err) {
         console.error('[API/FORMS] Error:', err);

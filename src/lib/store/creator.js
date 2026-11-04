@@ -20,7 +20,7 @@ const CAMPAIGNS_TTL_MS = 5 * 60 * 1000;
 // The Firestore fallback: bounded, far above the number of campaigns ever run.
 const CAMPAIGNS_READ_LIMIT = 500;
 
-const REFERRALS_TTL_MS = 2 * 60 * 1000;
+const REFERRALS_TTL_MS = 10 * 60 * 1000;
 
 export const createCreatorSlice = (set, get) => ({
     /*
