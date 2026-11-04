@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Send from 'lucide-react/dist/esm/icons/send';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
@@ -85,21 +85,26 @@ const CampaignOpenPanel = ({ campaign, live }) => {
     const sameAsCampaign = chosenCities.length === cleanCities(cities).length && chosenCities.every(c => cleanCities(cities).includes(c));
     const meets = (c) => matchesCriteria(c, criteria, mode);
     const reachable = useMemo(() => state.creators.filter(c => c.phone && !c.optedOut && !c.whatsappOff && !c.applied), [state.creators]);
+    // Everyone who fits, including people already sent this campaign's message (in any earlier batch): they stay
+    // in the list marked Sent (or Queued), unticked, and can only be ticked with "Send again to people already sent".
+    // A message that didn't go (Meta refused it) never reached them, so they stay pickable.
     const audience = useMemo(() => reachable.filter(c => matchesCriteria(c, criteria, mode)
-        && (withUnverified || c.verified)
-        && (withTold || !c.told)), [reachable, criteria, mode, withUnverified, withTold]);
-    useEffect(() => { setPicked(new Set(audience.map(c => c.id))); }, [audience]);
+        && (withUnverified || c.verified)), [reachable, criteria, mode, withUnverified]);
+    const canPick = useCallback((c) => !c.told || c.told === 'failed' || withTold, [withTold]);
+    useEffect(() => { setPicked(new Set(audience.filter(canPick).map(c => c.id))); }, [audience, canPick]);
     const query = q.trim().toLowerCase().replace(/^@/, '');
     const shown = query ? audience.filter(c => `${c.name} ${c.handle} ${c.city} ${c.phone}`.toLowerCase().includes(query)) : audience;
-    const recipients = audience.filter(c => picked.has(c.id));
-    const allShownPicked = shown.length > 0 && shown.every(c => picked.has(c.id));
+    const recipients = audience.filter(c => picked.has(c.id) && canPick(c));
+    const pickable = shown.filter(canPick);
+    const alreadySent = audience.filter(c => c.told === 'sent' || c.told === 'queued').length;
+    const allShownPicked = pickable.length > 0 && pickable.every(c => picked.has(c.id));
 
     const left = {
         applied: state.creators.filter(c => c.applied).length,
         noNumber: state.creators.filter(c => !c.phone).length,
         stopped: state.creators.filter(c => c.phone && (c.optedOut || c.whatsappOff)).length,
-        unverified: reachable.filter(c => !c.verified && meets(c) && (withTold || !c.told)).length,
-        told: reachable.filter(c => c.told && meets(c) && (withUnverified || c.verified)).length,
+        unverified: reachable.filter(c => !c.verified && meets(c)).length,
+        told: reachable.filter(c => (c.told === 'sent' || c.told === 'queued') && meets(c) && (withUnverified || c.verified)).length,
     };
     const sample = recipients[0] || audience[0];
     const params = [firstNameOf(sample?.name) || 'Riya', campaign.title || 'the campaign'];
@@ -187,7 +192,7 @@ const CampaignOpenPanel = ({ campaign, live }) => {
                     </label>
                     <label className="flex items-center gap-2 text-[13px] font-medium">
                         <input type="checkbox" checked={withTold} onChange={(e) => setWithTold(e.target.checked)} className="h-4 w-4 accent-emerald-600" />
-                        Send again to people already told ({left.told})
+                        Send again to people already sent ({left.told})
                     </label>
                 </div>
                 {withUnverified && <p className="text-[12px] text-amber-600 dark:text-amber-300">An unverified number was typed on the sign-up form and could belong to someone else. Messages to people who didn’t expect them hurt the number’s WhatsApp rating.</p>}
@@ -196,8 +201,8 @@ const CampaignOpenPanel = ({ campaign, live }) => {
                     <div className="overflow-hidden rounded-2xl border border-black/[0.06] dark:border-white/[0.08]">
                         <div className="flex flex-wrap items-center gap-2 border-b border-black/[0.06] px-3 py-2 dark:border-white/[0.06]">
                             <label className="flex items-center gap-2.5 text-[12px] font-semibold text-gray-500">
-                                <input type="checkbox" checked={allShownPicked} disabled={!shown.length} onChange={() => setPicked(s => { const n = new Set(s); shown.forEach(c => (allShownPicked ? n.delete(c.id) : n.add(c.id))); return n; })} className="h-4 w-4 accent-emerald-600" />
-                                {recipients.length} of {audience.length} picked
+                                <input type="checkbox" checked={allShownPicked} disabled={!pickable.length} onChange={() => setPicked(s => { const n = new Set(s); pickable.forEach(c => (allShownPicked ? n.delete(c.id) : n.add(c.id))); return n; })} className="h-4 w-4 accent-emerald-600" />
+                                {recipients.length} of {audience.length} picked{alreadySent > 0 && ` · ${alreadySent} already sent`}
                             </label>
                             <button type="button" onClick={load} className="flex items-center gap-1 text-[12px] font-semibold text-gray-500 hover:text-gray-800 dark:hover:text-white" aria-label="Refresh the list">
                                 <RefreshCw size={12} className={cn(state.loading && 'animate-spin')} /> Refresh
@@ -212,14 +217,14 @@ const CampaignOpenPanel = ({ campaign, live }) => {
                             <ul className="max-h-96 divide-y divide-black/[0.05] overflow-y-auto dark:divide-white/[0.06]">
                                 {shown.slice(0, 500).map(c => (
                                     <li key={c.id}>
-                                        <label className="flex cursor-pointer items-center gap-3 px-4 py-2.5">
-                                            <input type="checkbox" checked={picked.has(c.id)} onChange={() => setPicked(s => { const n = new Set(s); if (n.has(c.id)) n.delete(c.id); else n.add(c.id); return n; })} className="h-4 w-4 accent-emerald-600" />
+                                        <label className={cn('flex items-center gap-3 px-4 py-2.5', canPick(c) ? 'cursor-pointer' : 'cursor-not-allowed opacity-60')} title={canPick(c) ? undefined : 'Already sent this campaign’s message. Tick “Send again to people already sent” to include them.'}>
+                                            <input type="checkbox" checked={picked.has(c.id) && canPick(c)} disabled={!canPick(c)} onChange={() => setPicked(s => { const n = new Set(s); if (n.has(c.id)) n.delete(c.id); else n.add(c.id); return n; })} className="h-4 w-4 accent-emerald-600" />
                                             <span className="min-w-0 flex-1">
                                                 <span className="block truncate text-[13.5px] font-semibold">{c.name}</span>
                                                 <span className="block truncate text-[12px] text-gray-500">{c.handle ? <><Handle handle={c.handle} /> · </> : null}{followers(c.followers)} · {c.city || 'No city'}</span>
                                             </span>
                                             {!c.verified && <Badge tone="amber">Not verified</Badge>}
-                                            {c.told && <Badge tone="gray">{c.told === 'sent' ? 'Told' : c.told === 'queued' ? 'Queued' : 'Didn’t go'}</Badge>}
+                                            {c.told && <Badge tone={c.told === 'sent' ? 'green' : c.told === 'failed' ? 'rose' : 'gray'}>{c.told === 'sent' ? 'Sent' : c.told === 'queued' ? 'Queued' : 'Didn’t go'}</Badge>}
                                         </label>
                                     </li>
                                 ))}
