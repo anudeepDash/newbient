@@ -44,6 +44,7 @@ import { dayLabel, directionsUrl, lineupOf, quickFacts, termsOf, timeRange, venu
 import { useDarkMode } from './PickTickets';
 import { rupees } from './ticketParts';
 import TicketSheet from './TicketSheet';
+import { sizedImage } from '../../lib/image';
 
 /*
  * /tickets/:id: one show, as a card expanded, the same way campaigns,
@@ -289,7 +290,7 @@ const EventPage = ({ overlay = false }) => {
                                 return (
                                     <Tag key={`${a.name}-${i}`} {...(ig ? { href: ig, target: '_blank', rel: 'noopener noreferrer' } : {})} className="flex w-20 shrink-0 flex-col items-center gap-2 text-center">
                                         <span className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-emerald-400/30 to-sky-400/30 text-[24px] font-black text-gray-700 ring-1 ring-black/[0.06] dark:text-zinc-200 dark:ring-white/[0.1]">
-                                            {isPresent(a.image) ? <img src={a.image} alt="" className="h-full w-full object-cover" loading="lazy" /> : a.name.slice(0, 1).toUpperCase()}
+                                            {isPresent(a.image) ? <img src={sizedImage(a.image, 160)} alt="" className="h-full w-full object-cover" loading="lazy" /> : a.name.slice(0, 1).toUpperCase()}
                                         </span>
                                         <span className="w-full">
                                             <span className="block truncate text-[13px] font-bold">{a.name}</span>

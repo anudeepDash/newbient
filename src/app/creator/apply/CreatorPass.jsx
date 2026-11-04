@@ -12,6 +12,7 @@ import { CREATOR_NICHE_OPTIONS } from '../../../lib/creator/options';
 import newbiIcon from '../../../assets/logo/newbi-icon.svg';
 import { compactCount } from '../format';
 import { useT } from '../../../i18n';
+import { sizedImage } from '../../../lib/image';
 
 /*
  * The live creator pass on the application: it fills in as you type. The
@@ -67,7 +68,7 @@ const CreatorPass = ({ handle, lookup, profile, city, niches = [], customNiche, 
                 <div className="flex items-center gap-4">
                     <span className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/[0.08] ring-2 ring-neon-green/60 ring-offset-2 ring-offset-[#07090c]">
                         {picture
-                            ? <img src={picture} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+                            ? <img src={sizedImage(picture, 320)} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
                             : <Instagram size={24} className="text-zinc-500" />}
                     </span>
                     <div className="min-w-0 flex-1 space-y-1.5">

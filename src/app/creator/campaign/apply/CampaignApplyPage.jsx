@@ -18,6 +18,7 @@ import { callCreatorApi } from '../../api';
 import { validateApplication, CATEGORIES, REFERRAL_SOURCES, CONSENT_TEXT, TIERS, minFollowersFor } from '../../../../lib/outreach/application';
 import { formatDeadline } from '../../../../lib/outreach/template';
 import { useT } from '../../../../i18n';
+import { sizedImage } from '../../../../lib/image';
 
 /*
  * /c/:slug/apply: the open campaign application. Replaces the Google Form.
@@ -168,7 +169,7 @@ const CampaignApplyPage = () => {
     const header = (
         <header className="space-y-4 lg:sticky lg:top-24 lg:self-start">
             {isPresent(campaign.image) && (
-                <img src={campaign.image} alt="" decoding="async" className="aspect-video w-full rounded-3xl border border-black/[0.06] object-cover dark:border-white/[0.08]" />
+                <img src={sizedImage(campaign.image, 1280)} alt="" decoding="async" className="aspect-video w-full rounded-3xl border border-black/[0.06] object-cover dark:border-white/[0.08]" />
             )}
             <PanelLabel>{state.open ? t('Creator application') : t('Applications closed')}</PanelLabel>
             <h1 className="font-heading text-[30px] font-extrabold leading-[1.04] tracking-[-0.035em] sm:text-[36px] lg:text-[42px]">{campaign.title}</h1>

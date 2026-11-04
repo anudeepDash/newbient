@@ -24,8 +24,4 @@ export const ARCHIVE_URL = '/api/forms?type=public-archive';
 export const ENQUIRY_URL = '/api/forms?type=enquiry';
 
 // Smaller, modern-format Cloudinary renditions; other hosts are left alone.
-export const sizedImage = (src, width) => {
-    if (!src || !/res\.cloudinary\.com\/.+\/image\/upload\//.test(src)) return src;
-    if (/\/upload\/[^/]*(w_|f_auto|q_auto)/.test(src)) return src;
-    return src.replace('/image/upload/', `/image/upload/f_auto,q_auto,c_limit,w_${width}/`);
-};
+export { sizedImage } from '../lib/image';

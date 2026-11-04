@@ -20,6 +20,7 @@ import { validateSubmission, DELIVERABLE_STATUS } from '../../../../lib/outreach
 import { formatDeadline } from '../../../../lib/outreach/template';
 import { useT } from '../../../../i18n';
 import { appPath } from '../../../host';
+import { sizedImage } from '../../../../lib/image';
 
 /*
  * /d/:token: a creator's own page for a campaign. The token is their personal
@@ -121,7 +122,7 @@ const TaskForm = ({ token, task, onDone }) => {
                     <span className="block px-1 text-[13px] font-bold text-gray-700 dark:text-zinc-300">{task.proof === 'screenshot' ? t('Screenshot of your story') : t('Screenshot (optional)')}</span>
                     {shot ? (
                         <div className="flex items-center gap-3">
-                            <img src={shot} alt={t('Your screenshot')} className="h-24 w-16 rounded-xl object-cover ring-1 ring-black/10" />
+                            <img src={sizedImage(shot, 160)} alt={t('Your screenshot')} className="h-24 w-16 rounded-xl object-cover ring-1 ring-black/10" />
                             <button type="button" onClick={() => setShot('')} className="h-11 text-[14px] font-bold text-gray-600 underline dark:text-zinc-300">{t('Change')}</button>
                         </div>
                     ) : (

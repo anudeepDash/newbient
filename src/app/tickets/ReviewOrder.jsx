@@ -12,6 +12,7 @@ import { isPresent } from '../../lib/present';
 import { useT } from '../../i18n';
 import { dayLabel, termsOf, timeRange, venueName } from './eventDetails';
 import { ErrorText, PriceLine, rupees } from './ticketParts';
+import { sizedImage } from '../../lib/image';
 
 /*
  * Booking step 2: what you're buying, a coupon, who the tickets are for and
@@ -41,7 +42,7 @@ const ReviewOrder = ({ event, co, customer, needsEmail, email, onEmail, emailErr
         <div className="space-y-4">
             <Box>
                 <div className="flex gap-3">
-                    {image && <img src={image} alt="" className="aspect-video w-28 shrink-0 self-start rounded-xl object-cover" />}
+                    {image && <img src={sizedImage(image, 320)} alt="" className="aspect-video w-28 shrink-0 self-start rounded-xl object-cover" />}
                     <div className="min-w-0 space-y-1">
                         <p className="line-clamp-2 text-[16px] font-extrabold leading-tight">{event.title}</p>
                         {when && <p className="flex items-center gap-1.5 text-[13px] text-gray-600 dark:text-zinc-400"><CalendarDays size={13} className="shrink-0" /> {when}</p>}

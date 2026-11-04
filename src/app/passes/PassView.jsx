@@ -8,6 +8,7 @@ import { isPresent } from '../../lib/present';
 import { cn } from '../../lib/utils';
 import { ExternalTicketButton, PassQr, entryLine, passWhen, venueLine } from './passParts';
 import { useT } from '../../i18n';
+import { sizedImage } from '../../lib/image';
 
 /*
  * One pass, as the holder shows it at the gate, drawn as a ticket: the ticket
@@ -74,7 +75,7 @@ const PassView = ({ pass, token, offline = false, bare = false }) => {
                 <PosterGlow image={event.image} color={event.ambientColor} height="80%" strength={0.8} />
                 {isPresent(event.image) ? (
                     <div className="relative aspect-video w-full overflow-hidden" style={{ WebkitMaskImage: 'linear-gradient(to bottom, #000 60%, transparent)', maskImage: 'linear-gradient(to bottom, #000 60%, transparent)' }}>
-                        <img src={event.image} alt="" className="h-full w-full object-cover" decoding="async" />
+                        <img src={sizedImage(event.image, 960)} alt="" className="h-full w-full object-cover" decoding="async" />
                     </div>
                 ) : <div className="h-14" aria-hidden="true" />}
                 <div className="absolute left-4 top-4 z-10 flex flex-wrap items-center gap-2">

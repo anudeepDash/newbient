@@ -19,6 +19,7 @@ import { useStore } from '../../lib/store';
 import { Button } from '../ui/Button';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import { cn } from '../../lib/utils';
+import { sizedImage } from '../../lib/image';
 
 export const GuestlistTaskSubmissionStep = ({
     taskConfig,
@@ -251,7 +252,7 @@ export const GuestlistTaskSubmissionStep = ({
                                 <div className="flex items-center gap-3 min-w-0">
                                     {isImage ? (
                                         <img 
-                                            src={fileUrl} 
+                                            src={sizedImage(fileUrl, 160)} 
                                             alt={fileName} 
                                             className="w-12 h-12 rounded-xl object-cover border border-black/10 dark:border-white/10 shrink-0" 
                                         />

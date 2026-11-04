@@ -37,6 +37,7 @@ import { interestLabel } from '../community/welcomeForm';
 import PageHeader, { PageBody } from './PageHeader';
 import useDynamicMeta from '../../hooks/useDynamicMeta';
 import { useT } from '../../i18n';
+import { sizedImage } from '../../lib/image';
 
 /*
  * Profile: the one place for your details. "Edit profile" opens the same
@@ -89,7 +90,7 @@ const ProfileDetails = () => {
                     <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(90% 120% at 100% 0%, rgba(57,255,20,0.22), transparent 60%)' }} />
                     <div className="relative flex items-center gap-4 lg:flex-col lg:items-start">
                         <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-neon-green/15 text-2xl font-black text-neon-green ring-2 ring-neon-green/60 lg:h-20 lg:w-20">
-                            {photo ? <img src={photo} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" /> : (name || '?').charAt(0).toUpperCase()}
+                            {photo ? <img src={sizedImage(photo, 320)} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" /> : (name || '?').charAt(0).toUpperCase()}
                         </span>
                         <div className="min-w-0">
                             {name && <p className="line-clamp-2 break-words font-heading text-[22px] font-extrabold tracking-[-0.02em] lg:text-[26px]">{name}</p>}

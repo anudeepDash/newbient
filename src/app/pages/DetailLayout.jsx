@@ -7,6 +7,7 @@ import { cn } from '../../lib/utils';
 import { PageBody } from './PageHeader';
 import { GLASS } from './parts';
 import { useT } from '../../i18n';
+import { sizedImage } from '../../lib/image';
 
 /*
  * The page for one thing (a guestlist, a giveaway, a form), laid out like the
@@ -81,7 +82,7 @@ const DetailLayout = ({ back, image, badges, eyebrow, title, onShare, aside, chi
                     {hasImage && (
                         <div className="space-y-5 lg:sticky lg:top-24 lg:self-start">
                             <div className="relative overflow-hidden rounded-3xl border border-black/[0.06] bg-black/[0.04] shadow-[0_30px_80px_-40px_rgba(0,0,0,0.6)] dark:border-white/[0.08] dark:bg-white/[0.04]">
-                                <img src={image} alt="" decoding="async" className="aspect-video w-full object-cover lg:aspect-auto lg:max-h-[calc(100dvh-9rem)] lg:object-contain" />
+                                <img src={sizedImage(image, 1600)} alt="" decoding="async" className="aspect-video w-full object-cover lg:aspect-auto lg:max-h-[calc(100dvh-9rem)] lg:object-contain" />
                                 {badges && <div className="absolute left-3 top-3 flex flex-wrap gap-2">{badges}</div>}
                             </div>
                             {aside && <div className="hidden lg:block">{aside}</div>}

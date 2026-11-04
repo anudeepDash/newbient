@@ -3,6 +3,7 @@ import ZoomIn from 'lucide-react/dist/esm/icons/zoom-in';
 import ZoomOut from 'lucide-react/dist/esm/icons/zoom-out';
 import { cn } from '../../lib/utils';
 import { rupees } from './ticketParts';
+import { sizedImage } from '../../lib/image';
 
 /*
  * The venue layout with a tappable zone per ticket type (the admin draws them
@@ -17,7 +18,7 @@ const VenueMap = ({ image, categories = [], cart = {}, onPick, tierLeft }) => {
         <div className="relative overflow-hidden rounded-3xl border border-black/[0.06] bg-white dark:border-white/[0.08] dark:bg-black/30">
             <div className="max-h-[52dvh] overflow-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
                 <div className="relative origin-top-left transition-[width] duration-200" style={{ width: `${zoom * 100}%` }}>
-                    <img src={image} alt="Venue layout" className="block h-auto w-full select-none" draggable={false} />
+                    <img src={sizedImage(image, 2000)} alt="Venue layout" className="block h-auto w-full select-none" draggable={false} />
                     {zones.map(cat => {
                         const picked = (cart[cat.id] || 0) > 0;
                         const soldOut = tierLeft?.(cat.id) === 0;

@@ -5,6 +5,7 @@ import { Button, Sheet, TextInput } from '../../../components/app';
 import { callCreatorApi, uploadProof } from '../api';
 import { FormBlock, Notice, TextArea } from '../ui';
 import { useT } from '../../../i18n';
+import { sizedImage } from '../../../lib/image';
 
 /*
  * Submit (or resubmit) one deliverable: a link to the post, a screenshot, or
@@ -95,7 +96,7 @@ const SubmitTaskSheet = ({ open, onClose, campaign, task, current, onSubmitted }
                     <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={pick} />
                     {preview || current?.proofUrl ? (
                         <div className="relative w-32 overflow-hidden rounded-2xl border border-black/[0.08] dark:border-white/[0.1]">
-                            <img src={preview || current.proofUrl} alt={t('Your screenshot')} className="aspect-[9/16] w-full object-cover" />
+                            <img src={preview || sizedImage(current.proofUrl, 720)} alt={t('Your screenshot')} className="aspect-[9/16] w-full object-cover" />
                             <button
                                 type="button"
                                 onClick={() => { setFile(null); setPreview(null); if (fileRef.current) fileRef.current.value = ''; fileRef.current?.click(); }}

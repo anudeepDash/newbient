@@ -36,6 +36,7 @@ import GoogleFormSheet from './GoogleFormSheet';
 import { applyMethodOf, formValuesFor, googleFormUrl } from './applyMethod';
 import { useT, t as translateNow } from '../../../i18n';
 import { useLocalizedCampaign } from '../../../i18n/useHinglish';
+import { sizedImage } from '../../../lib/image';
 
 /*
  * The campaign, shared by the sheet (opened over a list) and the full page
@@ -286,7 +287,7 @@ const CampaignView = ({ campaign: source, variant = 'page', initialTaskId, onClo
                 )}
                 {(isPresent(campaign.brand) || campaign.brandLogo) && (
                     <div className="flex items-center gap-2">
-                        {campaign.brandLogo && <img src={campaign.brandLogo} alt="" className="h-5 w-5 rounded-md border border-black/10 bg-white object-contain p-0.5 dark:border-white/10" />}
+                        {campaign.brandLogo && <img src={sizedImage(campaign.brandLogo, 96)} alt="" className="h-5 w-5 rounded-md border border-black/10 bg-white object-contain p-0.5 dark:border-white/10" />}
                         {isPresent(campaign.brand) && <span className="text-[11px] font-black uppercase tracking-widest text-emerald-700 dark:text-neon-green">{campaign.brand}</span>}
                     </div>
                 )}

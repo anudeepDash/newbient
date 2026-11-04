@@ -22,6 +22,7 @@ import { linkifyContent, extractTaskActionLinks, cleanTaskDescription, getTaskGo
 import { buildCampaignUrl } from '../../lib/campaignLinks';
 import { copyToClipboard } from '../../lib/clipboard';
 import { AMBIENT_OFF, cleanAmbient } from '../../lib/ambientColor';
+import { sizedImage } from '../../lib/image';
 
 const POPULAR_NICHES = [
     'Fashion & Style',
@@ -702,7 +703,7 @@ const CampaignDetailModal = ({
 
     // The admin's glow colour (lib/ambientColor.js): a colour replaces the blurred thumbnail, 'none' drops it.
     const glow = cleanAmbient(campaign.ambientColor);
-    const glowStyle = glow ? { backgroundColor: glow } : { backgroundImage: `url(${campaign.thumbnail})` };
+    const glowStyle = glow ? { backgroundColor: glow } : { backgroundImage: `url(${sizedImage(campaign.thumbnail, 480)})` };
     const showGlow = glow !== AMBIENT_OFF && Boolean(campaign.thumbnail || glow);
 
     return createPortal(
@@ -811,7 +812,7 @@ const CampaignDetailModal = ({
 
                                     {/* Crisp Foreground Image - Full bleed edge-to-edge */}
                                     <img 
-                                        src={campaign.thumbnail} 
+                                        src={sizedImage(campaign.thumbnail, 1280)} 
                                         alt={campaign.title} 
                                         className="relative z-10 w-full h-full object-cover object-center scale-100 transition-transform duration-700"
                                     />
@@ -836,7 +837,7 @@ const CampaignDetailModal = ({
                                 {(campaign.brand || campaign.brandLogo) && (
                                     <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-black/60 backdrop-blur-xl border border-white/15 text-white shadow-lg">
                                         {campaign.brandLogo && (
-                                            <img src={campaign.brandLogo} alt="" className="w-4 h-4 rounded object-contain shrink-0" />
+                                            <img src={sizedImage(campaign.brandLogo, 96)} alt="" className="w-4 h-4 rounded object-contain shrink-0" />
                                         )}
                                         {campaign.brand && (
                                             <span className="text-[10px] font-black uppercase tracking-widest text-neon-green font-mono">
@@ -867,7 +868,7 @@ const CampaignDetailModal = ({
                                 {(campaign.brand || campaign.brandLogo) && (
                                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.08] dark:border-white/[0.1]">
                                         {campaign.brandLogo && (
-                                            <img src={campaign.brandLogo} alt="" className="w-3.5 h-3.5 rounded object-contain shrink-0" />
+                                            <img src={sizedImage(campaign.brandLogo, 96)} alt="" className="w-3.5 h-3.5 rounded object-contain shrink-0" />
                                         )}
                                         {campaign.brand && (
                                             <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-neon-green">
@@ -1320,7 +1321,7 @@ const CampaignDetailModal = ({
                                             <div className="flex items-center gap-2.5 min-w-0">
                                                 <div className="w-8 h-8 rounded-full overflow-hidden bg-black/5 dark:bg-white/10 shrink-0">
                                                     {(profile.profilePicture || user?.photoURL) ? (
-                                                        <img src={profile.profilePicture || user?.photoURL} alt="" className="w-full h-full object-cover" />
+                                                        <img src={sizedImage(profile.profilePicture || user?.photoURL, 160)} alt="" className="w-full h-full object-cover" />
                                                     ) : (
                                                         <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
                                                             {profile.name?.charAt(0) || 'C'}
@@ -1406,7 +1407,7 @@ const CampaignDetailModal = ({
                                                             <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 dark:bg-white/10 border-2 border-emerald-500/40 dark:border-neon-green/40 shrink-0">
                                                                 {(profile.profilePicture || instagramVerifiedData?.profilePic || user?.photoURL) ? (
                                                                     <img
-                                                                        src={profile.profilePicture || instagramVerifiedData?.profilePic || user?.photoURL}
+                                                                        src={sizedImage(profile.profilePicture || instagramVerifiedData?.profilePic || user?.photoURL, 160)}
                                                                         alt={profile.name || form.name}
                                                                         className="w-full h-full object-cover"
                                                                         onError={(e) => { e.currentTarget.style.display = 'none'; }}

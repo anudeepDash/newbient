@@ -22,6 +22,7 @@ import { creatorPassId, handleOf } from '../format';
 import { inviteUrl, shareInvite, whatsappShareUrl } from '../referral';
 import { ToneChip } from '../ui';
 import { useT, t as tNow } from '../../../i18n';
+import { sizedImage } from '../../../lib/image';
 
 /*
  * Referrals: your invite link, your tier, this month's and the all-time
@@ -47,7 +48,7 @@ const Avatar = ({ person, size = 40, className }) => {
     const handle = handleOf(person.instagram);
     const style = { width: size, height: size };
     return person.profilePicture
-        ? <img src={person.profilePicture} alt="" referrerPolicy="no-referrer" loading="lazy" style={style} className={cn('shrink-0 rounded-full object-cover', className)} />
+        ? <img src={sizedImage(person.profilePicture, 160)} alt="" referrerPolicy="no-referrer" loading="lazy" style={style} className={cn('shrink-0 rounded-full object-cover', className)} />
         : (
             <span style={{ ...style, fontSize: Math.round(size * 0.38) }} className={cn('flex shrink-0 items-center justify-center rounded-full bg-black/[0.06] font-black text-gray-600 dark:bg-white/[0.08] dark:text-zinc-300', className)}>
                 {(person.name || handle || '?').charAt(0).toUpperCase()}
