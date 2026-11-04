@@ -4,7 +4,6 @@ import { cn } from '../../../../lib/utils';
 import { useStore } from '../../../../lib/store';
 import { Button, Card } from '../../ui';
 import { Field, fieldCls, Toggle, Choice } from '../../uploads/UploadKit';
-import { WA_TEMPLATES, JOIN_BUTTON, renderTemplatePreview } from '../../../../lib/outreach/whatsappTemplate';
 import { TICKET_RULES } from '../../../../lib/outreach/deliverables';
 import { DEFAULT_TEMPLATE, PLACEHOLDERS, renderMessage, unknownPlaceholders } from '../../../../lib/outreach/template';
 import { callOutreach } from './outreachApi';
@@ -39,12 +38,6 @@ const SetupPanel = ({ campaign, settings, api, sampleApplication, onSaved }) => 
     const hours = Number(form.joinReminderHours);
     const hoursError = form.remindersEnabled && !(Number.isInteger(hours) && hours >= 1 && hours <= 336) ? 'Use 1 to 336 hours.' : null;
     const dirty = ['whatsappGroupLink', 'messageTemplate', 'remindersEnabled', 'joinReminderHours', 'ticketRule'].some(k => form[k] !== initial[k]) || !settings?.updatedAt;
-    const apiSample = {
-        application: sampleApplication || SAMPLE,
-        campaign,
-        groupLink: form.whatsappGroupLink.trim() || 'https://chat.whatsapp.com/…',
-        data: { taskTitle: campaign.tasks?.[0]?.title || 'Instagram reel 1', reason: 'Tag @newbi.live in the caption.', amount: 1500, reference: '412345678901' },
-    };
     const preview = renderMessage(form.messageTemplate, { application: sampleApplication || SAMPLE, campaign: { ...campaign, whatsappGroupLink: form.whatsappGroupLink.trim() } });
     const fallbackPreview = renderMessage(form.messageTemplate, { application: { fullName: 'rj_99' }, campaign: { ...campaign, whatsappGroupLink: form.whatsappGroupLink.trim() } });
 
@@ -84,8 +77,12 @@ const SetupPanel = ({ campaign, settings, api, sampleApplication, onSaved }) => 
         onSaved?.();
     };
 
+    // With the WhatsApp API every message is a Meta template, so the by-hand message text (and its preview) only
+    // matters when sending by hand through Open WhatsApp.
+    const byHand = !api?.configured;
+
     return (
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className={cn('grid gap-4', byHand && 'xl:grid-cols-[minmax(0,1fr)_380px]')}>
             <Card className="space-y-4 p-5">
                 <Field label="WhatsApp group invite" hint="Only shortlisted creators get this, inside their message. It isn’t shown on the public campaign.">
                     <input
@@ -98,7 +95,7 @@ const SetupPanel = ({ campaign, settings, api, sampleApplication, onSaved }) => 
                     />
                     {(linkError || errors.whatsappGroupLink) && <p className="mt-1 text-[12px] font-semibold text-rose-600 dark:text-rose-300">{linkError || errors.whatsappGroupLink}</p>}
                 </Field>
-                <Field label="Message template">
+                {byHand && <Field label="Message for Open WhatsApp" hint="Used when sending by hand, until the WhatsApp API is set up.">
                     <div className="mb-2 flex flex-wrap gap-1.5">
                         {PLACEHOLDERS.map(p => (
                             <button key={p} type="button" onClick={() => insert(p)} className="h-8 rounded-lg border border-black/10 px-2.5 font-mono text-[12px] text-gray-700 hover:border-black/25 dark:border-white/10 dark:text-zinc-300">{`{${p}}`}</button>
@@ -114,21 +111,10 @@ const SetupPanel = ({ campaign, settings, api, sampleApplication, onSaved }) => 
                     />
                     {unknown.length > 0 && <p className="mt-1 text-[12px] font-semibold text-rose-600 dark:text-rose-300">Unknown placeholder{unknown.length > 1 ? 's' : ''}: {unknown.map(u => `{${u}}`).join(', ')}. Use the buttons above.</p>}
                     <p className="mt-1 text-[12px] text-gray-500">When a first name isn’t clear (a handle, one letter, numbers), “Hey {'{first_name}'}!” becomes “Hey!”.</p>
-                </Field>
+                </Field>}
                 <div className="space-y-3 rounded-2xl border border-black/[0.06] p-4 dark:border-white/[0.08]">
                     <p className="text-[13px] font-bold">WhatsApp API {api?.configured ? <span className="font-semibold text-emerald-600">· set up</span> : <span className="font-semibold text-gray-500">· not set up (sending by hand)</span>}</p>
-                    <p className="text-[12.5px] text-gray-500">API messages use templates approved by Meta, so they can’t be edited here. The template above is for Open WhatsApp. Both use the same details.</p>
-                    {['invite', 'reminder', 'deliverables', 'changes', 'payout'].map(kind => (
-                        <div key={kind} className="space-y-1">
-                            <p className="flex items-center gap-2 font-mono text-[12px] text-gray-500">
-                                {WA_TEMPLATES[kind].name}
-                                {api?.configured && (api.templates?.[kind]
-                                    ? <span className="font-sans font-semibold text-emerald-600">· on</span>
-                                    : <span className="font-sans font-semibold text-gray-500">· off until WHATSAPP_TEMPLATE_{WA_TEMPLATES[kind].name.toUpperCase()} is set</span>)}
-                            </p>
-                            <div className="whitespace-pre-wrap rounded-xl bg-black/[0.03] p-3 text-[13px] dark:bg-white/[0.04]">{renderTemplatePreview(kind, apiSample)}{(['invite', 'reminder'].includes(kind) ? JOIN_BUTTON : WA_TEMPLATES[kind].button) && <span className="mt-1 block font-semibold text-sky-600">{['invite', 'reminder'].includes(kind) ? JOIN_BUTTON : WA_TEMPLATES[kind].button}</span>}</div>
-                        </div>
-                    ))}
+                    {byHand && <p className="text-[12.5px] text-gray-500">Once it’s set up, messages use the templates approved by Meta (see WhatsApp → Templates).</p>}
                     <Toggle
                         label="Remind people who haven’t tapped Joined"
                         hint="One reminder with the API, only if they still haven’t joined."
@@ -146,15 +132,15 @@ const SetupPanel = ({ campaign, settings, api, sampleApplication, onSaved }) => 
                     <Choice value={form.ticketRule} onChange={(v) => setForm(f => ({ ...f, ticketRule: v }))} options={TICKET_RULES} />
                 </Field>
                 <div className="flex justify-end">
-                    <Button variant="accent" onClick={save} disabled={saving || !dirty || Boolean(linkError) || Boolean(hoursError) || unknown.length > 0}>{saving ? 'Saving…' : 'Save message setup'}</Button>
+                    <Button variant="accent" onClick={save} disabled={saving || !dirty || Boolean(linkError) || Boolean(hoursError) || unknown.length > 0}>{saving ? 'Saving…' : 'Save settings'}</Button>
                 </div>
             </Card>
-            <div className="space-y-3">
+            {byHand && <div className="space-y-3">
                 <p className="text-[12px] font-bold text-gray-500">Preview · {sampleApplication?.fullName || SAMPLE.fullName}</p>
                 <div className="whitespace-pre-wrap rounded-2xl bg-[#dcf8c6] p-4 text-[14px] leading-relaxed text-gray-900 shadow-sm dark:bg-[#005c4b] dark:text-white">{preview}</div>
                 <p className="text-[12px] font-bold text-gray-500">When the name isn’t clear</p>
                 <div className="whitespace-pre-wrap rounded-2xl bg-black/[0.03] p-4 text-[13px] leading-relaxed text-gray-700 dark:bg-white/[0.04] dark:text-zinc-300">{fallbackPreview.split('\n').slice(0, 2).join('\n')}</div>
-            </div>
+            </div>}
         </div>
     );
 };
