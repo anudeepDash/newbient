@@ -105,7 +105,9 @@ const WhatsAppCenter = () => {
     const showRight = Boolean(pane || openId);
 
     if (templatesState.unavailable) {
-        return <div className="p-4 sm:p-6"><Card className="p-6 text-[14px] text-gray-600 dark:text-zinc-400">{templatesState.error} Set WHATSAPP_ACCESS_TOKEN, WHATSAPP_PHONE_NUMBER_ID and WHATSAPP_WABA_ID in Vercel.</Card></div>;
+        // A 503 is also how the server says the database is over its limit; the setup hint is only for a missing WhatsApp config.
+        const dbDown = /usage limit/i.test(templatesState.error || '');
+        return <div className="p-4 sm:p-6"><Card className="p-6 text-[14px] text-gray-600 dark:text-zinc-400">{templatesState.error}{dbDown ? '' : ' Set WHATSAPP_ACCESS_TOKEN, WHATSAPP_PHONE_NUMBER_ID and WHATSAPP_WABA_ID in Vercel.'}</Card></div>;
     }
 
     let right;
