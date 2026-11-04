@@ -87,12 +87,30 @@ export default async function handler(req, res) {
 
         console.log(`[SYNC-USERS] Total users retrieved from Firebase Authentication: ${allAuthUsers.length}`);
 
+        // Only accounts created or signed in since the last sync need writing (each
+        // write is billed, and every admin with the members list open reads each
+        // changed doc again). The Sync button asks for a full pass with { full: true }.
+        const statsRef = db.collection('system_stats').doc('auth_users');
+        const full = Boolean(req.body?.full);
+        let since = 0;
+        if (!full) {
+            const stats = await statsRef.get().catch(() => null);
+            since = Date.parse(stats?.data()?.lastSyncedAt || '') || 0;
+        }
+        const MARGIN_MS = 10 * 60 * 1000;
+        const touchedSince = (u) => {
+            if (!since) return true;
+            const at = Math.max(Date.parse(u.metadata?.creationTime || '') || 0, Date.parse(u.metadata?.lastSignInTime || '') || 0);
+            return u.disabled || !at || at >= since - MARGIN_MS;
+        };
+        const toWrite = allAuthUsers.filter(touchedSince);
+
         // Write users to Firestore using batch operations (max 400 per batch)
         const batchSize = 400;
         let syncedCount = 0;
 
-        for (let i = 0; i < allAuthUsers.length; i += batchSize) {
-            const chunk = allAuthUsers.slice(i, i + batchSize);
+        for (let i = 0; i < toWrite.length; i += batchSize) {
+            const chunk = toWrite.slice(i, i + batchSize);
             const batch = db.batch();
 
             chunk.forEach(authUser => {
@@ -106,11 +124,14 @@ export default async function handler(req, res) {
                     phone: authUser.phoneNumber || '',
                     phoneNumber: authUser.phoneNumber || '',
                     photoURL: authUser.photoURL || '',
-                    isBlocked: !!authUser.disabled,
                     createdAt: authUser.metadata?.creationTime || new Date().toISOString(),
                     lastActive: authUser.metadata?.lastSignInTime || authUser.metadata?.creationTime || new Date().toISOString(),
                     authProvider: authUser.providerData?.[0]?.providerId || 'password'
                 };
+
+                // A disabled Auth account is blocked; an enabled one keeps whatever the
+                // admin set in the app (Block only writes Firestore).
+                if (authUser.disabled) payload.isBlocked = true;
 
                 // Remove undefined values
                 Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
@@ -120,11 +141,11 @@ export default async function handler(req, res) {
 
             await batch.commit();
             syncedCount += chunk.length;
-            console.log(`[SYNC-USERS] Committed batch: ${syncedCount}/${allAuthUsers.length}`);
+            console.log(`[SYNC-USERS] Committed batch: ${syncedCount}/${toWrite.length}`);
         }
 
         try {
-            await db.collection('system_stats').doc('auth_users').set({
+            await statsRef.set({
                 totalCount: allAuthUsers.length,
                 lastSyncedAt: new Date().toISOString()
             }, { merge: true });
@@ -137,7 +158,9 @@ export default async function handler(req, res) {
             totalAuthUsers: allAuthUsers.length,
             syncedCount: syncedCount,
             lastSyncedAt: new Date().toISOString(),
-            message: `Successfully synchronized ${syncedCount} members from Firebase Authentication into Firestore.`
+            message: syncedCount
+                ? `${syncedCount} ${syncedCount === 1 ? 'member' : 'members'} updated from sign-in accounts.`
+                : 'Member list is up to date.'
         });
 
     } catch (error) {

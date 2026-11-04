@@ -1,4 +1,5 @@
 import { verifyToken } from './_lib/auth.js';
+import { getDb } from './_lib/db.js';
 import { signTrackedLinks } from './_lib/linkSign.js';
 import { isStaffCaller, findSuppressed, listSuppressed, recordResubscribe, normalizeEmail, isValidEmail } from './_lib/mailing.js';
 import { getEmailConfig, resolveSender, quotaIdFor } from './_lib/mail/accounts.js';
@@ -80,22 +81,45 @@ const chainWorker = async (req, depth) => {
     return true;
 };
 
+/*
+ * The sweeps (posts opening, posting and event reminders, feedback, waitlists) read
+ * every campaign and their applications. The daily cron always runs them; the
+ * staff screens' worker kicks (every minute while a send is on screen) run them at
+ * most once an hour, and otherwise only drain mail.
+ */
+const SWEEP_EVERY_MS = 60 * 60 * 1000;
+const sweepsDue = async (force) => {
+    const ref = getDb().collection('system_stats').doc('mail_sweeps');
+    try {
+        if (!force) {
+            const snap = await ref.get();
+            if (Date.now() - (Date.parse(snap.data()?.lastRunAt || '') || 0) < SWEEP_EVERY_MS) return false;
+        }
+        await ref.set({ lastRunAt: new Date().toISOString() }, { merge: true });
+    } catch (e) {
+        console.warn('[MAIL] sweep marker:', e.message);
+        return Boolean(force);
+    }
+    return true;
+};
+
 /** One pass: transactional retries first, then campaigns until the deadline. */
-const runWorker = async (req, { budgetMs = 48000, depth = 0 } = {}) => {
+const runWorker = async (req, { budgetMs = 48000, depth = 0, cron = false } = {}) => {
     const started = Date.now();
+    const sweeps = depth === 0 && await sweepsDue(cron);
     const retried = await retryDeferredMail({ deadline: started + 8000 }).catch(e => { console.error('[MAIL] retry pass failed:', e.message); return 0; });
     const waRetried = await retryFailedWhatsApp({ deadline: started + 12000 }).catch(e => { console.error('[MAIL] WhatsApp retry failed:', e.message); return 0; });
     // Deliverables with an "Opens on" date: tomorrow's get a heads-up, today's open. Queued like the reminders.
-    const opening = depth === 0
+    const opening = sweeps
         ? await runPostsOpen().catch(e => { console.error('[MAIL] posts open failed:', e.message); return null; })
         : null;
     // Posting deadline reminders (due tomorrow / overdue), queued so the run below sends them.
-    const posts = depth === 0
+    const posts = sweeps
         ? await runPostReminders().catch(e => { console.error('[MAIL] post reminders failed:', e.message); return null; })
         : null;
     // The day after a campaign's event: ask everyone who took part for feedback (WhatsApp is queued for
     // the run below; emails go out here, and any left over carry on in the chained runs).
-    const feedback = depth === 0
+    const feedback = sweeps
         ? await runCampaignFeedback({ deadline: Date.now() + 12000 }).catch(e => { console.error('[MAIL] campaign feedback failed:', e.message); return null; })
         : await runFeedbackEmails(undefined, { deadline: Date.now() + 15000 }).catch(e => { console.error('[MAIL] feedback emails failed:', e.message); return null; });
     // Campaign outreach: leftover sends and due join reminders (the queue keeps to its own rate limit).
@@ -105,11 +129,11 @@ const runWorker = async (req, { budgetMs = 48000, depth = 0 } = {}) => {
     // More due than fits here: hand over to the outreach worker, which chains itself.
     if (outreach?.more && !outreach.capped) await kickOutreachWorker(req, 0);
     // The day-before reminder for tomorrow's passes (each pass once per date).
-    const reminders = depth === 0
+    const reminders = sweeps
         ? await runEventReminders({ deadline: Date.now() + 15000 }).catch(e => { console.error('[MAIL] event reminders failed:', e.message); return null; })
         : null;
     // Waitlists: expired offers pass on, free places are offered.
-    if (depth === 0) await runWaitlists().catch(e => console.error('[MAIL] waitlists failed:', e.message));
+    if (sweeps) await runWaitlists().catch(e => console.error('[MAIL] waitlists failed:', e.message));
     const campaigns = await runCampaignWorker({ deadline: started + budgetMs }).catch(e => { console.error('[MAIL] campaign worker failed:', e); return { campaigns: 0, sent: 0, more: false }; });
     let chained = false;
     if (campaigns.more || feedback?.waiting) chained = await chainWorker(req, depth);
@@ -233,7 +257,7 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
         if (!isCronRequest(req)) return res.status(401).json({ error: 'Unauthorized' });
         const depth = Math.max(0, parseInt(req.headers['x-mail-chain'] || '0', 10) || 0);
-        const result = await runWorker(req, { depth });
+        const result = await runWorker(req, { depth, cron: !req.headers['x-mail-chain'] });
         console.log('[MAIL] worker', JSON.stringify(result));
         return res.status(200).json({ success: true, ...result });
     }

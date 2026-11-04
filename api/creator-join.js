@@ -8,7 +8,7 @@ import { safeSiteOrigin } from './_lib/linkSign.js';
 import { cleanHandle as cleanInstagramHandle, lookupInstagram, readCreatorSettings } from './_lib/instagram.js';
 import { CREATOR_APP_ACTIONS, handleCreatorAppAction } from './_lib/creatorApp.js';
 import { verifyIdTokenSafe } from './_lib/auth.js';
-import { buildCreatorReferrals } from './_lib/referrals.js';
+import { buildCreatorReferrals, loadReferralPool, callerForReferrals } from './_lib/referrals.js';
 import { OUTREACH_ACTIONS, handleOutreachAction } from './_lib/outreach.js';
 import { HANDOFF_ACTIONS, handleHandoffAction } from './_lib/adminHandoff.js';
 import { OTP_ACTIONS, handleOtpAction } from './_lib/phoneOtp.js';
@@ -668,6 +668,8 @@ export default async function handler(req, res) {
             snapshot.forEach(doc => {
                 groups.push({ id: doc.id, ...doc.data() });
             });
+            // Every visitor's page asks for this list; the edge answers repeats for five minutes.
+            if (req.method === 'GET') res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
             return res.status(200).json({ success: true, groups });
         } catch (err) {
             console.error('[API/CREATOR-JOIN] Get creator groups error:', err);
@@ -1006,31 +1008,37 @@ export default async function handler(req, res) {
                 if (!querySnap.empty) foundDoc = querySnap.docs[0];
             }
 
-            // 2. Try by the token's verified email
+            // 2. Try by the token's verified email, as stored
             if (!foundDoc && searchEmail) {
                 const emailSnap = await adminDb.collection('creators').where('email', '==', searchEmail).limit(1).get();
-                if (!emailSnap.empty) {
-                    foundDoc = emailSnap.docs[0];
-                } else {
-                    const creatorsSnap = await adminDb.collection('creators').get();
-                    creatorsSnap.forEach(doc => {
-                        const data = doc.data();
-                        if (!foundDoc && data.email && data.email.trim().toLowerCase() === searchEmail) {
-                            foundDoc = doc;
-                        }
-                    });
-                }
+                if (!emailSnap.empty) foundDoc = emailSnap.docs[0];
             }
 
-            // 3. Try by the token's verified phone number
+            // 3. Try by the token's verified phone, in the usual spellings
             if (!foundDoc && searchPhone) {
-                const creatorsSnap = await adminDb.collection('creators').get();
-                creatorsSnap.forEach(doc => {
-                    const data = doc.data();
-                    if (!foundDoc && normalizePhoneNumber(data.phone) === searchPhone) {
-                        foundDoc = doc;
-                    }
-                });
+                const digits = searchPhone.replace(/\D/g, '');
+                const local = digits.slice(-10);
+                const spellings = [...new Set([searchPhone, digits, `+${digits}`, local, `+91${local}`, `91${local}`, `+91 ${local}`].filter(Boolean))];
+                const phoneSnap = await adminDb.collection('creators').where('phone', 'in', spellings).limit(1).get();
+                if (!phoneSnap.empty) foundDoc = phoneSnap.docs[0];
+            }
+
+            // 4. Odd spellings (capitals, spaces) need every creator read, so that runs at most
+            //    once a day per account; most people who ask aren't creators at all.
+            if (!foundDoc && (searchEmail || searchPhone)) {
+                const missRef = adminDb.collection('creator_lookup_misses').doc(searchUid);
+                const miss = await missRef.get();
+                const checkedAt = Date.parse(miss.exists ? miss.data().checkedAt : '') || 0;
+                if (Date.now() - checkedAt > 24 * 60 * 60 * 1000) {
+                    const creatorsSnap = await adminDb.collection('creators').get();
+                    creatorsSnap.forEach(doc => {
+                        if (foundDoc) return;
+                        const data = doc.data();
+                        if (searchEmail && data.email && String(data.email).trim().toLowerCase() === searchEmail) foundDoc = doc;
+                        else if (searchPhone && data.phone && normalizePhoneNumber(data.phone) === searchPhone) foundDoc = doc;
+                    });
+                    if (!foundDoc) await missRef.set({ checkedAt: new Date().toISOString() }).catch(() => {});
+                }
             }
 
             if (!foundDoc) {
@@ -1064,9 +1072,13 @@ export default async function handler(req, res) {
     // Computed here so creator dashboards don't need every creator's record.
     if (action === 'creator-referrals') {
         try {
-            const creatorsSnap = await adminDb.collection('creators').get();
-            const all = creatorsSnap.docs.map(d => ({ ...d.data(), id: d.id, uid: d.data().uid || d.id }));
-            return res.status(200).json({ success: true, ...buildCreatorReferrals(all, decodedToken.uid) });
+            // From a pool cached for ten minutes (only creators in a referral), not every creator per visit.
+            const uid = decodedToken.uid;
+            // A referral made in the last ten minutes shows up on the next rebuild.
+            const pool = await loadReferralPool(adminDb);
+            const me = pool.find(c => c.id === uid || c.uid === uid) || await callerForReferrals(adminDb, uid);
+            const all = me && !pool.some(c => c.id === me.id) ? [...pool, me] : pool;
+            return res.status(200).json({ success: true, ...buildCreatorReferrals(all, uid) });
         } catch (err) {
             console.error('[API/CREATOR-JOIN] Creator referrals error:', err);
             return res.status(500).json({ success: false, error: err.message });

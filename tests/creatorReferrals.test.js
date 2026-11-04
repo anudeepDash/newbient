@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { buildCreatorReferrals } from '../api/_lib/referrals.js';
+import { buildCreatorReferrals, referralPool, loadReferralPool, resetReferralPoolForTests, callerForReferrals } from '../api/_lib/referrals.js';
+import { FakeFirestore } from './helpers/fakeFirestore.js';
 import { tierProgress, monthStartIST, referralCounts } from '../src/lib/creator/referralTiers.js';
 
 const NOW = Date.parse('2026-10-20T12:00:00Z');
@@ -49,5 +50,38 @@ describe('creator referrals', () => {
 
     it('starts the month at midnight in India', () => {
         expect(new Date(monthStartIST(NOW)).toISOString()).toBe('2026-09-30T18:30:00.000Z');
+    });
+
+    it('answers the same from the cached pool as from every creator', async () => {
+        const all = [...world, c('loner'), c('quiet', { instagram: 'quiet' })];
+        const pool = referralPool(all);
+        // Only creators in a referral are kept.
+        expect(pool.some(p => p.uid === 'loner' || p.uid === 'quiet')).toBe(false);
+        const db = new FakeFirestore(Object.fromEntries(all.map(x => [`creators/${x.id}`, x])));
+        for (const uid of ['alice', 'bob', 'a2', 'loner', 'stranger']) {
+            const me = pool.find(p => p.uid === uid) || await callerForReferrals(db, uid);
+            const withMe = me && !pool.some(p => p.id === me.id) ? [...pool, me] : pool;
+            const strip = (o) => JSON.parse(JSON.stringify(o));
+            expect(strip(buildCreatorReferrals(withMe, uid, NOW))).toEqual(strip(buildCreatorReferrals(all, uid, NOW)));
+        }
+    });
+
+    it('reads every creator at most once per ten minutes', async () => {
+        resetReferralPoolForTests();
+        const db = new FakeFirestore(Object.fromEntries(world.map(x => [`creators/${x.id}`, x])));
+        let reads = 0;
+        const realCollection = db.collection.bind(db);
+        db.collection = (name) => {
+            const ref = realCollection(name);
+            if (name === 'creators') { const get = ref.get.bind(ref); ref.get = () => { reads += 1; return get(); }; }
+            return ref;
+        };
+        await loadReferralPool(db, { now: NOW });
+        await loadReferralPool(db, { now: NOW + 5 * 60 * 1000 });
+        resetReferralPoolForTests(); // another instance: uses the saved copy
+        await loadReferralPool(db, { now: NOW + 6 * 60 * 1000 });
+        expect(reads).toBe(1);
+        await loadReferralPool(db, { now: NOW + 11 * 60 * 1000 });
+        expect(reads).toBe(2);
     });
 });

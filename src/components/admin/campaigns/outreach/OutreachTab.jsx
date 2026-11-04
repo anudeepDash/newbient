@@ -87,15 +87,21 @@ const OutreachTab = ({ campaign }) => {
      * along when the background worker isn't running.
      */
     const waiting = (data.api?.queue?.queued || 0) + (data.api?.queue?.sending || 0);
+    // The whole applicant list is re-read only when a tick actually sent something; the
+    // badges come with the tick. At the daily cap nothing more goes out today, so it stops.
+    const [queueCapped, setQueueCapped] = useState(false);
     useEffect(() => {
-        if (!waiting) return undefined;
+        if (!waiting || queueCapped) return undefined;
         const timer = setInterval(async () => {
             if (document.hidden) return;
-            await callOutreach('outreach-queue-run', { campaignId: campaign.id });
-            load();
+            const r = await callOutreach('outreach-queue-run', { campaignId: campaign.id });
+            if (!r.ok) return;
+            if (r.data.capped) setQueueCapped(true);
+            if (r.data.sent || r.data.failed || r.data.cancelled) load();
+            else if (r.data.queue) setData(d => (d.api ? { ...d, api: { ...d.api, queue: r.data.queue } } : d));
         }, 30_000);
         return () => clearInterval(timer);
-    }, [waiting, campaign.id, load]);
+    }, [waiting, queueCapped, campaign.id, load]);
 
     const sendWithApi = async (ids) => {
         const r = await callOutreach('outreach-send', { campaignId: campaign.id, appIds: ids });
