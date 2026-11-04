@@ -5,7 +5,7 @@ import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import TriangleAlert from 'lucide-react/dist/esm/icons/triangle-alert';
 import { cn } from '../../../../lib/utils';
 import { useStore } from '../../../../lib/store';
-import { Button, Card, Badge, Select, SearchInput } from '../../ui';
+import { Button, Card, Badge, SearchInput } from '../../ui';
 import { Field, fieldCls } from '../../uploads/UploadKit';
 import { Spinner, ConfirmSheet } from '../parts';
 import { firstNameOf } from '../../../../lib/outreach/normalize';
@@ -52,7 +52,8 @@ const CampaignOpenPanel = ({ campaign, live }) => {
     // The cities picked: starts with the campaign's once it loads; empty = all cities.
     const [pickedCities, setPickedCities] = useState(null);
     const [niche, setNiche] = useState('any');
-    const [mode, setMode] = useState('all');
+    // Always all of the criteria: it goes only to creators who meet everything the team set.
+    const mode = 'all';
     const [minFollowers, setMinFollowers] = useState('');
     const [withUnverified, setWithUnverified] = useState(false);
     const [withTold, setWithTold] = useState(false);
@@ -160,49 +161,49 @@ const CampaignOpenPanel = ({ campaign, live }) => {
                         <TriangleAlert size={15} className="mt-0.5 shrink-0" /> This campaign isn’t taking applications, so there’s nothing to apply to. Set it to Open (and check the deadline) first.
                     </p>
                 )}
-                {!state.loading && !criteria.length && (
-                    <p className="flex items-start gap-2 rounded-xl bg-amber-500/10 p-3 text-[13px] font-medium text-amber-700 dark:text-amber-300">
-                        <TriangleAlert size={15} className="mt-0.5 shrink-0" /> Set at least one criterion: some cities, a follower minimum or the campaign’s niches. This only goes to creators who fit, never to everyone registered.
-                    </p>
-                )}
-                <p className="text-[13px] leading-snug text-gray-500">
-                    For creators registered on the creator portal who haven’t applied yet, and only the ones who fit the criteria below. Each person gets it once per campaign. This is the only place campaign WhatsApps go from: announcing a campaign sends email and push only.
-                </p>
+                <p className="text-[13px] leading-snug text-gray-500">Registered creators who haven’t applied yet and meet everything below. Each gets it once per campaign.</p>
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                    <Field label="Who to send to" hint={criteria.length > 1 ? (mode === 'any' ? 'Anyone who meets at least one of the criteria below.' : 'Only people who meet every criterion below.') : 'Matters once more than one criterion is set.'}>
-                        <Select label="Who to send to" value={mode} onChange={setMode} className="w-full" options={[
-                            { value: 'all', label: 'Meets all the criteria' },
-                            { value: 'any', label: 'Meets any of the criteria' },
-                        ]} />
-                    </Field>
-                    <Field label="Niche" hint={niches.length ? 'Set in the campaign editor (Preferred niches).' : 'The campaign has no preferred niches.'}>
-                        <Select label="Niche" value={niche} onChange={setNiche} className="w-full" options={[
-                            { value: 'any', label: 'Any niche' },
-                            ...(niches.length ? [{ value: 'campaign', label: `This campaign’s niches (${niches.join(', ')})` }] : []),
-                        ]} />
-                    </Field>
-                    <Field label="Cities" hint={(
-                        <span>
-                            {chosenCities.length ? `Creators in ${chosenCities.length === 1 ? chosenCities[0] : `any of ${chosenCities.length} cities`}.` : 'All cities.'}
-                            {!sameAsCampaign && cities.length > 0 && <> <button type="button" onClick={() => setPickedCities(cleanCities(cities))} className="font-semibold underline">Use the campaign’s ({cities.join(', ')})</button></>}
-                        </span>
-                    )}>
-                        <MultiSelectFilter
-                            label="Cities"
-                            allLabel="All cities"
-                            noun="city"
-                            nounPlural="cities"
-                            options={cityOptions}
-                            value={chosenCities}
-                            onChange={setPickedCities}
-                            className="w-full"
-                        />
-                    </Field>
-                    <Field label="At least this many followers" hint={state.criteria.minFollowers ? `The campaign’s minimum is ${followers(state.criteria.minFollowers)}.` : 'The campaign has no minimum.'}>
-                        <input className={fieldCls} inputMode="numeric" value={minFollowers} onChange={(e) => setMinFollowers(e.target.value)} placeholder="0" />
-                    </Field>
+                <div className="space-y-3 rounded-2xl bg-black/[0.025] p-3 dark:bg-white/[0.03]">
+                    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_11rem]">
+                        <Field label="Cities">
+                            <MultiSelectFilter
+                                label="Cities"
+                                allLabel="All cities"
+                                noun="city"
+                                nounPlural="cities"
+                                options={cityOptions}
+                                value={chosenCities}
+                                onChange={setPickedCities}
+                                className="w-full"
+                            />
+                        </Field>
+                        <Field label="Min followers">
+                            <input className={fieldCls} inputMode="numeric" value={minFollowers} onChange={(e) => setMinFollowers(e.target.value)} placeholder="0" aria-label="Minimum followers" />
+                        </Field>
+                    </div>
+                    {niches.length > 0 && (
+                        <label className="flex items-center gap-2 text-[13px] font-medium">
+                            <input type="checkbox" checked={niche === 'campaign'} onChange={(e) => setNiche(e.target.checked ? 'campaign' : 'any')} className="h-4 w-4 accent-emerald-600" />
+                            Only the campaign’s niches ({niches.join(', ')})
+                        </label>
+                    )}
+                    {!state.loading && (criteria.length ? (
+                        <p className="text-[13px]">
+                            <strong>{audience.length.toLocaleString('en-IN')} {audience.length === 1 ? 'creator fits' : 'creators fit'}</strong>
+                            <span className="text-gray-500">: {[
+                                chosenCities.length ? `in ${chosenCities.length > 3 ? `${chosenCities.slice(0, 3).join(', ')} +${chosenCities.length - 3}` : chosenCities.join(', ')}` : 'any city',
+                                min ? `${followers(min)}+ followers` : null,
+                                niche === 'campaign' && niches.length ? niches.join(', ') : null,
+                            ].filter(Boolean).join(' · ')}</span>
+                            {!sameAsCampaign && cities.length > 0 && <> · <button type="button" onClick={() => setPickedCities(cleanCities(cities))} className="font-semibold text-emerald-700 underline dark:text-neon-green">Use the campaign’s cities</button></>}
+                        </p>
+                    ) : (
+                        <p className="flex items-start gap-2 text-[13px] font-medium text-amber-700 dark:text-amber-300">
+                            <TriangleAlert size={15} className="mt-0.5 shrink-0" /> Pick cities, a follower minimum or the campaign’s niches. It never goes to every registered creator.
+                        </p>
+                    ))}
                 </div>
+
                 <div className="flex flex-wrap gap-x-5 gap-y-2">
                     <label className="flex items-center gap-2 text-[13px] font-medium">
                         <input type="checkbox" checked={withUnverified} onChange={(e) => setWithUnverified(e.target.checked)} className="h-4 w-4 accent-emerald-600" />

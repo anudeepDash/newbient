@@ -24,20 +24,28 @@ import { taskWindow } from '../../../../lib/creator/tasks';
 import { callOutreach } from './outreachApi';
 import { StatusBadge, Handle, SKIP_REASON, Bubble } from './parts';
 import CampaignOpenPanel from './CampaignOpenPanel';
+import MessagesPanel from './MessagesPanel';
+import UserCheck from 'lucide-react/dist/esm/icons/user-check';
 
 /*
- * Outreach → WhatsApp: the team picks a message, who gets it, and sends it
+ * Outreach → Message: every WhatsApp the team sends for a campaign, in one
+ * place. Only messages whose template Meta approved (and is switched on) are
+ * offered; the rest are named in one line at the bottom. The shortlist invite
+ * is the existing invite flow (MessagesPanel, with the by-hand fallback), and
+ * Campaign is live goes to registered creators who fit (CampaignOpenPanel).
+ *
+ * The rest: the team picks a message, who gets it, and sends it
  * through the WhatsApp API (api/_lib/outreachBroadcast.js). The queue keeps to
  * the rate limit, retries, and skips anyone who replied STOP. Each message is
  * a Meta template, so it goes out only once Meta approved it and its switch
  * is on; until then it shows as "Waiting for Meta".
  *
- * Below the composer: the messages that go out by themselves, and whether each
- * one is switched on.
+ * The messages that go out by themselves are listed in Settings (AutomaticMessages).
  */
 
 const MESSAGES = [
-    { kind: 'campaign_open', label: 'Campaign open', icon: DoorOpen, tone: 'blue', hint: 'Registered creators who match', segments: [] },
+    { kind: 'campaign_open', label: 'Campaign is live', icon: DoorOpen, tone: 'blue', hint: 'Registered creators who fit the campaign', segments: [] },
+    { kind: 'invite', label: 'Shortlist invite', icon: UserCheck, tone: 'violet', hint: 'Shortlisted people: the brief and the group', segments: [] },
     { kind: 'task_live', label: 'Task is live', icon: ClipboardList, tone: 'green', hint: 'The brief, links and due date', segments: ['owes', 'approved'] },
     { kind: 'brief_changed', label: 'Brief changed', icon: FilePen, tone: 'amber', hint: 'What changed, with their task link', segments: ['approved', 'owes'] },
     { kind: 'group', label: 'Group invite', icon: Users, tone: 'violet', hint: 'A Join the group button, then Joined', segments: ['not_joined', 'approved'] },
@@ -87,13 +95,50 @@ const buttonsOf = (kind) => {
     return WA_TEMPLATES[kind]?.button ? [`↗ ${WA_TEMPLATES[kind].button}`] : [];
 };
 
-const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent }) => {
+/* The messages that go out without anyone pressing send, and whether each is switched on (shown in Settings). */
+export const AutomaticMessages = ({ api }) => {
+    const live = (k) => Boolean(api?.configured && api?.templates?.[k]);
+    return (
+        <Card className="p-4">
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+                <Zap size={15} className="text-amber-500" />
+                <h4 className="mr-auto text-[14px] font-bold">Goes out by itself</h4>
+                <span className="flex items-center gap-1.5 text-[11.5px] text-gray-500"><span className="h-2 w-2 rounded-full bg-emerald-500" /> On <span className="ml-2 h-2 w-2 rounded-full bg-amber-400" /> Waiting for Meta</span>
+            </div>
+            <ul className="grid gap-x-6 gap-y-1 sm:grid-cols-2 xl:grid-cols-3">
+                {AUTOMATIC.map(a => (
+                    <li key={a.kind} className="flex items-start gap-2.5 py-1.5">
+                        <span className={cn('mt-1.5 h-2 w-2 shrink-0 rounded-full', live(a.kind) ? 'bg-emerald-500' : 'bg-amber-400')} />
+                        <span className="min-w-0">
+                            <span className="block text-[13px] font-semibold">{a.label}</span>
+                            <span className="block text-[11.5px] leading-snug text-gray-500">{a.when}</span>
+                        </span>
+                    </li>
+                ))}
+            </ul>
+            <p className="mt-3 text-[11.5px] text-gray-500">Submit waiting templates from <Link to="/admin/whatsapp" className="underline">WhatsApp → Templates</Link>.</p>
+        </Card>
+    );
+};
+
+const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, invite = null }) => {
     const addToast = useStore(s => s.addToast);
     const live = (k) => Boolean(api?.configured && api?.templates?.[k]);
     // The invite with a "Join the group" button once Meta approves it; until then whichever older one is on (link in the text).
     const groupKind = live('group_invite') ? 'group_invite' : live('group_join') ? 'group_join' : live('group_link') ? 'group_link' : 'group_invite';
+    const kindOf = (m) => (m.kind === 'group' ? groupKind : m.kind);
+    // Only what can actually go out: approved and switched on. The shortlist invite is always here (it has a by-hand fallback).
+    const available = MESSAGES.filter(m => (m.kind === 'invite' && invite) || (m.kind !== 'invite' && live(kindOf(m))));
+    const waiting = MESSAGES.filter(m => m.kind !== 'invite' && !live(kindOf(m)));
     const hasImported = applications.some(a => a.source === 'import');
-    const [pick, setPick] = useState(hasImported && applications.some(SEGMENTS.imported_new.test) ? 'reach_out' : 'task_live');
+    const firstPick = () => {
+        const has = (k) => available.some(m => m.kind === k);
+        if (invite?.toInvite > 0 && has('invite')) return 'invite';
+        if (hasImported && applications.some(SEGMENTS.imported_new.test) && has('reach_out')) return 'reach_out';
+        if (has('campaign_open')) return 'campaign_open';
+        return available[0]?.kind || 'invite';
+    };
+    const [pick, setPick] = useState(firstPick);
     const kind = pick === 'group' ? groupKind : pick;
     const meta = MESSAGES.find(m => m.kind === pick) || MESSAGES[0];
 
@@ -174,33 +219,35 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent })
 
     return (
         <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {MESSAGES.map(m => {
-                    const k = m.kind === 'group' ? groupKind : m.kind;
-                    const on = pick === m.kind;
-                    return (
-                        <button
-                            key={m.kind}
-                            type="button"
-                            onClick={() => setPick(m.kind)}
-                            aria-pressed={on}
-                            className={cn(
-                                'flex flex-col gap-1.5 rounded-2xl border p-3 text-left transition-all',
-                                on ? 'border-emerald-500/60 bg-neon-green/[0.08] shadow-sm dark:border-neon-green/50' : 'border-black/[0.06] bg-white hover:-translate-y-0.5 hover:border-black/15 dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:border-white/20',
-                            )}
-                        >
-                            <span className="flex items-center justify-between gap-2">
-                                <Badge tone={m.tone} className="!p-1.5"><m.icon size={14} /></Badge>
-                                <span className={cn('h-2 w-2 rounded-full', live(k) ? 'bg-emerald-500' : 'bg-amber-400')} title={live(k) ? 'Switched on' : 'Waiting for Meta'} />
-                            </span>
-                            <span className="text-[13px] font-bold leading-tight">{m.label}</span>
-                            <span className="text-[11.5px] leading-snug text-gray-500">{m.hint}</span>
-                        </button>
-                    );
-                })}
+            <div className="space-y-2">
+                <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="Message">
+                    {available.map(m => {
+                        const on = pick === m.kind;
+                        return (
+                            <button
+                                key={m.kind}
+                                type="button"
+                                role="tab"
+                                aria-selected={on}
+                                onClick={() => setPick(m.kind)}
+                                className={cn(
+                                    'flex h-10 shrink-0 items-center gap-2 rounded-full border px-3.5 text-[13px] font-semibold transition-colors',
+                                    on ? 'border-transparent bg-gray-900 text-white dark:bg-white dark:text-black' : 'border-black/[0.08] bg-white text-gray-700 hover:border-black/20 dark:border-white/[0.1] dark:bg-white/[0.03] dark:text-zinc-200 dark:hover:border-white/25',
+                                )}
+                            >
+                                <m.icon size={14} className={on ? '' : 'text-gray-400'} />
+                                {m.label}
+                                {m.kind === 'invite' && invite?.toInvite > 0 && <span className={cn('rounded-full px-1.5 text-[11px] tabular-nums', on ? 'bg-white/20 dark:bg-black/10' : 'bg-violet-500/15 text-violet-700 dark:text-violet-300')}>{invite.toInvite}</span>}
+                            </button>
+                        );
+                    })}
+                </div>
+                <p className="text-[12.5px] text-gray-500">{meta.hint}.</p>
             </div>
 
-            {pick === 'campaign_open' ? <CampaignOpenPanel campaign={campaign} live={live('campaign_open')} /> : (
+            {pick === 'invite' ? (
+                <MessagesPanel campaign={campaign} applications={applications} settings={settings} api={api} wame={invite?.wame} onStatus={invite?.onStatus} onOpen={invite?.onOpen} onSetup={invite?.onSetup} onSendApi={invite?.onSendApi} onStopApi={invite?.onStopApi} onSentNow={onSent} />
+            ) : pick === 'campaign_open' ? <CampaignOpenPanel campaign={campaign} live={live('campaign_open')} /> : (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,21rem)]">
                 <Card className="min-w-0 space-y-5 p-4">
                     {!api?.configured && <p className="flex items-start gap-2 rounded-xl bg-amber-500/10 p-3 text-[13px] font-medium text-amber-700 dark:text-amber-300"><TriangleAlert size={15} className="mt-0.5 shrink-0" /> The WhatsApp API isn’t set up yet.</p>}
@@ -303,25 +350,11 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent })
             </div>
             )}
 
-            <Card className="p-4">
-                <div className="mb-3 flex flex-wrap items-center gap-2">
-                    <Zap size={15} className="text-amber-500" />
-                    <h4 className="mr-auto text-[14px] font-bold">Goes out by itself</h4>
-                    <span className="flex items-center gap-1.5 text-[11.5px] text-gray-500"><span className="h-2 w-2 rounded-full bg-emerald-500" /> On <span className="ml-2 h-2 w-2 rounded-full bg-amber-400" /> Waiting for Meta</span>
-                </div>
-                <ul className="grid gap-x-6 gap-y-1 sm:grid-cols-2 xl:grid-cols-3">
-                    {AUTOMATIC.map(a => (
-                        <li key={a.kind} className="flex items-start gap-2.5 py-1.5">
-                            <span className={cn('mt-1.5 h-2 w-2 shrink-0 rounded-full', live(a.kind) ? 'bg-emerald-500' : 'bg-amber-400')} />
-                            <span className="min-w-0">
-                                <span className="block text-[13px] font-semibold">{a.label}</span>
-                                <span className="block text-[11.5px] leading-snug text-gray-500">{a.when}</span>
-                            </span>
-                        </li>
-                    ))}
-                </ul>
-                <p className="mt-3 text-[11.5px] text-gray-500">Submit waiting templates from <Link to="/admin/whatsapp" className="underline">WhatsApp → Templates</Link>.</p>
-            </Card>
+            {waiting.length > 0 && (
+                <p className="text-[12px] text-gray-500">
+                    Waiting for Meta approval: {waiting.map(m => m.label).join(', ')}. They show up here once approved and switched on (<Link to="/admin/whatsapp" className="underline">WhatsApp → Templates</Link>).
+                </p>
+            )}
 
             <ConfirmSheet
                 open={confirm}

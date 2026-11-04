@@ -13,6 +13,7 @@ import Plus from 'lucide-react/dist/esm/icons/plus';
 import SlidersHorizontal from 'lucide-react/dist/esm/icons/sliders-horizontal';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import Settings from 'lucide-react/dist/esm/icons/settings';
 import { cn } from '../../../../lib/utils';
 import { useStore } from '../../../../lib/store';
 import { copyToClipboard } from '../../../../lib/clipboard';
@@ -25,21 +26,21 @@ import { exportSpecFor } from '../../../../lib/outreach/export';
 import { callOutreach, applyUrlFor } from './outreachApi';
 import { StatusBadge, Handle, followers, SKIP_REASON } from './parts';
 import PasteSheet from './PasteSheet';
-import MessagesPanel from './MessagesPanel';
 import SetupPanel from './SetupPanel';
 import ActivityList from './ActivityList';
 import ApplicationSheet from './ApplicationSheet';
 import DeliverablesReview from './DeliverablesReview';
 import PayoutsPanel from './PayoutsPanel';
 import InboxPanel from './InboxPanel';
-import WhatsAppUpdatesPanel from './WhatsAppUpdatesPanel';
+import WhatsAppUpdatesPanel, { AutomaticMessages } from './WhatsAppUpdatesPanel';
 import ImportSheet from './ImportSheet';
 import { deliverableSummary } from '../../../../lib/outreach/deliverables';
 
 /*
  * The campaign's Outreach tab: people (from the open form, or imported from a
  * sheet) → shortlist → invite → joined / posted / paid, with WhatsApp messages
- * for every step. Everything is read and changed
+ * for every step. Four tabs: People, Message (every WhatsApp the team sends,
+ * WhatsAppUpdatesPanel), Posts & payouts, Inbox; Settings sits behind the gear. Everything is read and changed
  * through api/_lib/outreach.js, which checks the admin role and writes the
  * audit log; phones and emails never come from Firestore in the browser.
  */
@@ -224,7 +225,7 @@ const OutreachTab = ({ campaign }) => {
             <span className="px-2 text-[13px] font-bold">{selected.size} selected</span>
             <Button variant="accent" size="sm" disabled={!canShortlist.length} onClick={() => addToShortlist(canShortlist.map(a => a.id))}><Star size={13} /> {canShortlist.length ? `Add ${canShortlist.length} to shortlist` : 'Add to shortlist'}</Button>
             <Button size="sm" disabled={!canRemove.length} onClick={() => setConfirmRemove(canRemove.map(a => a.id))}>{canRemove.length ? `Remove ${canRemove.length}` : 'Remove'}</Button>
-            <Button size="sm" variant="success" onClick={() => setView('whatsapp')}><MessageCircle size={13} /> Message on WhatsApp</Button>
+            <Button size="sm" variant="success" onClick={() => setView('message')}><MessageCircle size={13} /> Message on WhatsApp</Button>
             {data.api?.configured && <Button size="sm" variant="ghost" onClick={() => messageOnWhatsApp([...selected])}>Any template</Button>}
             <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>Clear</Button>
         </div>
@@ -315,8 +316,9 @@ const OutreachTab = ({ campaign }) => {
                     </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                    <Button variant={view === 'setup' ? 'secondary' : 'ghost'} onClick={() => setView(view === 'setup' ? 'applications' : 'setup')} aria-label="Outreach settings" aria-pressed={view === 'setup'} title="Group link, reminders, tickets and activity"><Settings size={15} /></Button>
                     <Button variant="accent" onClick={() => setImportOpen(true)}><FileSpreadsheet size={14} /> Import a sheet</Button>
-                    <Button variant="success" onClick={() => setView('whatsapp')}><MessageCircle size={14} /> Send on WhatsApp</Button>
+                    <Button variant="success" onClick={() => setView('message')}><MessageCircle size={14} /> Send on WhatsApp</Button>
                 </div>
             </div>
             <div className="grid grid-cols-3 gap-px border-t border-black/[0.06] bg-black/[0.06] sm:grid-cols-6 dark:border-white/[0.08] dark:bg-white/[0.08]">
@@ -365,12 +367,9 @@ const OutreachTab = ({ campaign }) => {
                     onChange={setView}
                     items={[
                         { value: 'applications', label: 'People', count: apps.length },
-                        { value: 'messages', label: 'Invite', count: toInvite || undefined, highlight: toInvite > 0 },
-                        { value: 'whatsapp', label: 'WhatsApp' },
-                        { value: 'deliverables', label: 'Review posts', count: toReview || undefined, highlight: toReview > 0 },
-                        { value: 'payouts', label: 'Payouts and tickets' },
+                        { value: 'message', label: 'Message', count: toInvite || undefined, highlight: toInvite > 0 },
+                        { value: 'posts', label: 'Posts & payouts', count: toReview || undefined, highlight: toReview > 0 },
                         { value: 'inbox', label: 'Inbox' },
-                        { value: 'setup', label: 'Settings' },
                     ]}
                 />
             </div>
@@ -400,21 +399,32 @@ const OutreachTab = ({ campaign }) => {
                     {table}
                 </div>
             )}
-            {view === 'messages' && (
-                <MessagesPanel campaign={campaign} applications={apps} settings={data.settings} api={data.api} wame={data.wame} onStatus={changeStatus} onOpen={(a) => setOpenId(a.id)} onSetup={() => setView('setup')} onSendApi={sendWithApi} onStopApi={stopApi} onSentNow={() => { setRefreshKey(k => k + 1); load(); }} />
-            )}
             {view === 'setup' && (
                 <div className="space-y-4">
                     <SetupPanel campaign={campaign} settings={data.settings} api={data.api} sampleApplication={shortlist[0] || apps[0]} onSaved={load} />
+                    <AutomaticMessages api={data.api} />
                     <Card className="p-4">
                         <p className="mb-3 flex items-center gap-1.5 text-[14px] font-bold">Activity <ChevronRight size={14} className="text-gray-400" /> <span className="font-medium text-gray-500">every change, by whom</span></p>
                         <ActivityList campaignId={campaign.id} nameOf={nameOf} refreshKey={refreshKey} />
                     </Card>
                 </div>
             )}
-            {view === 'whatsapp' && <WhatsAppUpdatesPanel campaign={campaign} applications={apps} settings={data.settings} api={data.api} onSent={() => { setRefreshKey(k => k + 1); load(); }} />}
-            {view === 'deliverables' && <DeliverablesReview campaign={campaign} applications={apps} onChanged={() => { setRefreshKey(k => k + 1); load(); }} />}
-            {view === 'payouts' && <PayoutsPanel campaign={campaign} applications={apps} onChanged={() => { setRefreshKey(k => k + 1); load(); }} />}
+            {view === 'message' && (
+                <WhatsAppUpdatesPanel
+                    campaign={campaign}
+                    applications={apps}
+                    settings={data.settings}
+                    api={data.api}
+                    onSent={() => { setRefreshKey(k => k + 1); load(); }}
+                    invite={{ wame: data.wame, onStatus: changeStatus, onOpen: (a) => setOpenId(a.id), onSetup: () => setView('setup'), onSendApi: sendWithApi, onStopApi: stopApi, toInvite }}
+                />
+            )}
+            {view === 'posts' && (
+                <div className="space-y-6">
+                    <DeliverablesReview campaign={campaign} applications={apps} onChanged={() => { setRefreshKey(k => k + 1); load(); }} />
+                    <PayoutsPanel campaign={campaign} applications={apps} onChanged={() => { setRefreshKey(k => k + 1); load(); }} />
+                </div>
+            )}
             {view === 'inbox' && <InboxPanel campaign={campaign} configured={Boolean(data.api?.configured)} />}
 
             <PasteSheet
