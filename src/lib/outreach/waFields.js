@@ -15,6 +15,7 @@ export const FIELDS = {
     full_name: { label: 'Name', auto: 'person', example: 'Riya Sharma' },
     campaign_title: { label: 'Campaign', auto: 'campaign', example: 'Arijit Singh Live' },
     group_link: { label: 'Group link', auto: 'campaign', example: 'https://chat.whatsapp.com/…' },
+    group_code: { label: 'Group invite code (the end of its chat.whatsapp.com link)', auto: 'campaign', example: 'AbCdEfGhIjK123' },
     deadline_line: { label: 'Posting deadline line', auto: 'campaign', example: 'Post by 2 Nov.' },
     campaign_id: { label: 'Campaign link ending', auto: 'campaign', example: 'abc123' },
     city: { label: 'City', auto: 'applicant', example: 'Bengaluru' },
@@ -102,14 +103,16 @@ const OURS = {
     new_sign_in: { body: ['first_name', 'device', 'when'] },
     phone_number_changed: { body: ['first_name', 'phone_last4', 'when'] },
     accounts_merged: { body: ['first_name', 'merged_in', 'moved_summary'] },
+    creator_welcome_city: { body: ['first_name', 'city'], button: 'group_code' },
     ...Object.fromEntries(Object.values(WA_TEMPLATES).map(t => [t.name, {
         body: t.placeholders,
+        ...(t.name === 'campaign_group_invite' ? { button: 'group_code' } : {}),
         ...(['campaign_deliverables', 'campaign_deliverable_changes', 'campaign_post_due', 'campaign_post_overdue', 'campaign_posts_open', 'campaign_task_live', 'campaign_event_day', 'campaign_brief_updated'].includes(t.name) ? { button: 'submit_token' } : {}),
     }])),
 };
 
 /* The outreach templates whose quick reply is "Joined": sent to an applicant, it carries their signed payload. */
-export const JOIN_TEMPLATES = new Set([WA_TEMPLATES.invite.name, WA_TEMPLATES.reminder.name, WA_TEMPLATES.group_link.name, WA_TEMPLATES.group_join.name]);
+export const JOIN_TEMPLATES = new Set([WA_TEMPLATES.invite.name, WA_TEMPLATES.reminder.name, WA_TEMPLATES.group_link.name, WA_TEMPLATES.group_join.name, WA_TEMPLATES.group_invite.name]);
 
 /**
  * The meaning of each variable of a template (as listed by Meta).

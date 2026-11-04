@@ -44,6 +44,8 @@ const IMAGE_HEADERS = {
     campaign_update: 'wa-invite',
     campaign_creator_invite: 'wa-invite',
     campaign_group_join: 'wa-shortlist',
+    campaign_group_invite: 'wa-shortlist',
+    creator_welcome_city: 'wa-city',
     campaign_event_day: 'wa-pass',
     campaign_brief_updated: 'wa-changes',
     campaign_feedback: 'wa-feedback',

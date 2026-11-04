@@ -12,6 +12,13 @@ import { deadlineLineFor } from './template.js';
  * deadline as "Details are in the group."
  */
 
+/*
+ * Sent once when someone registers on the creator portal (api/creator-join.js, through the outreach queue): their
+ * city's creators community, as a "Join the community" URL button (app.newbi.live/wa/g/<code>), then Stop updates.
+ * Not tied to a campaign, so it isn't in WA_TEMPLATES. Variables: first name, city.
+ */
+export const WELCOME_CITY_BODY = "👋 *Welcome to Newbi Creators, {{1}}!*\n\nYour creator profile is set up. Paid gigs, guestlist passes and meetups in {{2}} are posted first in our city creators community on WhatsApp.\n\nTap *Join the community* below to get in.";
+
 // As approved in Meta: WhatsApp Manager strips emoji from button labels.
 export const JOIN_BUTTON = 'Joined';
 export const STOP_BUTTON = 'Stop updates';
@@ -113,6 +120,15 @@ export const WA_TEMPLATES = {
         body: "👥 *Hi {{1}}, join the {{2}} creators group*\n\nEverything for this campaign happens in the group: the brief, task dates, passes and quick updates from the Newbi team.\n\n*Group link:* {{3}}\n*Join by:* {{4}}\n\nTap *Joined* once you're in, so we know you've got it.",
         placeholders: ['first_name', 'campaign_title', 'group_link', 'join_by'],
     },
+    // The group invite with a real button (replaces campaign_group_join and campaign_group_link once approved): the link
+    // isn't in the text, it's the "Join the group" URL button (app.newbi.live/wa/g/<code>, which redirects to
+    // chat.whatsapp.com/<code>). Then quick replies Joined (signed, marks them joined) and Stop updates.
+    group_invite: {
+        name: 'campaign_group_invite',
+        body: "👥 *Hi {{1}}, join the {{2}} creators group*\n\nEverything for this campaign happens in the group: the brief, task dates, passes and quick updates from the Newbi team.\n\n*Join by:* {{3}}\n\nTap *Join the group* below, then tap *Joined* so we know you're in.",
+        placeholders: ['first_name', 'campaign_title', 'join_by'],
+        button: 'Join the group',
+    },
     // The day before (or the morning of) the campaign's event, to approved creators: when, where, and anything to
     // bring. URL button: their creator page (/d/), where their pass and tasks are.
     event_day: {
@@ -160,6 +176,20 @@ export const WA_TEMPLATES = {
 };
 
 export const NAME_FALLBACK = 'there';
+
+/*
+ * A WhatsApp group link's invite code ("https://chat.whatsapp.com/AbC…?mode=gi_t" → "AbC…"), or '' when it isn't
+ * one. Templates with a "Join" button carry only the code: the button opens app.newbi.live/wa/g/<code>, which
+ * redirects to the group (vercel.json), so the button shows our domain.
+ */
+export const groupCodeOf = (link) => {
+    const m = String(link || '').trim().match(/^https:\/\/chat\.whatsapp\.com\/(?:invite\/)?([A-Za-z0-9]{10,40})\/?(?:[?#].*)?$/);
+    return m ? m[1] : '';
+};
+export const GROUP_JOIN_PATH = '/wa/g/';
+export const WELCOME_CITY_TEMPLATE = 'creator_welcome_city';
+export const JOIN_GROUP_BUTTON = 'Join the group';
+export const JOIN_COMMUNITY_BUTTON = 'Join the community';
 
 /** "Reel, Story 1 and Story 2" for a few posts, else "All 5 posts" (the all_posts_approved summary). */
 export const approvedSummary = (titles = []) => {

@@ -1,0 +1,204 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { FakeFirestore, fakeReq, fakeRes } from '../helpers/fakeFirestore.js';
+import { setDbForTests } from '../../api/_lib/db.js';
+import { setWhatsAppFetchForTests } from '../../api/_lib/whatsapp.js';
+import { runQueue, joinPayload } from '../../api/_lib/outreachQueue.js';
+import { handleOutreachAction } from '../../api/_lib/outreach.js';
+import { queueCityWelcome } from '../../api/_lib/creatorWelcome.js';
+import { WA_TEMPLATES, WELCOME_CITY_BODY, groupCodeOf, STOP_PAYLOAD } from '../../src/lib/outreach/whatsappTemplate.js';
+import { defaultPayoutAmount } from '../../src/lib/outreach/deliverables.js';
+import { parseAmount, detectColumns, parseDelimited, rowsFromTable } from '../../src/lib/outreach/importSheet.js';
+import { TEMPLATES, problemsWith } from '../../scripts/submit-wa-templates.mjs';
+
+/* The group invite with a Join button, the portal welcome, Campaign open to registered creators, and the payout sheet. */
+
+const ADMIN = { uid: 'u-admin', email: 'ops@newbi.live', email_verified: true };
+const GROUP = 'https://chat.whatsapp.com/AbCdEf123456?mode=gi_t';
+let db;
+let sent;
+const call = async (action, body) => {
+    const res = fakeRes();
+    await handleOutreachAction(action, fakeReq({ body }), res, { decodedToken: ADMIN, db });
+    return res;
+};
+const drain = () => runQueue({ db, deadline: Date.now() + 5000, sleep: async () => {} });
+const buttonsOf = (msg) => msg.template.components.filter(c => c.type === 'button');
+
+beforeEach(() => {
+    vi.stubEnv('WHATSAPP_ACCESS_TOKEN', 'test-token');
+    vi.stubEnv('WHATSAPP_PHONE_NUMBER_ID', '123');
+    vi.stubEnv('LINK_SIGNING_SECRET', 'test-secret');
+    vi.stubEnv('OUTREACH_WA_PER_MINUTE', '50');
+    vi.stubEnv('CRON_SECRET', '');
+    ['CAMPAIGN_GROUP_INVITE', 'CAMPAIGN_INVITE', 'CREATOR_WELCOME_CITY'].forEach(n => vi.stubEnv(`WHATSAPP_TEMPLATE_${n}`, n.toLowerCase()));
+    db = new FakeFirestore({
+        'campaigns/c1': { title: 'Pinnaca 2026', status: 'Open', targetCity: 'Lucknow', perksByTier: { nano: { minFollowers: 5000 } } },
+        'campaigns/c1/private/outreach': { whatsappGroupLink: GROUP },
+        'campaigns/c1/applications/a1': { fullName: 'Riya Sharma', phone: '+919876500001', status: 'applied', uid: 'u-riya' },
+        'campaigns/c1/applications/a2': { fullName: 'Kabir', phone: '+919876500002', status: 'shortlisted' },
+        'campaigns/c1/application_keys/p:+919876500001': { appId: 'a1' },
+        'campaigns/c1/application_keys/p:+919876500002': { appId: 'a2' },
+        'admins/x': { email: 'ops@newbi.live', role: 'admin' },
+        // Registered creators.
+        'creators/cr1': { uid: 'u1', displayName: 'Meera Joshi', city: 'Lucknow', instagramFollowers: '12000', phone: '+919876500011', isPhoneVerified: true, profileStatus: 'approved' },
+        'creators/cr2': { uid: 'u2', displayName: 'Dev', city: 'Delhi', instagramFollowers: '9000', phone: '+919876500012', isPhoneVerified: true, profileStatus: 'approved' },
+        'creators/cr3': { uid: 'u3', displayName: 'Tara', city: 'Lucknow', instagramFollowers: '7000', phone: '+919876500013', isPhoneVerified: false, profileStatus: 'pending' },
+        'creators/cr4': { uid: 'u-riya', displayName: 'Riya Sharma', city: 'Lucknow', instagramFollowers: '8000', phone: '+919876500001', isPhoneVerified: true },
+        'creators/cr5': { uid: 'u5', displayName: 'Rejected', city: 'Lucknow', instagramFollowers: '8000', phone: '+919876500015', isPhoneVerified: true, profileStatus: 'rejected' },
+    });
+    setDbForTests(db);
+    sent = [];
+    setWhatsAppFetchForTests(async (url, init) => {
+        sent.push(JSON.parse(init.body));
+        return { ok: true, status: 200, json: async () => ({ messages: [{ id: `wamid.${sent.length}` }] }) };
+    });
+});
+
+afterEach(() => {
+    vi.unstubAllEnvs();
+    setDbForTests(null);
+    setWhatsAppFetchForTests(null);
+});
+
+describe('the group invite with a Join button', () => {
+    it('reads a group link’s invite code', () => {
+        expect(groupCodeOf(GROUP)).toBe('AbCdEf123456');
+        expect(groupCodeOf('https://chat.whatsapp.com/invite/AbCdEf123456/')).toBe('AbCdEf123456');
+        expect(groupCodeOf('https://example.com/AbCdEf123456')).toBe('');
+    });
+
+    it('sends the code in the URL button, then Joined and Stop updates, with no link in the text', async () => {
+        const res = await call('outreach-wa-send', { campaignId: 'c1', kind: 'group_invite', joinBy: 'Sat, 14 Nov', appIds: ['a1', 'a2'] });
+        expect(res.body.queued).toBe(1);
+        expect(res.body.skipped).toEqual([{ id: 'a1', reason: 'not_approved' }]);
+        await drain();
+        expect(sent[0].template.name).toBe('campaign_group_invite');
+        expect(sent[0].template.components.find(c => c.type === 'body').parameters.map(p => p.text)).toEqual(['Kabir', 'Pinnaca 2026', 'Sat, 14 Nov']);
+        expect(buttonsOf(sent[0])).toEqual([
+            { type: 'button', sub_type: 'url', index: '0', parameters: [{ type: 'text', text: 'AbCdEf123456' }] },
+            { type: 'button', sub_type: 'quick_reply', index: '1', parameters: [{ type: 'payload', payload: joinPayload('c1', 'a2') }] },
+            { type: 'button', sub_type: 'quick_reply', index: '2', parameters: [{ type: 'payload', payload: STOP_PAYLOAD }] },
+        ]);
+    });
+
+    it('refuses a link that isn’t a WhatsApp group invite', async () => {
+        const res = await call('outreach-wa-send', { campaignId: 'c1', kind: 'group_invite', link: 'https://example.com/group', appIds: ['a2'] });
+        expect(res.statusCode).toBe(400);
+    });
+
+    it('both new templates pass Meta’s pre-checks and match the code', () => {
+        const invite = TEMPLATES.find(t => t.name === 'campaign_group_invite');
+        const welcome = TEMPLATES.find(t => t.name === 'creator_welcome_city');
+        expect(problemsWith(invite)).toEqual([]);
+        expect(problemsWith(welcome)).toEqual([]);
+        expect(invite.body).toBe(WA_TEMPLATES.group_invite.body);
+        expect(welcome.body).toBe(WELCOME_CITY_BODY);
+        expect(invite.buttons.map(b => b.type)).toEqual(['URL', 'QUICK_REPLY', 'QUICK_REPLY']);
+        expect(invite.buttons[0].url).toBe('https://app.newbi.live/wa/g/{{1}}');
+    });
+});
+
+describe('the welcome with the city community', () => {
+    const creator = { displayName: 'Meera Joshi', phone: '98765 00011', city: 'Lucknow' };
+    const cityGroup = { city: 'Lucknow', groupUrl: GROUP };
+
+    it('goes once, with the community as a Join button', async () => {
+        expect(await queueCityWelcome({ db, uid: 'u1', creator, cityGroup })).toBe('sent');
+        expect(sent).toHaveLength(1);
+        expect(sent[0].to).toBe('919876500011');
+        expect(sent[0].template.name).toBe('creator_welcome_city');
+        expect(sent[0].template.components.find(c => c.type === 'body').parameters.map(p => p.text)).toEqual(['Meera', 'Lucknow']);
+        expect(buttonsOf(sent[0])[0].parameters[0].text).toBe('AbCdEf123456');
+        expect(await queueCityWelcome({ db, uid: 'u1', creator, cityGroup })).toBe('already');
+        expect(sent).toHaveLength(1);
+    });
+
+    it('stays off until its template is switched on, and skips people who turned WhatsApp off', async () => {
+        db.store.set('users/u2', { channelPrefs: { whatsapp: false } });
+        expect(await queueCityWelcome({ db, uid: 'u2', creator, cityGroup })).toBe('whatsapp_off');
+        expect(await queueCityWelcome({ db, uid: 'u3', creator, cityGroup: { city: 'Lucknow', groupUrl: 'https://example.com' } })).toBe('no_group');
+        vi.stubEnv('WHATSAPP_TEMPLATE_CREATOR_WELCOME_CITY', '');
+        expect(await queueCityWelcome({ db, uid: 'u4', creator, cityGroup })).toBe('off');
+        expect(sent).toHaveLength(0);
+    });
+});
+
+describe('Campaign open to registered creators', () => {
+    it('lists creators with whether they match, applied or were told', async () => {
+        const res = await call('outreach-open-audience', { campaignId: 'c1' });
+        expect(res.statusCode).toBe(200);
+        expect(res.body.criteria).toEqual({ cities: ['Lucknow'], minFollowers: 5000 });
+        expect(res.body.open).toBe(true);
+        const by = Object.fromEntries(res.body.creators.map(c => [c.id, c]));
+        expect(Object.keys(by).sort()).toEqual(['cr1', 'cr2', 'cr3', 'cr4']);
+        expect(by.cr1).toMatchObject({ cityMatch: true, verified: true, applied: false, told: null, followers: 12000, phone: '+919876500011' });
+        expect(by.cr2.cityMatch).toBe(false);
+        expect(by.cr3.verified).toBe(false);
+        expect(by.cr4.applied).toBe(true);
+    });
+
+    it('sends to verified numbers only unless asked, never to people who applied, and once each', async () => {
+        let res = await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr1', 'cr3', 'cr4'] });
+        expect(res.statusCode).toBe(200);
+        expect(res.body.queued).toBe(1);
+        expect(res.body.skipped).toMatchObject({ noNumber: 1, notEligible: 1 });
+        await drain();
+        expect(sent.map(m => m.to)).toEqual(['919876500011']);
+        expect(sent[0].template.name).toBe('campaign_invite');
+        expect(buttonsOf(sent[0])[0].parameters[0].text).toBe('c1');
+
+        res = await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr1', 'cr3'], includeUnverified: true });
+        expect(res.body.queued).toBe(1);
+        expect(res.body.skipped.already).toBe(1);
+
+        const audience = await call('outreach-open-audience', { campaignId: 'c1' });
+        expect(audience.body.creators.find(c => c.id === 'cr1').told).toBe('sent');
+    });
+
+    it('needs the campaign to be taking applications', async () => {
+        db.store.set('campaigns/c1', { ...db.store.get('campaigns/c1'), status: 'Closed' });
+        expect((await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr1'] })).statusCode).toBe(409);
+    });
+});
+
+describe('the payout sheet', () => {
+    it('reads an Amount column', () => {
+        expect(parseAmount('₹2,000')).toBe(2000);
+        expect(parseAmount('2k')).toBe(2000);
+        expect(parseAmount('Rs. 1500/-')).toBe(1500);
+        expect(parseAmount('free')).toBeNull();
+        const table = parseDelimited('Name\tPhone\tAmount\nNeha\t9876500021\t₹1,500');
+        const { columns } = detectColumns(table);
+        expect(columns).toEqual({ 0: 'fullName', 1: 'phone', 2: 'agreedAmount' });
+        expect(rowsFromTable(table, columns, true)[0].value.agreedAmount).toBe(1500);
+    });
+
+    it('adds new people to the shortlist and matches people already here, with their amount', async () => {
+        const res = await call('outreach-import', {
+            campaignId: 'c1', purpose: 'payout',
+            rows: [
+                { line: 2, fullName: 'Neha', phone: '9876500021', agreedAmount: '1500' },
+                { line: 3, fullName: 'Riya', phone: '+919876500001', agreedAmount: '2000' },
+            ],
+        });
+        expect(res.statusCode).toBe(200);
+        expect(res.body.added).toHaveLength(1);
+        expect(res.body.matched).toEqual(['a1']);
+        const neha = db.store.get(`campaigns/c1/applications/${res.body.added[0]}`);
+        expect(neha).toMatchObject({ status: 'shortlisted', addedVia: 'payout_sheet', agreedAmount: 1500, source: 'import' });
+        const riya = db.store.get('campaigns/c1/applications/a1');
+        expect(riya).toMatchObject({ status: 'shortlisted', agreedAmount: 2000 });
+        expect(defaultPayoutAmount({ perksByTier: { nano: { cash: 500 } } }, { ...riya, tier: 'nano' })).toBe(2000);
+
+        // Now they can be asked for payout details like anyone approved.
+        const ask = await call('outreach-ask-payout', { campaignId: 'c1', appIds: [...res.body.added, ...res.body.matched] });
+        expect(ask.body.results.map(r => r.outcome)).not.toContain('not_shortlisted');
+    });
+
+    it('leaves out people removed from the campaign', async () => {
+        db.store.set('campaigns/c1/applications/a1', { ...db.store.get('campaigns/c1/applications/a1'), status: 'removed' });
+        const res = await call('outreach-import', { campaignId: 'c1', purpose: 'payout', rows: [{ line: 2, phone: '+919876500001' }] });
+        expect(res.body.matched).toEqual([]);
+        expect(res.body.invalid).toEqual([{ line: 2, problem: 'Removed from this campaign' }]);
+    });
+});

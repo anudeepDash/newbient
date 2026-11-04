@@ -9,6 +9,7 @@ import CalendarClock from 'lucide-react/dist/esm/icons/calendar-clock';
 import Hand from 'lucide-react/dist/esm/icons/hand';
 import HeartHandshake from 'lucide-react/dist/esm/icons/heart-handshake';
 import Zap from 'lucide-react/dist/esm/icons/zap';
+import DoorOpen from 'lucide-react/dist/esm/icons/door-open';
 import TriangleAlert from 'lucide-react/dist/esm/icons/triangle-alert';
 import { cn } from '../../../../lib/utils';
 import { useStore } from '../../../../lib/store';
@@ -16,12 +17,13 @@ import { Button, Card, Badge, Select, SearchInput } from '../../ui';
 import { Field, fieldCls } from '../../uploads/UploadKit';
 import { Spinner, ConfirmSheet } from '../parts';
 import { isOnShortlist } from '../../../../lib/outreach/status';
-import { renderTemplatePreview, WA_TEMPLATES, JOIN_BUTTON, STOP_BUTTON, INTERESTED_BUTTON } from '../../../../lib/outreach/whatsappTemplate';
+import { renderTemplatePreview, WA_TEMPLATES, JOIN_BUTTON, STOP_BUTTON, INTERESTED_BUTTON, JOIN_GROUP_BUTTON, groupCodeOf } from '../../../../lib/outreach/whatsappTemplate';
 import { briefLine, linksLine, taskLinksOf } from '../../../../lib/outreach/taskBrief';
 import { formatDeadline } from '../../../../lib/outreach/template';
 import { taskWindow } from '../../../../lib/creator/tasks';
 import { callOutreach } from './outreachApi';
-import { StatusBadge, Handle, SKIP_REASON } from './parts';
+import { StatusBadge, Handle, SKIP_REASON, Bubble } from './parts';
+import CampaignOpenPanel from './CampaignOpenPanel';
 
 /*
  * Outreach → WhatsApp: the team picks a message, who gets it, and sends it
@@ -35,9 +37,10 @@ import { StatusBadge, Handle, SKIP_REASON } from './parts';
  */
 
 const MESSAGES = [
+    { kind: 'campaign_open', label: 'Campaign open', icon: DoorOpen, tone: 'blue', hint: 'Registered creators who match', segments: [] },
     { kind: 'task_live', label: 'Task is live', icon: ClipboardList, tone: 'green', hint: 'The brief, links and due date', segments: ['owes', 'approved'] },
     { kind: 'brief_changed', label: 'Brief changed', icon: FilePen, tone: 'amber', hint: 'What changed, with their task link', segments: ['approved', 'owes'] },
-    { kind: 'group', label: 'Group invite', icon: Users, tone: 'violet', hint: 'Group link with a Joined button', segments: ['not_joined', 'approved'] },
+    { kind: 'group', label: 'Group invite', icon: Users, tone: 'violet', hint: 'A Join the group button, then Joined', segments: ['not_joined', 'approved'] },
     { kind: 'update', label: 'Update', icon: Megaphone, tone: 'blue', hint: 'A short note and a link', segments: ['approved', 'not_joined'] },
     { kind: 'event_day', label: 'Event day', icon: CalendarClock, tone: 'pink', hint: 'When, where, what to bring', segments: ['approved'] },
     { kind: 'reach_out', label: 'First reach-out', icon: Hand, tone: 'teal', hint: 'For imported numbers', segments: ['imported_new', 'imported', 'applied'] },
@@ -55,6 +58,7 @@ const SEGMENTS = {
 
 // The messages that go out without anyone pressing send, in the order a campaign meets them.
 const AUTOMATIC = [
+    { kind: 'welcome_city', label: 'Welcome + city community', when: 'When someone registers on the creator portal (once)' },
     { kind: 'city_group', label: 'City community', when: 'When someone applies' },
     { kind: 'invite', label: 'Shortlist invite', when: 'When you shortlist someone' },
     { kind: 'reminder', label: 'Join reminder', when: '48 h later, if they haven’t joined' },
@@ -76,33 +80,18 @@ const dueOf = (task, campaign) => {
 };
 
 const buttonsOf = (kind) => {
+    if (kind === 'group_invite') return [`↗ ${JOIN_GROUP_BUTTON}`, JOIN_BUTTON, STOP_BUTTON];
     if (['group_link', 'group_join'].includes(kind)) return [JOIN_BUTTON, STOP_BUTTON];
     if (kind === 'reach_out') return [INTERESTED_BUTTON, STOP_BUTTON];
     if (['update', 'not_selected'].includes(kind)) return [STOP_BUTTON];
     return WA_TEMPLATES[kind]?.button ? [`↗ ${WA_TEMPLATES[kind].button}`] : [];
 };
 
-/* The message as the creator sees it in WhatsApp: picture, text with *bold*, buttons. */
-const Bubble = ({ text, image, buttons }) => (
-    <div className="rounded-[1.4rem] bg-[#e7ddd3] p-3 dark:bg-[#0b141a]">
-        <div className="max-w-[19rem] overflow-hidden rounded-xl rounded-tl-sm bg-white shadow-sm dark:bg-[#202c33]">
-            {image
-                ? <img src={image} alt="" className="aspect-[1.9/1] w-full object-cover" />
-                : <div className="aspect-[1.9/1] w-full bg-gradient-to-br from-emerald-400/40 to-sky-400/30" />}
-            <p className="whitespace-pre-wrap break-words px-3 pb-1 pt-2 text-[13px] leading-relaxed text-[#111b21] dark:text-[#e9edef]">
-                {String(text).split(/(\*[^*\n]+\*)/g).map((part, i) => (/^\*[^*]+\*$/.test(part) ? <strong key={i}>{part.slice(1, -1)}</strong> : part))}
-            </p>
-            <p className="px-3 pb-2 text-[11px] text-gray-500">Newbi Creators · app.newbi.live</p>
-            {buttons.map(b => <p key={b} className="border-t border-black/[0.06] py-2 text-center text-[13px] font-semibold text-[#027eb5] dark:border-white/[0.08] dark:text-[#53bdeb]">{b}</p>)}
-        </div>
-    </div>
-);
-
 const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent }) => {
     const addToast = useStore(s => s.addToast);
     const live = (k) => Boolean(api?.configured && api?.templates?.[k]);
-    // The reworded group invite once Meta approves it; the old one until then.
-    const groupKind = live('group_join') || !live('group_link') ? 'group_join' : 'group_link';
+    // The invite with a "Join the group" button once Meta approves it; until then whichever older one is on (link in the text).
+    const groupKind = live('group_invite') ? 'group_invite' : live('group_join') ? 'group_join' : live('group_link') ? 'group_link' : 'group_invite';
     const hasImported = applications.some(a => a.source === 'import');
     const [pick, setPick] = useState(hasImported && applications.some(SEGMENTS.imported_new.test) ? 'reach_out' : 'task_live');
     const kind = pick === 'group' ? groupKind : pick;
@@ -116,8 +105,8 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent })
     const defaultGroup = settings?.whatsappGroupLink || campaign.whatsappLink || '';
     const [fields, setFields] = useState({ groupLink: defaultGroup, joinBy: '', note: '', link: '', when: '', where: '', reward: campaign.reward || '' });
     const set = (patch) => setFields(f => ({ ...f, ...patch }));
-    const [segment, setSegment] = useState(meta.segments[0]);
-    useEffect(() => { setSegment(meta.segments[0]); }, [pick]); // eslint-disable-line react-hooks/exhaustive-deps
+    const [segment, setSegment] = useState(meta.segments[0] || 'approved');
+    useEffect(() => { setSegment(meta.segments[0] || 'approved'); }, [pick]); // eslint-disable-line react-hooks/exhaustive-deps
     const [q, setQ] = useState('');
     const [picked, setPicked] = useState(() => new Set());
     const [confirm, setConfirm] = useState(false);
@@ -139,6 +128,7 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent })
         task_live: task ? { taskTitle: task.title || 'Deliverable', details: briefLine(task), links: linksLine(taskLinksOf(task)), dueAt: dueOf(task, campaign) } : null,
         group_link: { link: fields.groupLink.trim() },
         group_join: { link: fields.groupLink.trim(), joinBy: one(fields.joinBy) },
+        group_invite: { link: fields.groupLink.trim(), joinBy: one(fields.joinBy) },
         update: { note: one(fields.note), link: fields.link.trim() },
         brief_changed: { note: one(fields.note) },
         event_day: { when: one(fields.when), where: one(fields.where), note: one(fields.note) },
@@ -149,6 +139,7 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent })
         task_live: !task && 'Open a task in Deliverables first.',
         group_link: !httpsOk(fields.groupLink) && 'Paste the group link (https://chat.whatsapp.com/…).',
         group_join: !httpsOk(fields.groupLink) && 'Paste the group link (https://chat.whatsapp.com/…).',
+        group_invite: !groupCodeOf(fields.groupLink) && 'Paste the group’s invite link (https://chat.whatsapp.com/…).',
         update: (!one(fields.note) && 'Write the update.') || (!httpsOk(fields.link) && 'Add a link starting with https://'),
         brief_changed: !one(fields.note) && 'Say what changed in the brief.',
         event_day: (!one(fields.when) || !one(fields.where)) && 'Add when and where.',
@@ -183,7 +174,7 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent })
 
     return (
         <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {MESSAGES.map(m => {
                     const k = m.kind === 'group' ? groupKind : m.kind;
                     const on = pick === m.kind;
@@ -209,6 +200,7 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent })
                 })}
             </div>
 
+            {pick === 'campaign_open' ? <CampaignOpenPanel campaign={campaign} live={live('campaign_open')} /> : (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,21rem)]">
                 <Card className="min-w-0 space-y-5 p-4">
                     {!api?.configured && <p className="flex items-start gap-2 rounded-xl bg-amber-500/10 p-3 text-[13px] font-medium text-amber-700 dark:text-amber-300"><TriangleAlert size={15} className="mt-0.5 shrink-0" /> The WhatsApp API isn’t set up yet.</p>}
@@ -224,12 +216,12 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent })
                             <Select label="Task" value={taskId} onChange={setTaskId} className="w-full" options={openTasks.map(t => ({ value: String(t.id), label: t.title || 'Deliverable' }))} />
                         </Field>
                     ) : <p className="text-[13px] text-gray-500">No task is open. Open one in the Deliverables tab, and its brief goes out on WhatsApp by itself.</p>)}
-                    {(kind === 'group_link' || kind === 'group_join') && (
+                    {['group_link', 'group_join', 'group_invite'].includes(kind) && (
                         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
-                            <Field label="Group link" hint="This campaign’s group from Settings, or paste another. Tapping “Joined” marks them joined here.">
+                            <Field label="Group link" hint={kind === 'group_invite' ? 'This campaign’s group from Settings, or paste another. It opens from the “Join the group” button, not as a link in the text. Tapping “Joined” marks them joined here.' : 'This campaign’s group from Settings, or paste another. Tapping “Joined” marks them joined here.'}>
                                 <input className={fieldCls} value={fields.groupLink} onChange={(e) => set({ groupLink: e.target.value })} placeholder="https://chat.whatsapp.com/…" inputMode="url" autoCapitalize="off" autoCorrect="off" />
                             </Field>
-                            {kind === 'group_join' && (
+                            {(kind === 'group_join' || kind === 'group_invite') && (
                                 <Field label="Join by" optional>
                                     <input className={fieldCls} value={fields.joinBy} onChange={(e) => set({ joinBy: e.target.value })} maxLength={60} placeholder="Sat, 14 Nov" />
                                 </Field>
@@ -309,6 +301,7 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent })
                     </Card>
                 </div>
             </div>
+            )}
 
             <Card className="p-4">
                 <div className="mb-3 flex flex-wrap items-center gap-2">

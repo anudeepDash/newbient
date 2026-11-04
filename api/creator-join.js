@@ -14,6 +14,7 @@ import { OTP_ACTIONS, handleOtpAction } from './_lib/phoneOtp.js';
 import { WA_VERIFY_ACTIONS, handleWaVerifyAction } from './_lib/waVerify.js';
 import { SIGN_IN_ACTIONS, handleSignInSeen } from './_lib/securityAlerts.js';
 import { FEEDBACK_ACTIONS, handleFeedbackAction } from './_lib/campaignFeedback.js';
+import { queueCityWelcome } from './_lib/creatorWelcome.js';
 
 export const maxDuration = 60;
 
@@ -1471,6 +1472,15 @@ export default async function handler(req, res) {
         const displayName = finalCreator.displayName || finalCreator.name || 'Creator';
         if (sendWelcome && finalCreator.email) {
             await sendWelcomeEmail(finalCreator.email, displayName, verificationUrl, finalCreator, targetUid).catch(() => null);
+        }
+        // Their city's creators community on WhatsApp, once ever (a fixed job id), when they first register.
+        if (sendWelcome && !existingData?.cityWelcomeAt && finalCreator.city) {
+            const cityGroup = await resolveCityWhatsAppGroup(finalCreator.city, finalCreator.customGroupUrl || finalCreator.whatsappGroupUrl).catch(() => null);
+            const outcome = await queueCityWelcome({ db: adminDb, uid: targetUid, creator: finalCreator, cityGroup })
+                .catch((e) => { console.warn('[API/CREATOR-JOIN] City welcome not queued:', e.message); return null; });
+            if (outcome && !['off', 'no_number', 'no_group', 'whatsapp_off'].includes(outcome)) {
+                await adminDb.collection('creators').doc(targetUid).set({ cityWelcomeAt: now }, { merge: true }).catch(() => null);
+            }
         }
 
         // The token only travels by email; returning it would let anyone verify without the message.

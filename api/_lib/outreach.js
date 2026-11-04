@@ -21,6 +21,7 @@
  *   public  outreach-payout-form, outreach-payout-form-submit   (the campaign's open payout form, api/_lib/outreachPayoutForm.js)
  *   admin   outreach-review, outreach-ticket, outreach-payout, outreach-resend-link, outreach-ask-payout, outreach-payout-links,
  *           outreach-payout-form-admin, outreach-wa-send (api/_lib/outreachBroadcast.js), outreach-import (api/_lib/outreachImport.js),
+ *           outreach-open-audience, outreach-open-send (api/_lib/outreachOpenCall.js),
  *           inbox-list, inbox-thread, inbox-reply, inbox-react, inbox-template, inbox-state, inbox-media
  *
  * Data (see docs/campaign-outreach.md):
@@ -48,7 +49,10 @@ import {
 } from './outreachQueue.js';
 import { notify } from './notify.js';
 import { cityGroupFor } from '../../src/lib/outreach/cityGroups.js';
-import { isWhatsAppConfigured } from './whatsapp.js';
+import { isWhatsAppConfigured, isTemplateLive } from './whatsapp.js';
+import { INVITE_TEMPLATE } from './campaignInvites.js';
+import { handleOpenAudience, handleOpenSend } from './outreachOpenCall.js';
+import { WELCOME_CITY_TEMPLATE } from '../../src/lib/outreach/whatsappTemplate.js';
 import { submitUrlFor } from './outreachQueue.js';
 import {
     handleCreatorDeliverables, handleCreatorSubmit, handleCreatorPayoutDetails, handleReview, handleTicket, handlePayout, handleResendLink,
@@ -70,7 +74,7 @@ export const OUTREACH_ACTIONS = new Set([
     'outreach-review', 'outreach-ticket', 'outreach-payout', 'outreach-resend-link', 'outreach-ask-payout', 'outreach-payout-links',
     'outreach-payout-form', 'outreach-payout-form-submit', 'outreach-payout-form-admin',
     'inbox-list', 'inbox-thread', 'inbox-reply', 'inbox-react', 'inbox-template', 'inbox-state', 'inbox-media',
-    'outreach-city-notify', 'outreach-wame', 'outreach-wa-send', 'outreach-import',
+    'outreach-city-notify', 'outreach-wame', 'outreach-wa-send', 'outreach-import', 'outreach-open-audience', 'outreach-open-send',
     // The admin WhatsApp center (api/_lib/whatsappCenter.js).
     ...WA_CENTER_ACTIONS,
 ]);
@@ -343,7 +347,11 @@ const handleList = async (req, res, { db }) => {
             updatedAt: priv.updatedAt || null,
             updatedBy: priv.updatedBy || null,
         },
-        whatsappApi: { configured, queue, rate, templates: configured ? liveKinds() : {} },
+        whatsappApi: {
+            configured, queue, rate,
+            // The queue's kinds, plus the two that aren't per-application: the portal welcome and the campaign-open invite.
+            templates: configured ? { ...liveKinds(), welcome_city: isTemplateLive(WELCOME_CITY_TEMPLATE), campaign_open: isTemplateLive(INVITE_TEMPLATE) } : {},
+        },
         wame: await wameStatus(db),
     });
 };
@@ -675,6 +683,8 @@ export const handleOutreachAction = async (action, req, res, { decodedToken, db 
         if (action === 'outreach-wame') return await handleWame(req, res, withActor);
         if (action === 'outreach-wa-send') return await handleWaSend(req, res, { ...withActor, startWorker });
         if (action === 'outreach-import') return await handleImport(req, res, withActor);
+        if (action === 'outreach-open-audience') return await handleOpenAudience(req, res, withActor);
+        if (action === 'outreach-open-send') return await handleOpenSend(req, res, withActor);
         if (WA_CENTER_ACTIONS.has(action)) return await handleWhatsAppCenterAction(action, req, res, withActor);
         return send(res, 400, { success: false, error: 'Unknown action.' });
     } catch (err) {

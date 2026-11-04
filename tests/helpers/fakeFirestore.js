@@ -57,6 +57,8 @@ class Query {
     where(field, op, value) { return new Query(this.db, this.path, [...this.filters, { field, op, value }], this.order, this.max); }
     orderBy(field, dir = 'asc') { return new Query(this.db, this.path, this.filters, { field, dir }, this.max); }
     limit(n) { return new Query(this.db, this.path, this.filters, this.order, n); }
+    // Field masks don't matter here: every field comes back.
+    select() { return this; }
     async get() {
         const prefix = `${this.path}/`;
         let docs = [...this.db.store.entries()]
@@ -96,6 +98,8 @@ export class FakeFirestore {
     }
 
     collection(name) { return new CollectionRef(this, name); }
+
+    getAll(...refs) { return Promise.all(refs.map(r => r.get())); }
 
     _write(path, data, opts) {
         const prev = this.store.get(path);

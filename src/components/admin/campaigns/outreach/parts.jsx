@@ -47,3 +47,19 @@ export const SKIP_REASON = {
     no_phone: 'no phone number',
     below_min: 'under the follower minimum',
 };
+
+/* The message as the creator sees it in WhatsApp: picture, text with *bold*, buttons. */
+export const Bubble = ({ text, image, buttons }) => (
+    <div className="rounded-[1.4rem] bg-[#e7ddd3] p-3 dark:bg-[#0b141a]">
+        <div className="max-w-[19rem] overflow-hidden rounded-xl rounded-tl-sm bg-white shadow-sm dark:bg-[#202c33]">
+            {image
+                ? <img src={image} alt="" className="aspect-[1.9/1] w-full object-cover" />
+                : <div className="aspect-[1.9/1] w-full bg-gradient-to-br from-emerald-400/40 to-sky-400/30" />}
+            <p className="whitespace-pre-wrap break-words px-3 pb-1 pt-2 text-[13px] leading-relaxed text-[#111b21] dark:text-[#e9edef]">
+                {String(text).split(/(\*[^*\n]+\*)/g).map((part, i) => (/^\*[^*]+\*$/.test(part) ? <strong key={i}>{part.slice(1, -1)}</strong> : part))}
+            </p>
+            <p className="px-3 pb-2 text-[11px] text-gray-500">Newbi Creators · app.newbi.live</p>
+            {buttons.map(b => <p key={b} className="border-t border-black/[0.06] py-2 text-center text-[13px] font-semibold text-[#027eb5] dark:border-white/[0.08] dark:text-[#53bdeb]">{b}</p>)}
+        </div>
+    </div>
+);

@@ -189,6 +189,9 @@ export const payoutDestination = (d) => {
 
 /** The tier's cash amount for this person, the default for "Mark paid". */
 export const defaultPayoutAmount = (campaign, application) => {
+    // An amount agreed for this person (a payout sheet) wins over the tier's.
+    const agreed = Number(application?.agreedAmount);
+    if (Number.isFinite(agreed) && agreed > 0) return Math.round(agreed);
     const cash = Number(campaign?.perksByTier?.[application?.tier]?.cash);
     return Number.isFinite(cash) && cash > 0 ? Math.round(cash) : 0;
 };

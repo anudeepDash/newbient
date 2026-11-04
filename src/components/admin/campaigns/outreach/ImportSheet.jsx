@@ -20,6 +20,11 @@ import { followers } from './parts';
  * numbers that never filled the form. Only a phone number is needed; columns
  * are matched by their headers and can be changed before importing.
  * The server (api/_lib/outreachImport.js) skips numbers already on the campaign.
+ *
+ * purpose="payout" (Payouts → Add from a sheet): the people to pay. They go
+ * straight onto the shortlist, numbers already here are matched instead of
+ * skipped, an Amount column pre-fills "Mark paid", and afterwards the team can
+ * ask them all for payout details (onAsk) or share the links themselves.
  */
 
 const ORIGINS = [
@@ -31,7 +36,8 @@ const ORIGINS = [
 
 const colName = (i) => String.fromCharCode(65 + (i % 26)) + (i >= 26 ? String(Math.floor(i / 26)) : '');
 
-const ImportSheet = ({ open, onClose, campaign, applications, onImported, onShortlist }) => {
+const ImportSheet = ({ open, onClose, campaign, applications, onImported, onShortlist, onAsk, purpose = 'people' }) => {
+    const forPayout = purpose === 'payout';
     const addToast = useStore(s => s.addToast);
     const fileRef = useRef(null);
     const [mode, setMode] = useState('paste');
@@ -43,7 +49,7 @@ const ImportSheet = ({ open, onClose, campaign, applications, onImported, onShor
     const [origin, setOrigin] = useState(ORIGINS[0]);
     const [originOther, setOriginOther] = useState('');
     const [agreed, setAgreed] = useState(false);
-    const [then, setThen] = useState('applied');
+    const [then, setThen] = useState(forPayout ? 'ask' : 'applied');
     const [busy, setBusy] = useState(false);
 
     const load = (rows, name = '') => {
@@ -71,17 +77,19 @@ const ImportSheet = ({ open, onClose, campaign, applications, onImported, onShor
 
     const existingPhones = useMemo(() => new Set(applications.map(a => a.phone).filter(Boolean)), [applications]);
     const rows = useMemo(() => (table.length ? rowsFromTable(table, columns, hasHeader) : []), [table, columns, hasHeader]);
-    const ready = rows.filter(r => !r.problem && !existingPhones.has(r.value.phone));
     const already = rows.filter(r => !r.problem && existingPhones.has(r.value.phone));
+    // A payout sheet matches people already on the campaign instead of skipping them.
+    const ready = rows.filter(r => !r.problem && (forPayout || !existingPhones.has(r.value.phone)));
+    const fresh = ready.filter(r => !existingPhones.has(r.value.phone));
     const broken = rows.filter(r => r.problem);
     const width = Math.max(0, ...table.map(r => r.length));
     const hasPhoneCol = Object.values(columns).includes('phone');
     const tooMany = table.length - (hasHeader ? 1 : 0) > MAX_IMPORT_ROWS;
     const consentNote = (origin === 'other' ? originOther : origin).trim();
-    const canImport = ready.length > 0 && agreed && consentNote.length >= 3 && !busy && !tooMany;
+    const canImport = ready.length > 0 && agreed && (forPayout || consentNote.length >= 3) && !busy && !tooMany;
 
     const reset = () => {
-        setText(''); setTable([]); setFileName(''); setColumns({}); setAgreed(false); setThen('applied'); setOriginOther('');
+        setText(''); setTable([]); setFileName(''); setColumns({}); setAgreed(false); setThen(forPayout ? 'ask' : 'applied'); setOriginOther('');
     };
     const close = () => { reset(); onClose(); };
 
@@ -89,7 +97,8 @@ const ImportSheet = ({ open, onClose, campaign, applications, onImported, onShor
         setBusy(true);
         const r = await callOutreach('outreach-import', {
             campaignId: campaign.id,
-            consentNote,
+            consentNote: forPayout ? '' : consentNote,
+            ...(forPayout ? { purpose: 'payout' } : {}),
             rows: ready.map(x => ({ line: x.line, ...x.value })),
         });
         if (!r.ok) {
@@ -97,29 +106,46 @@ const ImportSheet = ({ open, onClose, campaign, applications, onImported, onShor
             addToast(r.error || 'Please try again.', 'error', { title: 'Not imported' });
             return;
         }
-        const { added, existing, invalid } = r.data;
-        const extra = [existing.length && `${existing.length} already on this campaign`, invalid.length && `${invalid.length} couldn’t be used`].filter(Boolean).join(', ');
-        addToast(`${added.length} added${extra ? `; ${extra}` : ''}.`, added.length ? 'success' : 'info', { title: 'Sheet imported' });
+        const { added, existing, invalid, matched = [] } = r.data;
+        if (forPayout) {
+            const extra = [matched.length && `${matched.length} already on this campaign`, invalid.length && `${invalid.length} couldn’t be used`].filter(Boolean).join(', ');
+            addToast(`${added.length} added${extra ? `, ${extra}` : ''}. They’re listed in Payouts.`, added.length + matched.length ? 'success' : 'info', { title: 'Payout sheet added' });
+        } else {
+            const extra = [existing.length && `${existing.length} already on this campaign`, invalid.length && `${invalid.length} couldn’t be used`].filter(Boolean).join(', ');
+            addToast(`${added.length} added${extra ? `; ${extra}` : ''}.`, added.length ? 'success' : 'info', { title: 'Sheet imported' });
+        }
         await onImported?.();
         if (then === 'shortlisted' && added.length) await onShortlist?.(added);
+        if (forPayout && then === 'ask' && added.length + matched.length) await onAsk?.([...added, ...matched]);
         setBusy(false);
         close();
     };
 
     const footer = (
         <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[12.5px] text-gray-500">{rows.length ? `${ready.length} ready${already.length ? ` · ${already.length} already here` : ''}${broken.length ? ` · ${broken.length} with problems` : ''}` : 'Nothing loaded yet'}</p>
+            <p className="text-[12.5px] text-gray-500">{rows.length ? (forPayout
+                ? `${fresh.length} new${already.length ? ` · ${already.length} already here` : ''}${broken.length ? ` · ${broken.length} with problems` : ''}`
+                : `${ready.length} ready${already.length ? ` · ${already.length} already here` : ''}${broken.length ? ` · ${broken.length} with problems` : ''}`) : 'Nothing loaded yet'}</p>
             <div className="flex gap-2">
                 <Button variant="ghost" onClick={close}>Cancel</Button>
                 <Button variant="accent" disabled={!canImport} onClick={submit}>
-                    {busy ? <Spinner /> : <FileSpreadsheet size={14} />} {ready.length ? `Import ${ready.length}` : 'Import'}
+                    {busy ? <Spinner /> : <FileSpreadsheet size={14} />} {forPayout ? (ready.length ? `Add ${ready.length} to pay` : 'Add') : ready.length ? `Import ${ready.length}` : 'Import'}
                 </Button>
             </div>
         </div>
     );
 
     return (
-        <Sheet open={open} onClose={close} title="Import a sheet" subtitle="Add creators who never filled the form: paste from Google Sheets or upload a file. Only a phone number is needed." size="lg" footer={footer}>
+        <Sheet
+            open={open}
+            onClose={close}
+            title={forPayout ? 'Add people to pay from a sheet' : 'Import a sheet'}
+            subtitle={forPayout
+                ? 'Paste or upload the list of creators to pay (name, phone, and an amount if you have one). Each gets a personal link to add their UPI ID or bank account.'
+                : 'Add creators who never filled the form: paste from Google Sheets or upload a file. Only a phone number is needed.'}
+            size="lg"
+            footer={footer}
+        >
             <div className="space-y-5">
                 <Choice
                     value={mode}
@@ -181,28 +207,30 @@ const ImportSheet = ({ open, onClose, campaign, applications, onImported, onShor
                         <section className="space-y-2">
                             <div className="flex flex-wrap items-center gap-2">
                                 <h4 className="mr-auto text-[13px] font-bold">Preview</h4>
-                                <Badge tone="green">{ready.length} ready</Badge>
-                                {already.length > 0 && <Badge tone="gray">{already.length} already here</Badge>}
+                                <Badge tone="green">{forPayout ? `${fresh.length} new` : `${ready.length} ready`}</Badge>
+                                {already.length > 0 && <Badge tone="gray">{already.length} already here{forPayout ? ', matched' : ''}</Badge>}
                                 {broken.length > 0 && <Badge tone="rose">{broken.length} with problems</Badge>}
                             </div>
                             <div className="max-h-72 overflow-auto rounded-2xl border border-black/[0.06] dark:border-white/[0.08]">
                                 <table className="w-full min-w-[560px] text-left text-[12.5px]">
                                     <thead className="sticky top-0 bg-white text-[11.5px] text-gray-500 dark:bg-[#14161d]">
-                                        <tr>{['Row', 'Name', 'Phone', 'Instagram', 'Followers', 'City', ''].map(h => <th key={h} className="px-3 py-2 font-semibold">{h}</th>)}</tr>
+                                        <tr>{['Row', 'Name', 'Phone', 'Instagram', forPayout ? 'Amount' : 'Followers', 'City', ''].map(h => <th key={h} className="px-3 py-2 font-semibold">{h}</th>)}</tr>
                                     </thead>
                                     <tbody className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
                                         {rows.slice(0, 200).map(r => {
                                             const here = !r.problem && existingPhones.has(r.value.phone);
                                             return (
-                                                <tr key={r.line} className={cn(r.problem && 'bg-rose-500/[0.04]', here && 'opacity-60')}>
+                                                <tr key={r.line} className={cn(r.problem && 'bg-rose-500/[0.04]', here && !forPayout && 'opacity-60')}>
                                                     <td className="px-3 py-1.5 tabular-nums text-gray-400">{r.line}</td>
                                                     <td className="max-w-[160px] truncate px-3 py-1.5 font-semibold">{r.value.fullName || '—'}</td>
                                                     <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">{r.value.phone || '—'}</td>
                                                     <td className="max-w-[140px] truncate px-3 py-1.5">{r.value.instagramHandle ? `@${r.value.instagramHandle}` : '—'}</td>
-                                                    <td className="px-3 py-1.5 tabular-nums">{r.value.followerCount !== null ? followers(r.value.followerCount) : '—'}</td>
+                                                    <td className="px-3 py-1.5 tabular-nums">{forPayout
+                                                        ? (r.value.agreedAmount ? `₹${r.value.agreedAmount.toLocaleString('en-IN')}` : '—')
+                                                        : (r.value.followerCount !== null ? followers(r.value.followerCount) : '—')}</td>
                                                     <td className="max-w-[110px] truncate px-3 py-1.5">{r.value.city || '—'}</td>
                                                     <td className="whitespace-nowrap px-3 py-1.5">
-                                                        {r.problem ? <Badge tone="rose">{r.problem}</Badge> : here ? <Badge tone="gray">Already here</Badge> : null}
+                                                        {r.problem ? <Badge tone="rose">{r.problem}</Badge> : here ? <Badge tone="gray">{forPayout ? 'On this campaign' : 'Already here'}</Badge> : null}
                                                     </td>
                                                 </tr>
                                             );
@@ -213,28 +241,41 @@ const ImportSheet = ({ open, onClose, campaign, applications, onImported, onShor
                             {rows.length > 200 && <p className="text-[11.5px] text-gray-500">Showing the first 200 of {rows.length.toLocaleString('en-IN')} rows; all of them are imported.</p>}
                         </section>
 
-                        <section className="space-y-3 rounded-2xl bg-black/[0.02] p-4 dark:bg-white/[0.03]">
-                            <p className="flex items-center gap-2 text-[13px] font-bold"><ShieldCheck size={15} className="text-emerald-600 dark:text-neon-green" /> Where did these numbers come from?</p>
-                            <p className="text-[12px] leading-snug text-gray-500">WhatsApp only allows messages to people who agreed to hear from Newbi. Cold lists (bought, scraped, or numbers nobody gave us) get the number restricted. This note is saved as their consent record.</p>
-                            <Select
-                                label="Where the numbers came from"
-                                value={origin}
-                                onChange={setOrigin}
-                                className="w-full"
-                                options={[...ORIGINS.map(o => ({ value: o, label: o })), { value: 'other', label: 'Somewhere else…' }]}
-                            />
-                            {origin === 'other' && <input className={fieldCls} value={originOther} onChange={(e) => setOriginOther(e.target.value)} maxLength={200} placeholder="e.g. Signed up at our booth at Pinnaca 2025" />}
-                            <label className="flex items-start gap-2.5 text-[13px] font-medium">
-                                <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-600" />
-                                These people gave their number to Newbi and expect to hear about creator campaigns.
-                            </label>
-                        </section>
+                        {forPayout ? (
+                            <section className="space-y-3 rounded-2xl bg-black/[0.02] p-4 dark:bg-white/[0.03]">
+                                <label className="flex items-start gap-2.5 text-[13px] font-medium">
+                                    <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-600" />
+                                    These people worked on this campaign and expect Newbi to pay them.
+                                </label>
+                                <p className="text-[12px] leading-snug text-gray-500">New numbers are added to the shortlist; people already on the campaign are matched by their number. An Amount column fills in “Mark paid” for them.</p>
+                            </section>
+                        ) : (
+                            <section className="space-y-3 rounded-2xl bg-black/[0.02] p-4 dark:bg-white/[0.03]">
+                                <p className="flex items-center gap-2 text-[13px] font-bold"><ShieldCheck size={15} className="text-emerald-600 dark:text-neon-green" /> Where did these numbers come from?</p>
+                                <p className="text-[12px] leading-snug text-gray-500">WhatsApp only allows messages to people who agreed to hear from Newbi. Cold lists (bought, scraped, or numbers nobody gave us) get the number restricted. This note is saved as their consent record.</p>
+                                <Select
+                                    label="Where the numbers came from"
+                                    value={origin}
+                                    onChange={setOrigin}
+                                    className="w-full"
+                                    options={[...ORIGINS.map(o => ({ value: o, label: o })), { value: 'other', label: 'Somewhere else…' }]}
+                                />
+                                {origin === 'other' && <input className={fieldCls} value={originOther} onChange={(e) => setOriginOther(e.target.value)} maxLength={200} placeholder="e.g. Signed up at our booth at Pinnaca 2025" />}
+                                <label className="flex items-start gap-2.5 text-[13px] font-medium">
+                                    <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-600" />
+                                    These people gave their number to Newbi and expect to hear about creator campaigns.
+                                </label>
+                            </section>
+                        )}
 
-                        <Field label="After importing">
+                        <Field label={forPayout ? 'After adding' : 'After importing'}>
                             <Choice
                                 value={then}
                                 onChange={setThen}
-                                options={[
+                                options={forPayout ? [
+                                    { value: 'ask', label: 'Ask them for payout details', hint: 'Email, WhatsApp and the Newbi app, with their link' },
+                                    { value: 'add', label: 'Just add them', hint: 'Copy or export their links yourself' },
+                                ] : [
                                     { value: 'applied', label: 'Add as applicants', hint: 'Pick who to shortlist later' },
                                     { value: 'shortlisted', label: 'Shortlist them all', hint: 'Invite goes out like any shortlist' },
                                 ]}
@@ -246,7 +287,9 @@ const ImportSheet = ({ open, onClose, campaign, applications, onImported, onShor
                 {!table.length && (
                     <p className="flex items-start gap-2 rounded-xl bg-black/[0.02] p-3 text-[12.5px] leading-snug text-gray-500 dark:bg-white/[0.03]">
                         <ClipboardPaste size={14} className="mt-0.5 shrink-0" />
-                        Columns are matched by their names (Name, Phone or WhatsApp, Instagram, Followers, City, Email, College, Category). Numbers already on this campaign are skipped, and anyone who replied STOP stays opted out.
+                        {forPayout
+                            ? 'Columns are matched by their names (Name, Phone or WhatsApp, Instagram, Amount, Email). Only a phone number is needed.'
+                            : 'Columns are matched by their names (Name, Phone or WhatsApp, Instagram, Followers, City, Email, College, Category). Numbers already on this campaign are skipped, and anyone who replied STOP stays opted out.'}
                     </p>
                 )}
             </div>

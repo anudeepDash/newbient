@@ -179,6 +179,34 @@ export const TEMPLATES = [
         footer: 'Newbi Creators · app.newbi.live',
     },
     {
+        // The group invite with a real button: the link isn't pasted in the text. "Join the group" opens
+        // app.newbi.live/wa/g/<invite code>, which redirects to chat.whatsapp.com/<code> (vercel.json). Then
+        // "Joined" (signed payload, marks them joined) and "Stop updates". Replaces campaign_group_join.
+        name: 'campaign_group_invite',
+        body: "👥 *Hi {{1}}, join the {{2}} creators group*\n\nEverything for this campaign happens in the group: the brief, task dates, passes and quick updates from the Newbi team.\n\n*Join by:* {{3}}\n\nTap *Join the group* below, then tap *Joined* so we know you're in.",
+        samples: ['Riya', 'Pinnaca 2026', 'Sat, 14 Nov'],
+        header: { image: 'public/og/wa-shortlist-v1.jpg' },
+        buttons: [
+            { type: 'URL', text: 'Join the group', url: `${APP}/wa/g/{{1}}`, example: [`${APP}/wa/g/AbCdEfGhIjK123`] },
+            { type: 'QUICK_REPLY', text: 'Joined' },
+            { type: 'QUICK_REPLY', text: 'Stop updates' },
+        ],
+        footer: 'Newbi Creators · app.newbi.live',
+    },
+    {
+        // Once, when someone registers on the creator portal (api/creator-join.js): their city's creators community.
+        // Same redirect as campaign_group_invite for the button.
+        name: 'creator_welcome_city',
+        body: "👋 *Welcome to Newbi Creators, {{1}}!*\n\nYour creator profile is set up. Paid gigs, guestlist passes and meetups in {{2}} are posted first in our city creators community on WhatsApp.\n\nTap *Join the community* below to get in.",
+        samples: ['Riya', 'Lucknow'],
+        header: { image: 'public/og/wa-city-v1.jpg' },
+        buttons: [
+            { type: 'URL', text: 'Join the community', url: `${APP}/wa/g/{{1}}`, example: [`${APP}/wa/g/AbCdEfGhIjK123`] },
+            { type: 'QUICK_REPLY', text: 'Stop updates' },
+        ],
+        footer: 'Newbi Creators · app.newbi.live',
+    },
+    {
         // Event day for approved creators: when, where, anything to bring. URL button: their creator page.
         name: 'campaign_event_day',
         body: "🎬 *Hi {{1}}, see you at {{2}}*\n\n*When:* {{3}}\n*Where:* {{4}}\n*Note:* {{5}}\n\nShow your pass at the gate and ask for the Newbi crew. Tap *Open my page* for your pass and tasks.",
