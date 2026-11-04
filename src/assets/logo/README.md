@@ -12,4 +12,4 @@ ConcertZone keeps its own brand and does not use these.
 | `newbi-icon.svg` | The "N." mark (transparent), for small spaces |
 | `newbi-icon-app.svg` | App icon on a dark square |
 
-Icons served by URL live in `public/brand/`: `favicon-32.png`, `newbi-icon-app-180.png` (apple-touch-icon), `newbi-icon-app-1024.png` (manifest), `newbi-icon-512.png`.
+Icons served by URL live in `public/brand/`: `favicon-32.png` / `favicon-48.png` / `favicon-192.png` (plus `/favicon.ico`), `newbi-icon-app-180.png` (apple-touch-icon, square: iOS rounds it), `newbi-icon-app-1024.png` (manifest maskable, square), `/favicon.png` (manifest any, rounded), `newbi-icon-512.png`.
