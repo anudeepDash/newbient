@@ -36,6 +36,7 @@
  * Browsers never read or write these collections directly: every read goes
  * through here, so personal fields reach admins only. Phones are masked in logs.
  */
+import { QUOTA_ERROR, isQuotaError } from './quota.js';
 import { createHash } from 'node:crypto';
 import { getDb, nowIso, istDate } from './db.js';
 import {
@@ -103,6 +104,7 @@ export const isOutreachAdmin = async (db, token) => {
         const user = await db.collection('users').doc(token.uid).get();
         return Boolean(user.exists && OUTREACH_ROLES.includes(user.data()?.role));
     } catch (e) {
+        if (isQuotaError(e)) throw e;
         console.warn('[outreach] admin check failed:', e.message);
         return false;
     }
@@ -692,6 +694,7 @@ export const handleOutreachAction = async (action, req, res, { decodedToken, db 
         const raw = req.body?.phone ? String(req.body.phone) : '';
         const phone = raw ? ` phone=${maskPhone(normalizePhone(raw) || raw.replace(/\D/g, ''))}` : '';
         console.error(`[outreach] ${action} failed:${phone}`, err?.message || err);
+        if (isQuotaError(err)) return send(res, 503, { success: false, error: QUOTA_ERROR });
         return send(res, 500, { success: false, error: 'Something went wrong. Please try again.' });
     }
 };
