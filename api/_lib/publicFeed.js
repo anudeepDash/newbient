@@ -48,25 +48,35 @@ const eventDay = (v) => {
     return '';
 };
 
-async function readCollection(db, name, limit = 200) {
+// A failed read leaves that part of the feed empty and is noted in `failed`,
+// so the handler doesn't cache a feed with holes in it at the edge.
+async function readCollection(db, name, limit = 200, failed = []) {
     try {
         const snap = await db.collection(name).limit(limit).get();
         return snap.docs.map((d) => ({ ...d.data(), id: d.id }));
     } catch (err) {
         console.warn(`[public-feed] ${name}:`, err.message);
+        failed.push(name);
         return [];
     }
 }
 
-async function readDoc(db, col, id) {
+async function readDoc(db, col, id, failed = []) {
     try {
         const snap = await db.collection(col).doc(id).get();
         return snap.exists ? snap.data() : {};
     } catch (err) {
         console.warn(`[public-feed] ${col}/${id}:`, err.message);
+        failed.push(`${col}/${id}`);
         return {};
     }
 }
+
+// Five minutes at the edge, then served stale while it refreshes in the background.
+const EDGE_CACHE = 'public, max-age=60, s-maxage=300, stale-while-revalidate=600';
+// Built from a failed read: sent as it is, but never kept, so the next request tries again.
+const NO_CACHE = 'no-store';
+const cacheFor = (partial) => (partial ? NO_CACHE : EDGE_CACHE);
 
 function publicSettings(general) {
     // Stats are shown only when the team has entered them (site_settings/general.stats:
@@ -233,18 +243,19 @@ function creatorGroups(list) {
 }
 
 export async function getPublicFeed(db, { maintenanceDoc = 'maintenance' } = {}) {
+    const failed = [];
     const [general, contact, maintenance, events, clients, portfolio, categories, quotes, campaigns, guestlists, groups] = await Promise.all([
-        readDoc(db, 'site_settings', 'general'),
-        readDoc(db, 'site_settings', 'contact_info'),
-        readDoc(db, 'app_state', maintenanceDoc),
-        readCollection(db, 'upcoming_events'),
-        readCollection(db, 'past_clients'),
-        readCollection(db, 'portfolio', 300),
-        readCollection(db, 'portfolio_categories'),
-        readCollection(db, 'creator_testimonials'),
-        readCollection(db, 'campaigns'),
-        readCollection(db, 'guestlists'),
-        readCollection(db, 'creator_groups'),
+        readDoc(db, 'site_settings', 'general', failed),
+        readDoc(db, 'site_settings', 'contact_info', failed),
+        readDoc(db, 'app_state', maintenanceDoc, failed),
+        readCollection(db, 'upcoming_events', 200, failed),
+        readCollection(db, 'past_clients', 200, failed),
+        readCollection(db, 'portfolio', 300, failed),
+        readCollection(db, 'portfolio_categories', 200, failed),
+        readCollection(db, 'creator_testimonials', 200, failed),
+        readCollection(db, 'campaigns', 200, failed),
+        readCollection(db, 'guestlists', 200, failed),
+        readCollection(db, 'creator_groups', 200, failed),
     ]);
 
     const settings = publicSettings(general);
@@ -266,18 +277,20 @@ export async function getPublicFeed(db, { maintenanceDoc = 'maintenance' } = {})
         testimonials: settings.showCreatorTestimonials ? testimonials(quotes) : [],
         campaigns: openCampaigns(campaigns),
         creatorGroups: creatorGroups(groups),
+        ...(failed.length ? { partial: true } : {}),
     };
 }
 
 // Every published portfolio item, for the /work archive.
 export async function getPublicArchive(db) {
+    const failed = [];
     const [portfolio, categories] = await Promise.all([
-        readCollection(db, 'portfolio', 500),
-        readCollection(db, 'portfolio_categories'),
+        readCollection(db, 'portfolio', 500, failed),
+        readCollection(db, 'portfolio_categories', 200, failed),
     ]);
     const items = caseStudies(portfolio, categories, 500);
     const used = [...new Set(items.map((i) => i.category).filter(Boolean))];
-    return { generatedAt: new Date().toISOString(), items, categories: used };
+    return { generatedAt: new Date().toISOString(), items, categories: used, ...(failed.length ? { partial: true } : {}) };
 }
 
 export async function handlePublicArchive(db, req, res) {
@@ -285,7 +298,7 @@ export async function handlePublicArchive(db, req, res) {
     if (!db) return res.status(503).json({ success: false, error: 'Archive unavailable' });
     try {
         const archive = await getPublicArchive(db);
-        res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
+        res.setHeader('Cache-Control', cacheFor(archive.partial));
         return res.status(200).json({ success: true, ...archive });
     } catch (err) {
         console.error('[public-archive] error:', err);
@@ -382,8 +395,9 @@ export async function handleAppFeed(db, req, res) {
     if (!db) return res.status(503).json({ success: false, error: 'Feed unavailable' });
     try {
         const feed = await getAppFeed(db);
-        // A minute at the edge (new campaigns and forms show up quickly), then stale while it refreshes.
-        res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=60, stale-while-revalidate=300');
+        // Five minutes at the edge, then stale while it refreshes: each rebuild reads five whole
+        // collections, so a one-minute cache cost a full read of them every minute per domain.
+        res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=600');
         return res.status(200).json({ success: true, ...feed });
     } catch (err) {
         console.error('[app-feed] error:', err);
@@ -397,8 +411,7 @@ export async function handlePublicFeed(db, req, res) {
     if (!db) return res.status(503).json({ success: false, error: 'Feed unavailable' });
     try {
         const feed = await getPublicFeed(db);
-        // Five minutes at the edge, then served stale while it refreshes in the background.
-        res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
+        res.setHeader('Cache-Control', cacheFor(feed.partial));
         return res.status(200).json({ success: true, ...feed });
     } catch (err) {
         console.error('[public-feed] error:', err);
