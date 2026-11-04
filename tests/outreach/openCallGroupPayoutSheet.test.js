@@ -5,7 +5,9 @@ import { setWhatsAppFetchForTests } from '../../api/_lib/whatsapp.js';
 import { runQueue, joinPayload } from '../../api/_lib/outreachQueue.js';
 import { handleOutreachAction } from '../../api/_lib/outreach.js';
 import { queueCityWelcome } from '../../api/_lib/creatorWelcome.js';
-import { WA_TEMPLATES, WELCOME_CITY_BODY, groupCodeOf, STOP_PAYLOAD } from '../../src/lib/outreach/whatsappTemplate.js';
+import { WA_TEMPLATES, WELCOME_CITY_BODY, LIVE_BRIEF_BODY, groupCodeOf, STOP_PAYLOAD } from '../../src/lib/outreach/whatsappTemplate.js';
+import { activeCriteria, matchesCriteria } from '../../src/lib/outreach/openAudience.js';
+import { fieldsFor } from '../../src/lib/outreach/waFields.js';
 import { defaultPayoutAmount } from '../../src/lib/outreach/deliverables.js';
 import { parseAmount, detectColumns, parseDelimited, rowsFromTable } from '../../src/lib/outreach/importSheet.js';
 import { TEMPLATES, problemsWith } from '../../scripts/submit-wa-templates.mjs';
@@ -124,10 +126,13 @@ describe('the welcome with the city community', () => {
 });
 
 describe('Campaign open to registered creators', () => {
+    const CITY = { city: 'campaign', min: 0, niche: 'any', mode: 'all' };
+
     it('lists creators with whether they match, applied or were told', async () => {
         const res = await call('outreach-open-audience', { campaignId: 'c1' });
         expect(res.statusCode).toBe(200);
-        expect(res.body.criteria).toEqual({ cities: ['Lucknow'], minFollowers: 5000 });
+        expect(res.body.criteria).toEqual({ cities: ['Lucknow'], minFollowers: 5000, niches: [] });
+        expect(res.body.template).toBe('campaign_invite');
         expect(res.body.open).toBe(true);
         const by = Object.fromEntries(res.body.creators.map(c => [c.id, c]));
         expect(Object.keys(by).sort()).toEqual(['cr1', 'cr2', 'cr3', 'cr4']);
@@ -138,7 +143,7 @@ describe('Campaign open to registered creators', () => {
     });
 
     it('sends to verified numbers only unless asked, never to people who applied, and once each', async () => {
-        let res = await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr1', 'cr3', 'cr4'] });
+        let res = await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr1', 'cr3', 'cr4'], criteria: CITY });
         expect(res.statusCode).toBe(200);
         expect(res.body.queued).toBe(1);
         expect(res.body.skipped).toMatchObject({ noNumber: 1, notEligible: 1 });
@@ -147,7 +152,7 @@ describe('Campaign open to registered creators', () => {
         expect(sent[0].template.name).toBe('campaign_invite');
         expect(buttonsOf(sent[0])[0].parameters[0].text).toBe('c1');
 
-        res = await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr1', 'cr3'], includeUnverified: true });
+        res = await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr1', 'cr3'], includeUnverified: true, criteria: CITY });
         expect(res.body.queued).toBe(1);
         expect(res.body.skipped.already).toBe(1);
 
@@ -157,7 +162,80 @@ describe('Campaign open to registered creators', () => {
 
     it('needs the campaign to be taking applications', async () => {
         db.store.set('campaigns/c1', { ...db.store.get('campaigns/c1'), status: 'Closed' });
-        expect((await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr1'] })).statusCode).toBe(409);
+        expect((await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr1'], criteria: CITY })).statusCode).toBe(409);
+    });
+});
+
+describe('the campaign-live message with a View the brief button', () => {
+    const CITY = { city: 'campaign', min: 0, niche: 'any', mode: 'all' };
+
+    it('passes Meta’s pre-checks, matches the code, and opens the campaign page in the app', () => {
+        const t = TEMPLATES.find(x => x.name === 'campaign_live_brief');
+        expect(problemsWith(t)).toEqual([]);
+        expect(t.body).toBe(LIVE_BRIEF_BODY);
+        expect(t.category).toBe('MARKETING');
+        expect(t.buttons.map(b => [b.type, b.text])).toEqual([['URL', 'View the brief'], ['QUICK_REPLY', 'Stop updates']]);
+        expect(t.buttons[0].url).toBe('https://app.newbi.live/c/{{1}}');
+        expect(fieldsFor({ name: 'campaign_live_brief', bodyVars: 2 })).toEqual({ body: ['first_name', 'campaign_title'], button: 'campaign_id' });
+    });
+
+    it('goes out instead of campaign_invite once it’s switched on, with the campaign id and Stop updates', async () => {
+        vi.stubEnv('WHATSAPP_TEMPLATE_CAMPAIGN_LIVE_BRIEF', 'campaign_live_brief');
+        expect((await call('outreach-open-audience', { campaignId: 'c1' })).body.template).toBe('campaign_live_brief');
+        const res = await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr1'], criteria: CITY });
+        expect(res.body.queued).toBe(1);
+        await drain();
+        expect(sent[0].template.name).toBe('campaign_live_brief');
+        expect(sent[0].template.components.find(c => c.type === 'body').parameters.map(p => p.text)).toEqual(['Meera', 'Pinnaca 2026']);
+        expect(buttonsOf(sent[0])).toEqual([
+            { type: 'button', sub_type: 'url', index: '0', parameters: [{ type: 'text', text: 'c1' }] },
+            { type: 'button', sub_type: 'quick_reply', index: '1', parameters: [{ type: 'payload', payload: STOP_PAYLOAD }] },
+        ]);
+    });
+
+    it('refuses to send with no criteria set, so it never goes to every registered creator', async () => {
+        const res = await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr1', 'cr2'], criteria: { city: 'any', min: 0, niche: 'any' } });
+        expect(res.statusCode).toBe(400);
+        // Asking for the campaign's niches when it has none sets nothing either.
+        expect((await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr1'], criteria: { city: 'any', niche: 'campaign' } })).statusCode).toBe(400);
+        await drain();
+        expect(sent).toHaveLength(0);
+        // Sent with no criteria at all (an older page): the campaign's own cities, not everyone.
+        const res2 = await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr1', 'cr2'] });
+        expect(res2.body).toMatchObject({ queued: 1, skipped: { notMatching: 1 } });
+    });
+
+    it('leaves out anyone picked who doesn’t fit, and “any” takes people who meet one criterion', async () => {
+        // Delhi with 9,000 followers: not in the campaign's city.
+        let res = await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr1', 'cr2'], criteria: CITY });
+        expect(res.body).toMatchObject({ queued: 1, skipped: { notMatching: 1 } });
+        // In Lucknow OR at least 9,000 followers: Dev fits now.
+        res = await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr2'], criteria: { city: 'campaign', min: 9000, mode: 'any' } });
+        expect(res.body).toMatchObject({ queued: 1, skipped: { notMatching: 0 } });
+        await drain();
+        expect(sent.map(m => m.to).sort()).toEqual(['919876500011', '919876500012']);
+    });
+
+    it('matches the campaign’s preferred niches', async () => {
+        db.store.set('campaigns/c1', { ...db.store.get('campaigns/c1'), preferredNiches: ['Fashion & Luxury'] });
+        db.store.set('creators/cr2', { ...db.store.get('creators/cr2'), niches: ['Fashion & Luxury'] });
+        const audience = await call('outreach-open-audience', { campaignId: 'c1' });
+        expect(audience.body.criteria.niches).toEqual(['Fashion & Luxury']);
+        const by = Object.fromEntries(audience.body.creators.map(c => [c.id, c]));
+        expect([by.cr1.nicheMatch, by.cr2.nicheMatch]).toEqual([false, true]);
+        const res = await call('outreach-open-send', { campaignId: 'c1', creatorIds: ['cr1', 'cr2'], criteria: { city: 'any', niche: 'campaign' } });
+        expect(res.body).toMatchObject({ queued: 1, skipped: { notMatching: 1 } });
+    });
+
+    it('reads all or any of the criteria that are set', () => {
+        const campaign = { cities: ['Lucknow'], niches: ['Fashion & Luxury'] };
+        const a = { cityMatch: true, followers: 3000, nicheMatch: false };
+        const crit = activeCriteria({ city: 'campaign', min: 5000, niche: 'campaign' }, campaign);
+        expect(crit).toHaveLength(3);
+        expect(matchesCriteria(a, crit, 'all')).toBe(false);
+        expect(matchesCriteria(a, crit, 'any')).toBe(true);
+        expect(activeCriteria({ city: 'campaign', min: 0, niche: 'campaign' }, { cities: [], niches: [] })).toEqual([]);
+        expect(matchesCriteria(a, [], 'all')).toBe(true);
     });
 });
 

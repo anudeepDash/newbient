@@ -29,6 +29,7 @@ const IMAGE_HEADERS = {
     campaign_ticket_link: 'wa-ticket',
     creator_approved: 'wa-approved',
     campaign_invite: 'wa-invite',
+    campaign_live_brief: 'wa-invite',
     campaign_shortlisted: 'wa-shortlisted',
     campaign_shortlist: 'wa-shortlist',
     campaign_join_reminder: 'wa-reminder',

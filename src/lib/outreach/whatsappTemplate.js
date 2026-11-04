@@ -19,6 +19,15 @@ import { deadlineLineFor } from './template.js';
  */
 export const WELCOME_CITY_BODY = "👋 *Welcome to Newbi Creators, {{1}}!*\n\nYour creator profile is set up. Paid gigs, guestlist passes and meetups in {{2}} are posted first in our city creators community on WhatsApp.\n\nTap *Join the community* below to get in.";
 
+/*
+ * Outreach → WhatsApp → Campaign open (and the announcement from Campaigns): a campaign is live, with a "View the
+ * brief" URL button to its page in the app (app.newbi.live/c/<campaign id>), where the brief, the perks and Apply
+ * are. Then Stop updates. Used instead of campaign_invite once WHATSAPP_TEMPLATE_CAMPAIGN_LIVE_BRIEF is set.
+ * Variables: first name, campaign title (the same as campaign_invite, so either can go out).
+ */
+export const LIVE_BRIEF_TEMPLATE = 'campaign_live_brief';
+export const LIVE_BRIEF_BODY = "📣 *A new campaign is live, {{1}}*\n\n*Campaign:* {{2}}\n\nThe brief has what to post, what you get and how to apply. Tap *View the brief* to open it in the Newbi app.";
+
 // As approved in Meta: WhatsApp Manager strips emoji from button labels.
 export const JOIN_BUTTON = 'Joined';
 export const STOP_BUTTON = 'Stop updates';

@@ -85,6 +85,7 @@ const OURS = {
     payment_declined: { body: ['first_name', 'event_name', 'payment_ref'] },
     creator_approved: { body: ['first_name'] },
     campaign_invite: { body: ['first_name', 'campaign_title'], button: 'campaign_id' },
+    campaign_live_brief: { body: ['first_name', 'campaign_title'], button: 'campaign_id' },
     campaign_shortlisted: { body: ['first_name', 'campaign_title', 'group_link'], button: 'campaign_id' },
     submission_changes: { body: ['first_name', 'campaign_title', 'feedback'], button: 'campaign_id' },
     giveaway_entry: { body: ['first_name', 'giveaway_name', 'ends_at'] },

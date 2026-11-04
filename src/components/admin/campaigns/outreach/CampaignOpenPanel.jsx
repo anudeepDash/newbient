@@ -9,25 +9,32 @@ import { Button, Card, Badge, Select, SearchInput } from '../../ui';
 import { Field, fieldCls } from '../../uploads/UploadKit';
 import { Spinner, ConfirmSheet } from '../parts';
 import { firstNameOf } from '../../../../lib/outreach/normalize';
+import { activeCriteria, matchesCriteria } from '../../../../lib/outreach/openAudience';
+import { LIVE_BRIEF_BODY, LIVE_BRIEF_TEMPLATE } from '../../../../lib/outreach/whatsappTemplate';
 import { callOutreach } from './outreachApi';
 import { Handle, Bubble, followers } from './parts';
 
 /*
  * Outreach → WhatsApp → Campaign open: tell creators registered on the portal
- * that this campaign takes applications (the campaign_invite template, with an
- * Apply button). Starts with everyone who matches the campaign (its cities
+ * that this campaign is live: the campaign_live_brief template ("View the brief"
+ * button to its page in the app) once it's switched on, else campaign_invite
+ * (Apply button). Starts with everyone who matches the campaign (its cities
  * and follower minimum), hasn't applied and hasn't been told; the team can
- * widen it, untick people, and send. Server: api/_lib/outreachOpenCall.js.
+ * add the campaign's niches, choose all or any of the criteria, widen it,
+ * untick people, and send. Server: api/_lib/outreachOpenCall.js.
  */
 
 const fill = (body, params) => String(body || '').replace(/\{\{(\d+)\}\}/g, (_, n) => params[Number(n) - 1] ?? '');
 const FALLBACK_BODY = "*A new campaign is open, {{1}}*\n\n{{2}} is taking applications on Newbi. Tap *Apply* to see the details and apply.";
+const FALLBACK_BUTTONS = { [LIVE_BRIEF_TEMPLATE]: ['↗ View the brief', 'Stop updates'], campaign_invite: ['↗ Apply'] };
 
 const CampaignOpenPanel = ({ campaign, live }) => {
     const addToast = useStore(s => s.addToast);
-    const [state, setState] = useState({ loading: true, error: '', creators: [], criteria: { cities: [], minFollowers: 0 }, open: true });
-    const [tpl, setTpl] = useState(null);
+    const [state, setState] = useState({ loading: true, error: '', creators: [], criteria: { cities: [], minFollowers: 0, niches: [] }, open: true, template: null });
+    const [templates, setTemplates] = useState([]);
     const [match, setMatch] = useState('campaign');
+    const [niche, setNiche] = useState('any');
+    const [mode, setMode] = useState('all');
     const [minFollowers, setMinFollowers] = useState('');
     const [withUnverified, setWithUnverified] = useState(false);
     const [withTold, setWithTold] = useState(false);
@@ -40,23 +47,29 @@ const CampaignOpenPanel = ({ campaign, live }) => {
         setState(s => ({ ...s, loading: true, error: '' }));
         const r = await callOutreach('outreach-open-audience', { campaignId: campaign.id });
         if (!r.ok) { setState(s => ({ ...s, loading: false, error: r.error })); return; }
-        setState({ loading: false, error: '', creators: r.data.creators, criteria: r.data.criteria, open: r.data.open });
+        setState({ loading: false, error: '', creators: r.data.creators, criteria: { niches: [], ...r.data.criteria }, open: r.data.open, template: r.data.template || null });
         setMinFollowers(m => (m === '' ? String(r.data.criteria.minFollowers || 0) : m));
     };
     useEffect(() => { load(); }, [campaign.id]); // eslint-disable-line react-hooks/exhaustive-deps
     // The approved text from Meta, for the preview.
     useEffect(() => {
         let on = true;
-        callOutreach('wa-templates').then(r => { if (on && r.ok) setTpl(r.data.templates.find(t => t.name === 'campaign_invite') || null); });
+        callOutreach('wa-templates').then(r => { if (on && r.ok) setTemplates(r.data.templates); });
         return () => { on = false; };
     }, []);
 
+    // The one that goes out: the "View the brief" template once it's switched on, else the Apply one.
+    const templateName = state.template || 'campaign_invite';
+    const tpl = templates.find(t => t.name === templateName) || null;
     const min = Math.max(0, Number(String(minFollowers).replace(/[,\s]/g, '')) || 0);
+    const cities = state.criteria.cities || [];
+    const niches = state.criteria.niches || [];
+    const criteria = useMemo(() => activeCriteria({ city: match, min, niche }, { cities, niches }), [match, min, niche, cities, niches]);
+    const meets = (c) => matchesCriteria(c, criteria, mode);
     const reachable = useMemo(() => state.creators.filter(c => c.phone && !c.optedOut && !c.whatsappOff && !c.applied), [state.creators]);
-    const audience = useMemo(() => reachable.filter(c => (match === 'any' || c.cityMatch)
-        && c.followers >= min
+    const audience = useMemo(() => reachable.filter(c => matchesCriteria(c, criteria, mode)
         && (withUnverified || c.verified)
-        && (withTold || !c.told)), [reachable, match, min, withUnverified, withTold]);
+        && (withTold || !c.told)), [reachable, criteria, mode, withUnverified, withTold]);
     useEffect(() => { setPicked(new Set(audience.map(c => c.id))); }, [audience]);
     const query = q.trim().toLowerCase().replace(/^@/, '');
     const shown = query ? audience.filter(c => `${c.name} ${c.handle} ${c.city} ${c.phone}`.toLowerCase().includes(query)) : audience;
@@ -67,24 +80,27 @@ const CampaignOpenPanel = ({ campaign, live }) => {
         applied: state.creators.filter(c => c.applied).length,
         noNumber: state.creators.filter(c => !c.phone).length,
         stopped: state.creators.filter(c => c.phone && (c.optedOut || c.whatsappOff)).length,
-        unverified: reachable.filter(c => !c.verified && (match === 'any' || c.cityMatch) && c.followers >= min && (withTold || !c.told)).length,
-        told: reachable.filter(c => c.told && (match === 'any' || c.cityMatch) && c.followers >= min && (withUnverified || c.verified)).length,
+        unverified: reachable.filter(c => !c.verified && meets(c) && (withTold || !c.told)).length,
+        told: reachable.filter(c => c.told && meets(c) && (withUnverified || c.verified)).length,
     };
-    const cities = state.criteria.cities || [];
     const sample = recipients[0] || audience[0];
     const params = [firstNameOf(sample?.name) || 'Riya', campaign.title || 'the campaign'];
-    const preview = fill(tpl?.body || FALLBACK_BODY, params);
-    const buttons = tpl?.buttons?.length ? tpl.buttons.map(b => (b.url ? `↗ ${b.text}` : b.text)) : ['↗ Apply'];
-    const canSend = live && state.open && recipients.length > 0 && !sending;
+    const preview = fill(tpl?.body || (templateName === LIVE_BRIEF_TEMPLATE ? LIVE_BRIEF_BODY : FALLBACK_BODY), params);
+    const buttons = tpl?.buttons?.length ? tpl.buttons.map(b => (b.url ? `↗ ${b.text}` : b.text)) : FALLBACK_BUTTONS[templateName] || FALLBACK_BUTTONS.campaign_invite;
+    // Never every registered creator: at least one criterion has to narrow it (the server checks this too).
+    const canSend = live && state.open && criteria.length > 0 && recipients.length > 0 && !sending;
 
     const sendNow = async () => {
         setSending(true);
-        const r = await callOutreach('outreach-open-send', { campaignId: campaign.id, creatorIds: recipients.map(c => c.id), includeUnverified: withUnverified, again: withTold });
+        const r = await callOutreach('outreach-open-send', {
+            campaignId: campaign.id, creatorIds: recipients.map(c => c.id), includeUnverified: withUnverified, again: withTold,
+            criteria: { city: match, min, niche, mode },
+        });
         setSending(false);
         setConfirm(false);
         if (!r.ok) { addToast(r.error || 'Please try again.', 'error', { title: 'Not sent' }); return; }
         const s = r.data.skipped || {};
-        const notes = [s.already && `${s.already} already got it`, s.noNumber && `${s.noNumber} without a usable number`, s.whatsappOff && `${s.whatsappOff} turned WhatsApp off`, s.notEligible && `${s.notEligible} applied or can’t be messaged`].filter(Boolean);
+        const notes = [s.already && `${s.already} already got it`, s.noNumber && `${s.noNumber} without a usable number`, s.whatsappOff && `${s.whatsappOff} turned WhatsApp off`, s.notEligible && `${s.notEligible} applied or can’t be messaged`, s.notMatching && `${s.notMatching} don’t fit the criteria`].filter(Boolean);
         addToast(`${r.data.queued} queued${notes.length ? `; ${notes.join(', ')}` : ''}. They go out a few a minute.`, r.data.queued ? 'success' : 'warning', { title: 'Campaign open on WhatsApp' });
         load();
     };
@@ -95,7 +111,7 @@ const CampaignOpenPanel = ({ campaign, live }) => {
                 {!live && (
                     <p className="flex items-start gap-2 rounded-xl bg-amber-500/10 p-3 text-[13px] font-medium text-amber-700 dark:text-amber-300">
                         <TriangleAlert size={15} className="mt-0.5 shrink-0" />
-                        <span><strong>campaign_invite</strong> isn’t switched on. Once Meta approves it, set WHATSAPP_TEMPLATE_CAMPAIGN_INVITE in Vercel. See <Link to="/admin/whatsapp" className="underline">WhatsApp → Templates</Link>.</span>
+                        <span>Neither <strong>campaign_live_brief</strong> nor <strong>campaign_invite</strong> is switched on. Once Meta approves one, set WHATSAPP_TEMPLATE_CAMPAIGN_LIVE_BRIEF (or _CAMPAIGN_INVITE) in Vercel. See <Link to="/admin/whatsapp" className="underline">WhatsApp → Templates</Link>.</span>
                     </p>
                 )}
                 {!state.loading && !state.open && (
@@ -103,11 +119,28 @@ const CampaignOpenPanel = ({ campaign, live }) => {
                         <TriangleAlert size={15} className="mt-0.5 shrink-0" /> This campaign isn’t taking applications, so there’s nothing to apply to. Set it to Open (and check the deadline) first.
                     </p>
                 )}
+                {!state.loading && !criteria.length && (
+                    <p className="flex items-start gap-2 rounded-xl bg-amber-500/10 p-3 text-[13px] font-medium text-amber-700 dark:text-amber-300">
+                        <TriangleAlert size={15} className="mt-0.5 shrink-0" /> Set at least one criterion: the campaign’s cities, a follower minimum or its niches. This only goes to creators who fit, never to everyone registered.
+                    </p>
+                )}
                 <p className="text-[13px] leading-snug text-gray-500">
-                    For creators registered on the portal who haven’t applied yet. Each person gets it once per campaign (the announcement from Campaigns counts too). Only WhatsApp: email and push go out when you announce the campaign.
+                    For creators registered on the creator portal who haven’t applied yet, and only the ones who fit the criteria below. Each person gets it once per campaign (the announcement from Campaigns counts too). Only WhatsApp: email and push go out when you announce the campaign.
                 </p>
 
                 <div className="grid gap-3 sm:grid-cols-2">
+                    <Field label="Who to send to" hint={criteria.length > 1 ? (mode === 'any' ? 'Anyone who meets at least one of the criteria below.' : 'Only people who meet every criterion below.') : 'Matters once more than one criterion is set.'}>
+                        <Select label="Who to send to" value={mode} onChange={setMode} className="w-full" options={[
+                            { value: 'all', label: 'Meets all the criteria' },
+                            { value: 'any', label: 'Meets any of the criteria' },
+                        ]} />
+                    </Field>
+                    <Field label="Niche" hint={niches.length ? 'Set in the campaign editor (Preferred niches).' : 'The campaign has no preferred niches.'}>
+                        <Select label="Niche" value={niche} onChange={setNiche} className="w-full" options={[
+                            { value: 'any', label: 'Any niche' },
+                            ...(niches.length ? [{ value: 'campaign', label: `This campaign’s niches (${niches.join(', ')})` }] : []),
+                        ]} />
+                    </Field>
                     <Field label="City">
                         <Select label="City" value={match} onChange={setMatch} className="w-full" options={[
                             { value: 'campaign', label: cities.length ? `This campaign’s cities (${cities.join(', ')})` : 'Any city (the campaign has none set)' },
@@ -176,7 +209,7 @@ const CampaignOpenPanel = ({ campaign, live }) => {
                     <p className="text-[12px] font-bold text-gray-500">What {sample ? firstNameOf(sample.name) || 'they' : 'they'} will get{tpl ? '' : ' (roughly; the approved text loads from Meta)'}</p>
                     <Bubble text={preview} image={campaign.image || campaign.coverImage || campaign.bannerImage || campaign.thumbnail} buttons={buttons} />
                     <Button variant="success" className="h-11 w-full" disabled={!canSend} onClick={() => setConfirm(true)}>
-                        {sending ? <Spinner /> : <Send size={14} />} {!live ? 'Waiting for Meta approval' : !state.open ? 'Applications aren’t open' : recipients.length ? `Send to ${recipients.length}` : 'Nobody picked'}
+                        {sending ? <Spinner /> : <Send size={14} />} {!live ? 'Waiting for Meta approval' : !state.open ? 'Applications aren’t open' : !criteria.length ? 'Set a criterion first' : recipients.length ? `Send to ${recipients.length}` : 'Nobody picked'}
                     </Button>
                 </Card>
             </div>
@@ -185,7 +218,7 @@ const CampaignOpenPanel = ({ campaign, live }) => {
                 open={confirm}
                 onClose={() => setConfirm(false)}
                 title={`Tell ${recipients.length} creators on WhatsApp?`}
-                message="Each person gets this campaign’s invite from the Newbi WhatsApp number, with an Apply button. It can’t be taken back once it’s sent."
+                message={`Each person gets this campaign’s message from the Newbi WhatsApp number, with ${templateName === LIVE_BRIEF_TEMPLATE ? 'a View the brief button that opens the campaign in the app' : 'an Apply button'}. It can’t be taken back once it’s sent.`}
                 confirmLabel={sending ? 'Sending…' : `Send to ${recipients.length}`}
                 onConfirm={sendNow}
             />

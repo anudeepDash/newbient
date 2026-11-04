@@ -1,18 +1,23 @@
 /**
  * Outreach → WhatsApp → Campaign open: tell creators registered on the portal
- * that this campaign takes applications, with the campaign_invite template
- * (the campaign's picture and an Apply button to app.newbi.live/c/<id>).
+ * that this campaign is live: the campaign_live_brief template ("View the brief"
+ * button) once it's switched on, else campaign_invite (Apply button). Either has
+ * the campaign's picture and opens app.newbi.live/c/<id>.
  *
  *   outreach-open-audience { campaignId }
- *     → { creators: [{ id, name, handle, city, followers, niches, phone, verified, cityMatch, applied, told, whatsappOff, optedOut }],
- *         criteria: { cities, minFollowers }, open }
- *   outreach-open-send { campaignId, creatorIds, includeUnverified?, again? }
- *     → { queued, skipped: { noNumber, whatsappOff, already, notEligible } }
+ *     → { creators: [{ id, name, handle, city, followers, niches, phone, verified, cityMatch, nicheMatch, applied, told, whatsappOff, optedOut }],
+ *         criteria: { cities, minFollowers, niches }, open, live, template }
+ *   outreach-open-send { campaignId, creatorIds, criteria: { city, min, niche, mode }, includeUnverified?, again? }
+ *     → { queued, skipped: { noNumber, whatsappOff, already, notEligible, notMatching } }
  *
- * Who's listed: every creator profile that isn't rejected or suspended. The
+ * Who's listed: every creator registered on the portal (the creators collection)
+ * whose profile isn't rejected or suspended. The
  * browser starts with the ones matching the campaign (its cities and the Nano
  * tier's follower minimum) who haven't applied or been told yet; the team can
- * widen that. Sending is the team's choice each time (never automatic) and
+ * widen that, add the campaign's niches, and choose all or any of the criteria
+ * (src/lib/outreach/openAudience.js). The send checks the criteria again here:
+ * at least one has to be set, and anyone picked who doesn't meet them is left
+ * out, so it never goes to every registered creator. Sending is the team's choice each time (never automatic) and
  * goes through the outreach queue, one job per creator per campaign, shared
  * with the campaign announcement (api/_lib/campaignInvites.js), so nobody gets
  * it twice unless the team asks to send again. Numbers that replied STOP are
@@ -20,11 +25,12 @@
  * includes them: a number typed on a form could be someone else's.
  */
 import { nowIso } from './db.js';
-import { isTemplateLive, isWhatsAppConfigured, toE164 } from './whatsapp.js';
+import { isWhatsAppConfigured, toE164 } from './whatsapp.js';
 import { contactIdFor } from './outreachThreads.js';
-import { INVITE_TEMPLATE, inviteJobId, queueCampaignInvites } from './campaignInvites.js';
+import { inviteJobId, inviteTemplate, queueCampaignInvites } from './campaignInvites.js';
 import { applicationsOpen, campaignCities, minFollowersFor } from '../../src/lib/outreach/application.js';
-import { isCampaignCityMatch } from '../../src/lib/constants.js';
+import { isCampaignCityMatch, nicheKey } from '../../src/lib/constants.js';
+import { activeCriteria, matchesCriteria } from '../../src/lib/outreach/openAudience.js';
 
 const send = (res, status, body) => res.status(status).json(body);
 const str = (v, max = 200) => String(v ?? '').trim().slice(0, max);
@@ -37,6 +43,13 @@ const followersOf = (c) => {
 };
 const numberOf = (c) => toE164(c.whatsapp || c.phone);
 const eligible = (c) => !OUT.has(String(c.profileStatus || '').toLowerCase()) && !c.deletedAt;
+const nichesOf = (c) => [...(Array.isArray(c.specializations) ? c.specializations : Array.isArray(c.niches) ? c.niches : []), c.category, c.niche].filter(Boolean);
+/* The campaign's preferred niches (optional, set in the campaign editor). */
+const wantedNiches = (campaign) => (Array.isArray(campaign.preferredNiches) ? campaign.preferredNiches : []).filter(Boolean);
+export const nicheMatches = (campaign, c) => {
+    const wanted = new Set(wantedNiches(campaign).map(nicheKey));
+    return wanted.size > 0 && nichesOf(c).some(n => wanted.has(nicheKey(n)));
+};
 export const cityMatches = (campaign, city) => {
     const cities = campaignCities(campaign);
     return !cities.length || cities.some(cc => isCampaignCityMatch(cc, city));
@@ -83,10 +96,11 @@ export const handleOpenAudience = async (req, res, { db }) => {
             handle: String(c.instagram || c.handle || '').replace(/^@/, ''),
             city: String(c.city || '').trim(),
             followers: followersOf(c),
-            niches: (Array.isArray(c.niches) ? c.niches : [c.niche || c.category].filter(Boolean)).slice(0, 3),
+            niches: [...new Set(nichesOf(c))].slice(0, 3),
             phone: phone || '',
             verified: Boolean(c.isPhoneVerified),
             cityMatch: cityMatches(campaign, c.city),
+            nicheMatch: nicheMatches(campaign, c),
             applied: applied(state, c, phone),
             told: status === 'sent' ? 'sent' : ['queued', 'sending'].includes(status) ? 'queued' : status === 'failed' ? 'failed' : null,
             whatsappOff: c.channelPrefs?.whatsapp === false,
@@ -96,9 +110,10 @@ export const handleOpenAudience = async (req, res, { db }) => {
     return send(res, 200, {
         success: true,
         creators,
-        criteria: { cities: campaignCities(campaign), minFollowers: minFollowersFor(campaign) },
+        criteria: { cities: campaignCities(campaign), minFollowers: minFollowersFor(campaign), niches: wantedNiches(campaign) },
         open: applicationsOpen(campaign).open,
-        live: isWhatsAppConfigured() && isTemplateLive(INVITE_TEMPLATE),
+        live: isWhatsAppConfigured() && Boolean(inviteTemplate()),
+        template: inviteTemplate(),
     });
 };
 
@@ -109,13 +124,22 @@ export const handleOpenSend = async (req, res, { db, actor }) => {
     if (!campaignId || !ids.length) return send(res, 400, { success: false, error: 'Choose at least one creator.' });
     if (ids.length > MAX_SEND) return send(res, 400, { success: false, error: `Up to ${MAX_SEND} at a time.` });
     if (!isWhatsAppConfigured()) return send(res, 409, { success: false, error: 'The WhatsApp API isn’t set up yet.' });
-    if (!isTemplateLive(INVITE_TEMPLATE)) return send(res, 409, { success: false, error: 'The campaign_invite template isn’t switched on (WHATSAPP_TEMPLATE_CAMPAIGN_INVITE).' });
+    if (!inviteTemplate()) return send(res, 409, { success: false, error: 'Neither campaign_live_brief nor campaign_invite is switched on (WHATSAPP_TEMPLATE_CAMPAIGN_LIVE_BRIEF or _CAMPAIGN_INVITE).' });
     const campRef = db.collection('campaigns').doc(campaignId);
     const campSnap = await campRef.get();
     if (!campSnap.exists) return send(res, 404, { success: false, error: 'Campaign not found.' });
     const campaign = { id: campaignId, ...campSnap.data() };
     // The message says "apply", so the form has to be taking applications.
     if (!applicationsOpen(campaign).open) return send(res, 409, { success: false, error: 'This campaign isn’t taking applications. Set it to Open (and check the deadline) first.' });
+    // Only the creators who fit what the team set, never everyone registered.
+    const cr = b.criteria || {};
+    const criteria = activeCriteria(
+        { city: cr.city === 'any' ? 'any' : 'campaign', min: Math.max(0, Number(cr.min) || 0), niche: cr.niche === 'campaign' ? 'campaign' : 'any' },
+        { cities: campaignCities(campaign), niches: wantedNiches(campaign) },
+    );
+    if (!criteria.length) return send(res, 400, { success: false, error: 'Set at least one criterion (city, followers or niche), so this goes only to creators who fit.' });
+    const mode = cr.mode === 'any' ? 'any' : 'all';
+    const fits = (c) => matchesCriteria({ cityMatch: cityMatches(campaign, c.city), nicheMatch: nicheMatches(campaign, c), followers: followersOf(c) }, criteria, mode);
 
     const state = await campaignState(db, campaignId);
     const snaps = [];
@@ -123,21 +147,23 @@ export const handleOpenSend = async (req, res, { db, actor }) => {
         snaps.push(...await db.getAll(...ids.slice(i, i + 100).map(id => db.collection('creators').doc(id))));
     }
     let notEligible = 0;
+    let notMatching = 0;
     const creators = snaps.filter(s => s.exists).map(s => ({ id: s.id, ...s.data() })).filter((c) => {
         const ok = eligible(c) && !applied(state, c, numberOf(c));
-        if (!ok) notEligible += 1;
-        return ok;
+        if (!ok) { notEligible += 1; return false; }
+        if (!fits(c)) { notMatching += 1; return false; }
+        return true;
     });
     notEligible += snaps.filter(s => !s.exists).length;
     const out = await queueCampaignInvites({
         db, campaign, creators, again: b.again === true, createdBy: actor.actorEmail || 'Newbi team', verifiedOnly: b.includeUnverified !== true,
     });
-    if (out.off) return send(res, 409, { success: false, error: 'The campaign_invite template isn’t switched on.' });
+    if (out.off) return send(res, 409, { success: false, error: 'The campaign-open template isn’t switched on.' });
     if (out.queued) {
         await campRef.collection('audit').doc().set({
             appId: null, field: 'campaign_open', from: null, to: `${out.queued} queued`, source: 'whatsapp_api',
             note: `Campaign-open message to ${out.queued} registered creator${out.queued === 1 ? '' : 's'}`, ...actor, at: nowIso(),
         });
     }
-    return send(res, 200, { success: true, queued: out.queued, skipped: { ...out.skipped, notEligible } });
+    return send(res, 200, { success: true, queued: out.queued, skipped: { ...out.skipped, notEligible, notMatching } });
 };
