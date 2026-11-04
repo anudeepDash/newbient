@@ -207,6 +207,21 @@ export const TEMPLATES = [
         footer: 'Newbi Creators · app.newbi.live',
     },
     {
+        // A campaign is live: sent from Outreach → WhatsApp → Campaign open to registered creators who match its
+        // criteria (and by the announcement from Campaigns). "View the brief" opens the campaign's page in the app.
+        // An invitation, so Marketing. Same variables as campaign_invite, which it replaces once approved.
+        name: 'campaign_live_brief',
+        category: 'MARKETING',
+        body: "📣 *A new campaign is live, {{1}}*\n\n*Campaign:* {{2}}\n\nThe brief has what to post, what you get and how to apply. Tap *View the brief* to open it in the Newbi app.",
+        samples: ['Riya', 'Pinnaca 2026'],
+        header: { image: 'public/og/wa-invite-v1.jpg' },
+        buttons: [
+            { type: 'URL', text: 'View the brief', url: `${APP}/c/{{1}}`, example: [`${APP}/c/sample-campaign`] },
+            { type: 'QUICK_REPLY', text: 'Stop updates' },
+        ],
+        footer: 'Newbi Creators · app.newbi.live',
+    },
+    {
         // Event day for approved creators: when, where, anything to bring. URL button: their creator page.
         name: 'campaign_event_day',
         body: "🎬 *Hi {{1}}, see you at {{2}}*\n\n*When:* {{3}}\n*Where:* {{4}}\n*Note:* {{5}}\n\nShow your pass at the gate and ask for the Newbi crew. Tap *Open my page* for your pass and tasks.",

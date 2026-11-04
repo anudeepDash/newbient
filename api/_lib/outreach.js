@@ -51,7 +51,7 @@ import {
 import { notify } from './notify.js';
 import { cityGroupFor } from '../../src/lib/outreach/cityGroups.js';
 import { isWhatsAppConfigured, isTemplateLive } from './whatsapp.js';
-import { INVITE_TEMPLATE } from './campaignInvites.js';
+import { inviteTemplate } from './campaignInvites.js';
 import { handleOpenAudience, handleOpenSend } from './outreachOpenCall.js';
 import { WELCOME_CITY_TEMPLATE } from '../../src/lib/outreach/whatsappTemplate.js';
 import { submitUrlFor } from './outreachQueue.js';
@@ -352,7 +352,7 @@ const handleList = async (req, res, { db }) => {
         whatsappApi: {
             configured, queue, rate,
             // The queue's kinds, plus the two that aren't per-application: the portal welcome and the campaign-open invite.
-            templates: configured ? { ...liveKinds(), welcome_city: isTemplateLive(WELCOME_CITY_TEMPLATE), campaign_open: isTemplateLive(INVITE_TEMPLATE) } : {},
+            templates: configured ? { ...liveKinds(), welcome_city: isTemplateLive(WELCOME_CITY_TEMPLATE), campaign_open: Boolean(inviteTemplate()) } : {},
         },
         wame: await wameStatus(db),
     });
