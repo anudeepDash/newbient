@@ -146,7 +146,7 @@ describe('app feed: campaigns', () => {
 });
 
 describe('handleAppFeed', () => {
-    it('serves the feed with a short edge cache', async () => {
+    it('serves the feed with a five-minute edge cache', async () => {
         const db = new FakeFirestore({
             'forms/f1': { title: 'Join the crew' },
             'forms/f2': { title: 'Closed form', status: 'Closed' },
@@ -157,7 +157,7 @@ describe('handleAppFeed', () => {
         const res = fakeRes();
         await handleAppFeed(db, fakeReq({ method: 'GET', query: { type: 'app-feed' } }), res);
         expect(res.statusCode).toBe(200);
-        expect(res.headers['Cache-Control']).toBe('public, max-age=0, s-maxage=60, stale-while-revalidate=300');
+        expect(res.headers['Cache-Control']).toBe('public, max-age=0, s-maxage=300, stale-while-revalidate=600');
         expect(res.body.success).toBe(true);
         expect(res.body.community.forms.map(f => f.id)).toEqual(['f1']);
         expect(res.body.community.events.map(e => e.id)).toEqual(['e1']);
