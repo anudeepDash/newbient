@@ -23,6 +23,7 @@ import { callOutreach } from './outreachApi';
 import { StatusBadge, Handle, when } from './parts';
 import PayoutFormCard from './PayoutFormCard';
 import ImportSheet from './ImportSheet';
+import UpiPayQr from '../../finance/UpiPayQr';
 
 /*
  * Per creator: deliverables progress, their ticket and their payout.
@@ -107,7 +108,7 @@ const PaySheet = ({ campaign, app, onClose, onDone }) => {
             open={Boolean(app)}
             onClose={onClose}
             title={app ? `Mark ${app.fullName} paid` : ''}
-            subtitle="Record a payment you’ve already made. Nothing is sent from here."
+            subtitle="Scan the QR to pay them in your UPI app, then record it here. Nothing is sent from here."
             footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="accent" disabled={saving} onClick={save}>{saving ? 'Saving…' : 'Record payout'}</Button></div>}
         >
             {app && (
@@ -125,6 +126,9 @@ const PaySheet = ({ campaign, app, onClose, onDone }) => {
                             <input type="date" className={cn(fieldCls, errors.paidAt && 'border-rose-500/60')} value={form.paidAt} onChange={(e) => set({ paidAt: e.target.value })} />
                         </Field>
                     </div>
+                    {app.payoutDetails?.upiId && app.payoutDetails?.mode !== 'bank' && (
+                        <UpiPayQr upiId={app.payoutDetails.upiId} name={app.payoutDetails.upiName || app.payoutDetails.name || app.fullName} amount={form.amount} note={`Newbi ${campaign.title || 'campaign'} payout`} size={168} />
+                    )}
                     <Field label="How"><Choice value={form.method} onChange={(v) => set({ method: v })} options={PAYOUT_METHODS} /></Field>
                     <Field label="From"><Choice value={form.accountType} onChange={(v) => set({ accountType: v })} options={[{ value: 'newbi', label: 'Newbi account' }, { value: 'personal', label: 'Personal account', hint: 'To reimburse' }]} /></Field>
                     <Field label="UTR or reference" optional hint="From your bank app. Sent to the creator with the payout message.">

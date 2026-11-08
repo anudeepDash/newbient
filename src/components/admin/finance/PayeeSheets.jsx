@@ -25,6 +25,7 @@ import {
     amountOf, spendDay, formatDay, SPEND_TYPES, spendType,
 } from './money';
 import ThemedSelect from '../ThemedSelect';
+import UpiPayQr from './UpiPayQr';
 
 const toast = (msg, type = 'success', options) => useStore.getState().addToast?.(msg, type, options);
 
@@ -267,6 +268,9 @@ export const PayeeDetailSheet = ({ payee, open, onClose, payees, spends, canDele
         .slice().sort((a, b) => (spendDay(b) || '').localeCompare(spendDay(a) || '')) : []), [payee, spends]);
     const paid = history.filter(isSpendPaid).reduce((a, s) => a + amountOf(s.amount), 0);
     const pending = history.filter(isSpendPending).reduce((a, s) => a + amountOf(s.amount), 0);
+    // The scan-to-pay amount starts at what's owed; re-set when another payee opens.
+    const [qrAmount, setQrAmount] = useState('');
+    useEffect(() => { setQrAmount(pending > 0 ? String(pending) : ''); }, [payee?.id, pending]);
 
     const twins = useMemo(() => {
         if (!payee) return [];
@@ -371,6 +375,15 @@ export const PayeeDetailSheet = ({ payee, open, onClose, payees, spends, canDele
                             {!acct.upiId && !acct.accountNumber && <Row label="Details">{payee.destinationDetails || 'Not given yet'}</Row>}
                         </div>
                     </Section>
+
+                    {acct.upiId && (
+                        <Section title="Scan to pay" hint={pending ? 'Set to what you still owe them. Change it for a part payment.' : 'Type an amount, or leave it blank and enter it in your app.'}>
+                            <Field label="Amount (₹)" optional>
+                                <input className={fieldCls} inputMode="decimal" value={qrAmount} onChange={(e) => setQrAmount(e.target.value)} placeholder="Leave blank to type it in the app" aria-label="Amount to pay" />
+                            </Field>
+                            <UpiPayQr upiId={acct.upiId} name={payee.accountHolder || payee.name} amount={qrAmount} note={`Newbi payout${payee.linkedGig ? ` ${payee.linkedGig}` : ''}`} />
+                        </Section>
+                    )}
 
                     <Section title="Contact">
                         <div className="divide-y divide-black/[0.06] rounded-2xl border border-black/[0.08] px-4 dark:divide-white/[0.06] dark:border-white/[0.08]">
