@@ -27,6 +27,7 @@ import {
     stripHtml, toDate, toDateInput, toTimeInput, fromDateTimeInputs, todayInput, formatDay, formatDayTime,
 } from '../../components/admin/content/contentRules';
 import ThemedSelect from '../../components/admin/ThemedSelect';
+import { sizedImage } from '../../lib/image';
 
 const ACCENTS = ['#00F0FF', '#A855F7', '#39FF14', '#FF4F8B', '#FFD700', '#FF6B35', '#FFFFFF'];
 
@@ -531,7 +532,7 @@ const CardPreview = ({ form, minutes }) => (
         <div className="mx-auto max-w-sm overflow-hidden rounded-2xl border border-black/[0.06] bg-gray-50 dark:border-white/[0.08] dark:bg-white/[0.03]">
             <div className="relative aspect-[16/10] overflow-hidden bg-black/5 dark:bg-white/5">
                 {form.coverImage
-                    ? <img src={form.coverImage} alt="" className="h-full w-full object-cover" style={{ transform: `scale(${form.coverImageScale})`, transformOrigin: `${form.coverImagePosX}% ${form.coverImagePosY}%` }} />
+                    ? <img src={sizedImage(form.coverImage, 1280)} alt="" className="h-full w-full object-cover" style={{ transform: `scale(${form.coverImageScale})`, transformOrigin: `${form.coverImagePosX}% ${form.coverImagePosY}%` }} />
                     : <span className="flex h-full w-full items-center justify-center text-gray-400"><Newspaper size={28} /></span>}
                 <span className="absolute left-3 top-3 rounded-lg px-2.5 py-1 text-[11px] font-bold text-black" style={{ backgroundColor: form.accentColor }}>{form.category}</span>
             </div>
@@ -548,7 +549,7 @@ const CardPreview = ({ form, minutes }) => (
 const ArticlePreview = ({ form, minutes }) => (
     <div>
         <div className="relative aspect-[16/10] overflow-hidden bg-gray-900">
-            {form.coverImage && <img src={form.coverImage} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ transform: `scale(${form.coverImageScale})`, transformOrigin: `${form.coverImagePosX}% ${form.coverImagePosY}%` }} />}
+            {form.coverImage && <img src={sizedImage(form.coverImage, 1280)} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ transform: `scale(${form.coverImageScale})`, transformOrigin: `${form.coverImagePosX}% ${form.coverImagePosY}%` }} />}
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 space-y-2 p-5 text-white">
                 <span className="inline-block rounded-lg px-2.5 py-1 text-[11px] font-bold text-black" style={{ backgroundColor: form.accentColor }}>{form.category}</span>

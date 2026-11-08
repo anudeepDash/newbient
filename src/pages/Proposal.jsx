@@ -54,6 +54,7 @@ import useDynamicMeta from '../hooks/useDynamicMeta';
 import { getDocumentShareMeta } from '../lib/documentPreviewUtils';
 import { CARD_MESSAGE, canSaveShareCard, renderPdfFirstPage, syncShareCard } from '../lib/docShareCard';
 import '../lib/documentFonts';
+import { sizedImage } from '../lib/image';
 
 const isHtmlEmpty = (html) => {
     if (!html) return true;
@@ -1717,7 +1718,7 @@ const Proposal = () => {
                                                     if (isImage) {
                                                         return (
                                                             <div key={idx} className="w-full relative rounded-2xl overflow-hidden border border-gray-200">
-                                                                <img src={attachment.url} alt={attachment.name} className="w-full h-auto object-contain" />
+                                                                <img src={sizedImage(attachment.url, 1600)} alt={attachment.name} className="w-full h-auto object-contain" />
                                                                 <div className="absolute top-4 left-4 bg-white dark:bg-black/80 backdrop-blur-md px-4 py-2 rounded-full text-gray-900 dark:text-white text-[10px] font-black uppercase tracking-wider">
                                                                     {attachment.name}
                                                                 </div>
@@ -2213,7 +2214,7 @@ const Proposal = () => {
                                                 if (isImage) {
                                                     return (
                                                         <div key={idx} className="w-full relative rounded-2xl overflow-hidden border border-gray-200">
-                                                            <img src={attachment.url} alt={attachment.name} className="w-full h-auto object-contain" />
+                                                            <img src={sizedImage(attachment.url, 1600)} alt={attachment.name} className="w-full h-auto object-contain" />
                                                             <div className="absolute top-4 left-4 bg-white dark:bg-black/80 backdrop-blur-md px-4 py-2 rounded-full text-gray-900 dark:text-white text-[10px] font-black uppercase tracking-wider">
                                                                 {attachment.name}
                                                             </div>

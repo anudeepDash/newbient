@@ -7,6 +7,7 @@ import { APP_LINKS } from '../links';
 import { readSessionHint } from '../../lib/sessionHint';
 import LangToggle from '../../i18n/LangToggle';
 import { useT } from '../../i18n';
+import { sizedImage } from '../../lib/image';
 
 const LINKS = [
     { label: 'Work', to: '/work' },
@@ -46,7 +47,7 @@ function Avatar({ hint, size = 28 }) {
     const [broken, setBroken] = useState(false);
     const initial = (hint.name || '').charAt(0).toUpperCase();
     if (hint.photo && !broken) {
-        return <img src={hint.photo} alt="" width={size} height={size} referrerPolicy="no-referrer" onError={() => setBroken(true)} className="shrink-0 rounded-full object-cover" style={{ width: size, height: size }} />;
+        return <img src={sizedImage(hint.photo, size * 2)} alt="" width={size} height={size} referrerPolicy="no-referrer" onError={() => setBroken(true)} className="shrink-0 rounded-full object-cover" style={{ width: size, height: size }} />;
     }
     return (
         <span aria-hidden="true" className="flex shrink-0 items-center justify-center rounded-full bg-neon-green text-black text-[13px] font-bold" style={{ width: size, height: size }}>

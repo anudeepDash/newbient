@@ -31,6 +31,7 @@ import ResponsesSheet from '../../components/admin/forms/ResponsesSheet';
 import { FORM_STATE_LABEL, formState, isNativeForm } from '../../components/admin/forms/formSchema';
 import { countFormResponses } from '../../components/admin/forms/formResponses';
 import { formatDateTime, formatDay, toDate, useConfirm } from '../../components/admin/forms/kit';
+import { sizedImage } from '../../lib/image';
 
 const FILTERS = ['all', 'live', 'filling', 'closed'];
 const FILTER_LABEL = { all: 'All', live: 'Live', filling: 'Filling fast', closed: 'Closed' };
@@ -311,7 +312,7 @@ const FormManager = () => {
                             <article key={e.f.id} className={cn('flex flex-col overflow-hidden rounded-2xl border border-black/[0.06] bg-white transition-colors hover:border-black/15 dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:border-white/15', busyId === e.f.id && 'opacity-60')}>
                                 <button type="button" onClick={() => navigate(`/admin/forms/edit/${e.f.id}`)} className="relative block h-32 w-full overflow-hidden text-left" aria-label={`Edit ${e.f.title}`}>
                                     {e.f.image ? (
-                                        <img src={e.f.image} alt="" loading="lazy" className="h-full w-full object-cover" />
+                                        <img src={sizedImage(e.f.image, 720)} alt="" loading="lazy" className="h-full w-full object-cover" />
                                     ) : (
                                         <span className="flex h-full w-full items-center justify-center" style={{ backgroundColor: `${e.f.highlightColor || '#FF4F8B'}1f`, color: e.f.highlightColor || '#FF4F8B' }}>
                                             <FileText size={30} />
@@ -340,7 +341,7 @@ const FormManager = () => {
                                 <li key={e.f.id} className={cn('flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:px-5', busyId === e.f.id && 'opacity-60')}>
                                     <button type="button" onClick={() => navigate(`/admin/forms/edit/${e.f.id}`)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
                                         <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl" style={{ backgroundColor: `${e.f.highlightColor || '#FF4F8B'}1f`, color: e.f.highlightColor || '#FF4F8B' }}>
-                                            {e.f.image ? <img src={e.f.image} alt="" className="h-full w-full object-cover" loading="lazy" /> : <FileText size={18} />}
+                                            {e.f.image ? <img src={sizedImage(e.f.image, 160)} alt="" className="h-full w-full object-cover" loading="lazy" /> : <FileText size={18} />}
                                         </span>
                                         <span className="min-w-0">
                                             <span className="flex flex-wrap items-center gap-1.5">

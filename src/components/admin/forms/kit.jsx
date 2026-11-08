@@ -6,6 +6,7 @@ import { cn } from '../../../lib/utils';
 import { useStore } from '../../../lib/store';
 import { PosterGlow, usePosterColor, usePosterPalette } from '../../app/AmbientBackdrop';
 import { AMBIENT_OFF, cleanAmbient, hslToHex } from '../../../lib/ambientColor';
+import { sizedImage } from '../../../lib/image';
 
 /*
  * Small pieces shared by the community modules (forms, volunteer gigs,
@@ -246,7 +247,7 @@ export const AmbientColorField = ({ image, value, onChange, label = 'Glow colour
                 <div aria-hidden="true" className="relative isolate w-36 shrink-0 overflow-hidden rounded-2xl border border-black/[0.08] bg-white pb-8 dark:border-white/[0.08] dark:bg-[#101219]">
                     <PosterGlow image={image} color={chosen} height="140%" strength={0.85} />
                     <div className="aspect-video w-full" style={{ WebkitMaskImage: 'linear-gradient(to bottom, #000 62%, transparent 100%)', maskImage: 'linear-gradient(to bottom, #000 62%, transparent 100%)' }}>
-                        {image && <img src={image} alt="" className="h-full w-full object-cover" />}
+                        {image && <img src={sizedImage(image, 320)} alt="" className="h-full w-full object-cover" />}
                     </div>
                 </div>
                 <div className="min-w-0 flex-1 space-y-2.5">

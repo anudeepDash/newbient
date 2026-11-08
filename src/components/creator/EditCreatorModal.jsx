@@ -16,6 +16,7 @@ import Sheet from '../admin/Sheet';
 import { Button, Badge } from '../admin/ui';
 import { Field, Section, Choice, fieldCls, areaCls } from '../admin/uploads/UploadKit';
 import ThemedSelect from '../admin/ThemedSelect';
+import { sizedImage } from '../../lib/image';
 
 const formatINR = (amt) => {
     if (!amt && amt !== 0) return '₹0';
@@ -528,7 +529,7 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
                     <div className="flex items-center gap-4">
                         <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-black/10 bg-black/[0.03] dark:border-white/10 dark:bg-white/[0.04]">
                             {form.profilePicture ? (
-                                <img src={form.profilePicture} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+                                <img src={sizedImage(form.profilePicture, 320)} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
                             ) : (
                                 <span className="text-2xl font-extrabold text-emerald-700 dark:text-neon-green">{(form.name?.trim().charAt(0) || 'C').toUpperCase()}</span>
                             )}

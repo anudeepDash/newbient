@@ -1816,7 +1816,7 @@ const CreatorProfileManager = ({
                     <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900/60 border border-gray-200 dark:border-white/10">
                         <div className="relative w-16 h-16 rounded-2xl bg-gray-200 dark:bg-zinc-800 border border-gray-300 dark:border-white/10 overflow-hidden flex items-center justify-center shrink-0">
                             {form.profilePicture ? (
-                                <img src={form.profilePicture} alt="Avatar Preview" className="w-full h-full object-cover" />
+                                <img src={sizedImage(form.profilePicture, 320)} alt="Avatar Preview" className="w-full h-full object-cover" />
                             ) : (
                                 <span className="text-2xl font-black text-gray-900 dark:text-white">{form.name?.charAt(0) || 'C'}</span>
                             )}

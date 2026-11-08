@@ -8,6 +8,7 @@ import { useStoreSubscription } from '../../../hooks/useStoreSubscription';
 import { triggerNotification } from '../../../lib/notificationTriggers';
 import { campaignStatus } from '../campaigns/campaignModel';
 import { giveawayState } from '../giveaways/giveawayUtils';
+import { sizedImage } from '../../../lib/image';
 
 /*
  * Send a notification to the app's notification page (the bell): pick what
@@ -196,7 +197,7 @@ const NotificationComposer = ({ open, onClose }) => {
             <Section title="Preview">
                 <div className="flex items-start gap-3 rounded-2xl bg-emerald-500/[0.06] p-3 dark:bg-neon-green/[0.05]">
                     <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-neon-green" />
-                    {form.image && <img src={form.image} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />}
+                    {form.image && <img src={sizedImage(form.image, 160)} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />}
                     <span className="min-w-0 flex-1">
                         <span className="block text-[15px] font-bold leading-snug">{form.title || 'Your title'}</span>
                         {form.content && <span className="mt-0.5 block text-[14px] leading-snug text-gray-600 dark:text-zinc-400">{form.content}</span>}

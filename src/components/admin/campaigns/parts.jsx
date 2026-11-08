@@ -8,6 +8,7 @@ import { Badge, Button } from '../ui';
 import Sheet from '../Sheet';
 import { Toggle } from '../uploads/UploadKit';
 import { CAMPAIGN_STATUS, campaignStatus, stageMeta } from './campaignModel';
+import { sizedImage } from '../../../lib/image';
 
 /* Small pieces shared by the campaign screens. */
 
@@ -39,7 +40,7 @@ export const CampaignThumb = ({ campaign, className, iconSize = 22 }) => {
     return (
         <div className={cn('relative overflow-hidden bg-pink-500/10 dark:bg-neon-pink/10', className)}>
             {src ? (
-                <img src={src} alt="" loading="lazy" onError={() => setFailed(true)} className="h-full w-full object-cover" />
+                <img src={sizedImage(src, 320)} alt="" loading="lazy" onError={() => setFailed(true)} className="h-full w-full object-cover" />
             ) : (
                 <Target size={iconSize} className="absolute inset-0 m-auto text-pink-500 dark:text-neon-pink" />
             )}

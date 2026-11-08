@@ -20,6 +20,7 @@ import EditCreatorModal from '../creator/EditCreatorModal';
 import Sheet from './Sheet';
 import WhatsAppSendSheet from './whatsapp/WhatsAppSendSheet';
 import { Button, Badge, SegmentedTabs, Menu, MenuItem } from './ui';
+import { sizedImage } from '../../lib/image';
 
 // ─── Badges ─────────────────────────────────────────────────────────────────
 const AVAILABLE_BADGES = [
@@ -316,7 +317,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
             <div className="relative shrink-0">
                 <div className="h-16 w-16 overflow-hidden rounded-2xl bg-black/5 dark:bg-white/5">
                     {avatar && !avatarError
-                        ? <img src={avatar} alt="" referrerPolicy="no-referrer" onError={() => setAvatarError(true)} className="h-full w-full object-cover" />
+                        ? <img src={sizedImage(avatar, 320)} alt="" referrerPolicy="no-referrer" onError={() => setAvatarError(true)} className="h-full w-full object-cover" />
                         : <span className="flex h-full w-full items-center justify-center text-2xl font-extrabold text-emerald-700 dark:text-neon-green">{(creatorData.name || 'C').charAt(0)}</span>}
                 </div>
                 {fullyVerified && <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-neon-green text-black dark:border-[#0d0f15]"><Check size={12} strokeWidth={3} /></span>}

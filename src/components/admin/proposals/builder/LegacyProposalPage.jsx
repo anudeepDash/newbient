@@ -4,6 +4,7 @@ import DocumentSeal from '../../../ui/DocumentSeal';
 import { renderContent } from './content';
 import { isHtmlEmpty } from './text';
 import { DEFAULT_COLUMNS } from './model';
+import { sizedImage } from '../../../../lib/image';
 
 /*
  * One page of a classic-format proposal (the format older proposals use).
@@ -385,7 +386,7 @@ const LegacyProposalPage = ({ page, idx, totalPages, formData, currentLogo, tota
                                 if (isImage) {
                                     return (
                                         <div key={idx} className="w-full relative rounded-2xl overflow-hidden border border-gray-200">
-                                            <img src={attachment.url} alt={attachment.name} className="w-full h-auto object-contain" />
+                                            <img src={sizedImage(attachment.url, 1600)} alt={attachment.name} className="w-full h-auto object-contain" />
                                             <div className="absolute top-4 left-4 bg-white dark:bg-black/80 backdrop-blur-md px-4 py-2 rounded-full text-gray-900 dark:text-white text-[10px] font-black uppercase tracking-wider">
                                                 {attachment.name}
                                             </div>

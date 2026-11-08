@@ -26,6 +26,7 @@ import { AccentContext, accent } from '../theme';
 import NewbiLogo from '../../brand/NewbiLogo';
 import newbiIcon from '../../../assets/logo/newbi-icon.svg';
 import { landingUrl } from '../../../app/host';
+import { sizedImage } from '../../../lib/image';
 
 const COLLAPSE_KEY = 'nb_admin_sidebar_collapsed';
 
@@ -247,7 +248,7 @@ const AdminShell = () => {
                     {!collapsed && (
                         <div className="flex items-center gap-3 rounded-xl px-1 pt-1">
                             <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-neon-green/15 text-sm font-bold uppercase text-emerald-700 dark:text-neon-green">
-                                {user?.photoURL ? <img src={user.photoURL} alt="" className="h-full w-full object-cover" /> : (user?.displayName || user?.email || '?').charAt(0)}
+                                {user?.photoURL ? <img src={sizedImage(user.photoURL, 96)} alt="" className="h-full w-full object-cover" /> : (user?.displayName || user?.email || '?').charAt(0)}
                             </div>
                             <div className="min-w-0">
                                 <p className="truncate text-[13px] font-bold">{user?.displayName || user?.email}</p>

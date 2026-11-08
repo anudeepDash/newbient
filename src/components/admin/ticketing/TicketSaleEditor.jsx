@@ -24,6 +24,7 @@ import { AmbientColorField } from '../forms/kit';
 import {
     AGE_LIMITS, SEATING, TIER_BADGES, VENUE_TYPES, EMPTY_SALE, blankTier, fromEvent, newRowId, saleProblems, toPayload,
 } from './saleModel';
+import { sizedImage } from '../../../lib/image';
 
 /*
  * Create or edit a ticket sale: everything the app's event page and checkout
@@ -159,7 +160,7 @@ const TierCard = ({ tier, index, count, sold, onChange, onMove, onRemove }) => {
 const ArtistRow = ({ artist, onChange, onRemove, onUpload, uploading }) => (
     <div className="flex items-start gap-3 rounded-2xl border border-black/[0.06] p-3 dark:border-white/[0.08]">
         <label className="relative flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-black/5 text-gray-400 dark:bg-white/5" aria-label="Photo">
-            {artist.image ? <img src={artist.image} alt="" className="h-full w-full object-cover" /> : <Upload size={16} />}
+            {artist.image ? <img src={sizedImage(artist.image, 160)} alt="" className="h-full w-full object-cover" /> : <Upload size={16} />}
             {uploading && <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-[10px] font-bold text-white">…</span>}
             <input type="file" accept="image/*" className="absolute inset-0 opacity-0" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) onUpload(f); }} />
         </label>

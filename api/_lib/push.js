@@ -14,6 +14,7 @@
  */
 import { getMessaging } from 'firebase-admin/messaging';
 import { getDb, FieldValue } from './db.js';
+import { sizedJpeg } from '../../src/lib/image.js';
 
 let testMessaging = null;
 export const setMessagingForTests = (m) => { testMessaging = m; };
@@ -73,7 +74,7 @@ export const sendPush = async (uid, message, { user = null } = {}) => {
             tag: clip(message.tag || message.title || 'newbi', 64),
             icon: `${PUSH_ORIGIN}/brand/push/icon-192.png`,
             badge: `${PUSH_ORIGIN}/brand/push/badge-96.png`,
-            ...(message.image ? { image: String(message.image) } : {}),
+            ...(message.image ? { image: sizedJpeg(String(message.image), 720) } : {}),
             ...Object.fromEntries(Object.entries(message.data || {}).map(([k, v]) => [k, String(v ?? '')])),
         };
         const messaging = testMessaging || getMessaging();

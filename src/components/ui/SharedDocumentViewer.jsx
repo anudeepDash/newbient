@@ -20,6 +20,7 @@ import { docTheme, StatusChip, fmtDate, fmtMoney, Row, DocButton } from './docvi
 import { invoiceState, invoiceBalance } from '../../lib/invoicing';
 import { proposalState } from '../../lib/proposals';
 import '../../lib/documentFonts';
+import { sizedImage } from '../../lib/image';
 
 // Safely render content that might be HTML (e.g. from rich text editor) or plain text
 const decodeEntities = (s) => s
@@ -447,7 +448,7 @@ export default function SharedDocumentViewer({
                                         />
                                     ) : (
                                         <div className="proposal-page-render w-[794px] max-w-full overflow-hidden rounded-[2px] bg-white p-4 shadow-[0_20px_60px_rgba(0,0,0,0.12)] dark:shadow-[0_30px_90px_rgba(0,0,0,0.55)]">
-                                            <img src={documentData.fileUrl} alt={documentData.fileName || 'Uploaded document'} className="h-auto w-full object-contain" />
+                                            <img src={sizedImage(documentData.fileUrl, 1600)} alt={documentData.fileName || 'Uploaded document'} className="h-auto w-full object-contain" />
                                         </div>
                                     )
                                 )

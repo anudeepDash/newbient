@@ -22,6 +22,7 @@ import RichEditor from '../RichEditor';
 import { TASK_TYPES, PLATFORMS, taskTypeOf, platformOf, formatDay, toDayInput, daysUntil } from './campaignModel';
 import { Spinner } from './parts';
 import ThemedSelect from '../ThemedSelect';
+import { sizedImage } from '../../../lib/image';
 
 const TYPE_TONE = { story: 'pink', reel: 'violet', content_post: 'blue', visit_event: 'amber', custom: 'teal' };
 const selectCls = cn(fieldCls, 'cursor-pointer');
@@ -219,7 +220,7 @@ const TaskCard = ({
                         <div className="flex flex-wrap gap-2">
                             {(task.creativeAssets || []).map((url, i) => (
                                 <div key={`${url}-${i}`} className="relative h-20 w-20 overflow-hidden rounded-xl border border-black/10 dark:border-white/10">
-                                    <img src={url} alt="" className="h-full w-full object-cover" />
+                                    <img src={sizedImage(url, 320)} alt="" className="h-full w-full object-cover" />
                                     <button
                                         type="button"
                                         onClick={() => set({ creativeAssets: (task.creativeAssets || []).filter((_, j) => j !== i) })}

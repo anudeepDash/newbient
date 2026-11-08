@@ -2,6 +2,7 @@ import React from 'react';
 import { Badge } from '../../ui';
 import { STATUS_META } from '../../../../lib/outreach/status';
 import { formatCount } from '../campaignModel';
+import { sizedImage } from '../../../../lib/image';
 
 /* Small pieces shared by the Outreach tab's panels. */
 
@@ -53,7 +54,7 @@ export const Bubble = ({ text, image, buttons }) => (
     <div className="rounded-[1.4rem] bg-[#e7ddd3] p-3 dark:bg-[#0b141a]">
         <div className="max-w-[19rem] overflow-hidden rounded-xl rounded-tl-sm bg-white shadow-sm dark:bg-[#202c33]">
             {image
-                ? <img src={image} alt="" className="aspect-[1.9/1] w-full object-cover" />
+                ? <img src={sizedImage(image, 720)} alt="" className="aspect-[1.9/1] w-full object-cover" />
                 : <div className="aspect-[1.9/1] w-full bg-gradient-to-br from-emerald-400/40 to-sky-400/30" />}
             <p className="whitespace-pre-wrap break-words px-3 pb-1 pt-2 text-[13px] leading-relaxed text-[#111b21] dark:text-[#e9edef]">
                 {String(text).split(/(\*[^*\n]+\*)/g).map((part, i) => (/^\*[^*]+\*$/.test(part) ? <strong key={i}>{part.slice(1, -1)}</strong> : part))}

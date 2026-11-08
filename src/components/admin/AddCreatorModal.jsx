@@ -19,6 +19,7 @@ import Sheet from './Sheet';
 import { Button } from './ui';
 import { Field, Section, Toggle, Choice, fieldCls, areaCls } from './uploads/UploadKit';
 import ThemedSelect from './ThemedSelect';
+import { sizedImage } from '../../lib/image';
 
 const POPULAR_CITIES = [
     'Bengaluru',
@@ -595,7 +596,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
                     <div className="flex items-center gap-4">
                         <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-black/10 bg-black/[0.03] dark:border-white/10 dark:bg-white/[0.04]">
                             {form.profilePicture ? (
-                                <img src={form.profilePicture} alt="" className="h-full w-full object-cover" />
+                                <img src={sizedImage(form.profilePicture, 320)} alt="" className="h-full w-full object-cover" />
                             ) : form.name?.trim() ? (
                                 <span className="text-2xl font-extrabold text-emerald-700 dark:text-neon-green">{form.name.trim().charAt(0).toUpperCase()}</span>
                             ) : (

@@ -12,6 +12,7 @@ import Sheet from '../Sheet';
 import { Button } from '../ui';
 import { fieldCls } from '../uploads/UploadKit';
 import { imageProblem, MAX_IMAGE_MB } from './contentRules';
+import { sizedImage } from '../../../lib/image';
 
 /* Pieces shared by the Content screens (site content, announcements, blog, portfolio). */
 
@@ -177,7 +178,7 @@ export const ImagePicker = ({ label, hint, value, onChange, aspect = 'aspect-vid
                     dragging ? 'border-2 border-dashed border-emerald-500 dark:border-neon-green' : 'border-black/10 dark:border-white/10')}
             >
                 {value ? (
-                    <img src={value} alt="" className={cn('h-full w-full', contain ? 'object-contain' : 'object-cover', imgClassName)} style={imgStyle} />
+                    <img src={sizedImage(value, 960)} alt="" className={cn('h-full w-full', contain ? 'object-contain' : 'object-cover', imgClassName)} style={imgStyle} />
                 ) : (
                     <span className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-3 text-center text-gray-500">
                         <Upload size={20} />

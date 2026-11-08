@@ -7,6 +7,7 @@ import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
 import { cn } from '../../lib/utils';
 import { accent, useAccent } from './theme';
 import { ADMIN_NAV_GROUPS, findActiveNavItem } from '../../constants/adminNavigation';
+import { sizedImage } from '../../lib/image';
 
 const NAV_PATHS = new Set(ADMIN_NAV_GROUPS.flatMap(g => g.items.map(i => i.path)));
 
@@ -109,7 +110,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
             <header className="mb-5 flex items-center gap-3 sm:gap-3.5 lg:mb-6">
                 {header.logo ? (
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-black/[0.06] bg-black p-0.5 dark:border-white/[0.08] dark:bg-white/5">
-                        <img src={header.logo} alt="" className="h-full w-full object-contain" />
+                        <img src={sizedImage(header.logo, 160)} alt="" className="h-full w-full object-contain" />
                     </div>
                 ) : HeaderIcon ? (
                     // The module colour, so every page header matches its sidebar entry.

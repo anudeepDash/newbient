@@ -24,3 +24,15 @@ export const sizedImage = (src, width) => {
     const w = STEPS.find((s) => s >= width) || STEPS[STEPS.length - 1];
     return src.replace('/image/upload/', `/image/upload/f_auto,q_auto,c_limit,w_${w}/`);
 };
+
+/**
+ * The same, as a JPEG: for emails and push notifications, where the picture is
+ * fetched by a mail client or the OS rather than the browser, so f_auto can't
+ * be trusted to pick a format every reader shows.
+ */
+export const sizedJpeg = (src, width) => {
+    if (typeof src !== 'string' || !CLOUDINARY_IMAGE.test(src)) return src;
+    if (ALREADY_TRANSFORMED.test(src) || KEEP_AS_IS.test(src)) return src;
+    const w = STEPS.find((s) => s >= width) || STEPS[STEPS.length - 1];
+    return src.replace('/image/upload/', `/image/upload/f_jpg,q_auto,c_limit,w_${w}/`);
+};

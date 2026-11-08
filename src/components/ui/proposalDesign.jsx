@@ -4,6 +4,7 @@ import '@fontsource/manrope/600.css';
 import '@fontsource/manrope/700.css';
 import '@fontsource/manrope/800.css';
 import { cn } from '../../lib/utils';
+import { sizedImage } from '../../lib/image';
 
 /*
  * The parts of the proposal paper (the "Pinnaca" design): A4 page chrome,
@@ -326,7 +327,7 @@ const ImageBlock = ({ block }) => {
         <div className={cn('grid gap-[24px]', side ? 'grid-cols-[1.45fr_1fr]' : 'grid-cols-1')}>
             <figure>
                 <div className="overflow-hidden border bg-[#FAFAFA]" style={{ borderColor: LINE }}>
-                    <img src={block.url} alt={block.caption || ''} className="block h-auto max-h-[420px] w-full object-contain" crossOrigin="anonymous" />
+                    <img src={sizedImage(block.url, 1280)} alt={block.caption || ''} className="block h-auto max-h-[420px] w-full object-contain" crossOrigin="anonymous" />
                 </div>
                 {block.caption && <figcaption className="mt-[6px] text-[9px] text-gray-400">{block.caption}</figcaption>}
             </figure>

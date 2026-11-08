@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Bell, Megaphone, Ticket, MessageSquare, Gift, FileText, Sparkles, Users, Heart, CalendarDays, ClipboardList, Star } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { sizedImage } from '../../lib/image';
 
 // Premium, SF-Symbols-style icons for banners and the notification centre:
 // a vivid gradient disc with a crisp white glyph and a soft coloured glow.
@@ -98,7 +99,7 @@ export const NotificationIcon = ({ notification, size = 34, muted = false }) => 
                 className="relative shrink-0 inline-block rounded-full overflow-hidden"
                 style={{ width: size, height: size, boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.25), 0 4px 12px -4px rgba(0,0,0,0.4)' }}
             >
-                <img src={image} alt="" className="w-full h-full object-cover" onError={() => setImgError(true)} draggable={false} />
+                <img src={sizedImage(image, 160)} alt="" className="w-full h-full object-cover" onError={() => setImgError(true)} draggable={false} />
             </span>
         );
     }

@@ -10,6 +10,7 @@ import { cn } from '../../lib/utils';
 import { accent, useAccent } from './theme';
 import ThemedSelect from './ThemedSelect';
 import MobileActionSheet, { isPhone } from './MobileActionSheet';
+import { sizedImage } from '../../lib/image';
 
 export { MobileActionSheet };
 
@@ -271,7 +272,7 @@ export const Avatar = ({ src, name, size = 40, className }) => {
             style={{ width: size, height: size, fontSize: Math.max(12, Math.round(size * 0.4)) }}
         >
             {showImage ? (
-                <img src={src} alt="" className="h-full w-full object-cover" onError={() => setFailed(true)} loading="lazy" />
+                <img src={sizedImage(src, size * 2)} alt="" className="h-full w-full object-cover" onError={() => setFailed(true)} loading="lazy" />
             ) : (
                 initial
             )}

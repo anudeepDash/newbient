@@ -37,6 +37,7 @@ import {
     BLOG_CATEGORIES, blogCategoryTone, postState, POST_STATE_LABEL, postPath, toDate, formatDay, formatDayTime,
     relativeTime, stripHtml, uniqueSlug, toDateInput,
 } from '../../components/admin/content/contentRules';
+import { sizedImage } from '../../lib/image';
 
 const FILTERS = [
     { value: 'all', label: 'All' },
@@ -291,7 +292,7 @@ const ConcertZoneStudio = () => {
                                 <Card key={p.id} className="relative flex flex-col overflow-hidden rounded-2xl transition-colors hover:border-black/15 dark:hover:border-white/15">
                                     <Link to={`/admin/blog/edit/${p.id}`} className="relative block aspect-[16/9] overflow-hidden bg-indigo-500/[0.07] dark:bg-indigo-400/[0.07]">
                                         {p.coverImage
-                                            ? <img src={p.coverImage} alt="" loading="lazy" className="h-full w-full object-cover" style={{ transform: `scale(${Math.max(0.5, Number(p.coverImageScale) || 1)})`, transformOrigin: `${p.coverImagePosX ?? 50}% ${p.coverImagePosY ?? 50}%` }} />
+                                            ? <img src={sizedImage(p.coverImage, 720)} alt="" loading="lazy" className="h-full w-full object-cover" style={{ transform: `scale(${Math.max(0.5, Number(p.coverImageScale) || 1)})`, transformOrigin: `${p.coverImagePosX ?? 50}% ${p.coverImagePosY ?? 50}%` }} />
                                             : <span className="flex h-full w-full items-center justify-center text-indigo-500/50 dark:text-indigo-300/40"><Newspaper size={32} /></span>}
                                         {p.featured && <span className="absolute left-3 top-3"><Badge tone="amber" className="bg-white/90 dark:bg-black/70"><Star size={10} className="fill-current" /> Featured</Badge></span>}
                                     </Link>
@@ -332,7 +333,7 @@ const ConcertZoneStudio = () => {
                                 return (
                                     <li key={p.id} className="flex items-center gap-3 px-4 py-3 sm:px-5">
                                         <Link to={`/admin/blog/edit/${p.id}`} className="h-12 w-16 shrink-0 overflow-hidden rounded-lg bg-indigo-500/[0.08] dark:bg-indigo-400/[0.08]">
-                                            {p.coverImage ? <img src={p.coverImage} alt="" loading="lazy" className="h-full w-full object-cover" /> : <span className="flex h-full w-full items-center justify-center text-indigo-500 dark:text-indigo-300"><Newspaper size={16} /></span>}
+                                            {p.coverImage ? <img src={sizedImage(p.coverImage, 160)} alt="" loading="lazy" className="h-full w-full object-cover" /> : <span className="flex h-full w-full items-center justify-center text-indigo-500 dark:text-indigo-300"><Newspaper size={16} /></span>}
                                         </Link>
                                         <Link to={`/admin/blog/edit/${p.id}`} className="min-w-0 flex-1">
                                             <span className="flex flex-wrap items-center gap-2">

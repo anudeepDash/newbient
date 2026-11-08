@@ -41,6 +41,7 @@ import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { cn } from '../../lib/utils';
 import { FINANCE_ROLES } from '../../constants/roles';
 import { computeAvailability, SOLD_STATUSES } from '../../lib/ticketing';
+import { sizedImage } from '../../lib/image';
 
 /*
  * Ticketing: every event that sells tickets or runs a guestlist, and for each
@@ -57,7 +58,7 @@ const EventThumb = ({ event, className }) => {
     const image = event.hubImage || event.image;
     return (
         <div className={cn('relative shrink-0 overflow-hidden bg-black/5 dark:bg-white/5', className)}>
-            {image ? <img src={image} alt="" loading="lazy" className="h-full w-full object-cover" />
+            {image ? <img src={sizedImage(image, 320)} alt="" loading="lazy" className="h-full w-full object-cover" />
                 : <span className="absolute inset-0 flex items-center justify-center text-gray-400">{event.isTicketed ? <Ticket size={22} /> : <ListChecks size={22} />}</span>}
         </div>
     );

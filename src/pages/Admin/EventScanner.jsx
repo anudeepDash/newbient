@@ -30,6 +30,7 @@ import { useOperationalEvents, useGuestEntries, useEventPasses, hasGuestlist } f
 import { passesPost } from '../../lib/passesApi';
 import { formatEventDate } from '../../components/admin/ticketing/format';
 import { scanFeedback, unlockScanAudio } from '../../components/admin/events/scanFeedback';
+import { sizedImage } from '../../lib/image';
 
 /*
  * The gate scanner: a full-screen page for a phone at the door, built for the
@@ -135,7 +136,7 @@ const EventPicker = ({ events, onPick, onBack }) => {
             <li key={e.id}>
                 <button type="button" onClick={() => onPick(e.id)} className="flex min-h-[72px] w-full items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.04] p-3 text-left active:bg-white/[0.08]">
                     <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-teal-400/15 text-teal-300">
-                        {e.image ? <img src={e.hubImage || e.image} alt="" className="h-full w-full object-cover" /> : e.isTicketed ? <ScanLine size={20} /> : <ListChecks size={20} />}
+                        {e.image ? <img src={sizedImage(e.hubImage || e.image, 160)} alt="" className="h-full w-full object-cover" /> : e.isTicketed ? <ScanLine size={20} /> : <ListChecks size={20} />}
                     </span>
                     <span className="min-w-0 flex-1">
                         <span className="block truncate text-[16px] font-bold">{e.title || 'Untitled event'}</span>

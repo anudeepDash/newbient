@@ -1,4 +1,5 @@
 import { generateWeeklyHTML } from '../../../lib/email';
+import { sizedJpeg } from '../../../lib/image';
 
 /*
  * The weekly newsletter email (Weekly by Concert Zone). The markup below is the
@@ -53,7 +54,7 @@ export const buildNewsletterHtml = ({ selectedPosts = [], theme = 'light', edito
                 </div>
                 <div class="story-card" style="background: ${cardBg}; border: 1px solid ${borderColor}; border-radius: 24px; overflow: hidden; display: block; text-decoration: none;">
                     <div style="position: relative; height: 200px; overflow: hidden; background: #000;">
-                        <img src="${mainPost.coverImage}" style="width: 100%; height: 100%; object-fit: cover; filter: ${isDark ? 'brightness(0.85)' : 'none'};" />
+                        <img src="${sizedJpeg(mainPost.coverImage, 1280)}" style="width: 100%; height: 100%; object-fit: cover; filter: ${isDark ? 'brightness(0.85)' : 'none'};" />
                         <div style="position: absolute; top: 15px; left: 15px;">
                             <span style="background: ${accent}; padding: 4px 10px; font-size: 9px; font-weight: 900; color: #000000; text-transform: uppercase; letter-spacing: 2px; border-radius: 6px;">${mainPost.category || 'FEATURE'}</span>
                         </div>
@@ -82,7 +83,7 @@ export const buildNewsletterHtml = ({ selectedPosts = [], theme = 'light', edito
                                 <!-- Thumbnail Column -->
                                 <td width="90" style="vertical-align: middle; padding: 12px; width: 90px; height: 90px;">
                                     <div style="width: 80px; height: 80px; border-radius: 10px; overflow: hidden; background: #000;">
-                                        <img src="${post.coverImage}" style="width: 100%; height: 100%; object-fit: cover; display: block; filter: ${isDark ? 'brightness(0.85)' : 'none'};" />
+                                        <img src="${sizedJpeg(post.coverImage, 160)}" style="width: 100%; height: 100%; object-fit: cover; display: block; filter: ${isDark ? 'brightness(0.85)' : 'none'};" />
                                     </div>
                                 </td>
                                 <!-- Details Column -->

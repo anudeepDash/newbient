@@ -11,6 +11,8 @@
  * adds List-Unsubscribe headers and tracking.
  */
 
+import { sizedJpeg } from '../../../src/lib/image.js';
+
 export const BRAND_GREEN = '#39FF14';
 
 /*
@@ -185,7 +187,7 @@ ${isPresent(block.total) && showPrice ? `<tr><td class="strong rule" style="padd
         return `<div style="margin:4px 0 24px;text-align:center"><img src="${esc(src)}" width="184" height="184" alt="${esc(block.qr.alt || 'Entry QR code')}" style="width:184px;height:184px;padding:12px;border-radius:18px;background:#ffffff;border:1px solid #e4e4e7" />${isPresent(block.qr.caption) ? `<p class="muted" style="margin:10px 0 0;font-size:12px;color:#9ca3af">${esc(block.qr.caption)}</p>` : ''}</div>`;
     }
     if (block.image) {
-        const src = safeUrl(block.image.url, ctx.origin);
+        const src = sizedJpeg(safeUrl(block.image.url, ctx.origin), 1080);
         return src ? `<img src="${esc(src)}" alt="${esc(block.image.alt || '')}" width="536" style="width:100%;max-width:100%;height:auto;display:block;margin:0 0 26px;border-radius:20px;border:0" />` : '';
     }
     if (block.button) {
@@ -254,7 +256,7 @@ const blockText = (block, ctx) => {
  */
 const heroFaded = (url, hex) => {
     const m = String(url).match(/^(https?:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)(.+)$/);
-    return m ? `${m[1]}w_1200,c_limit/e_gradient_fade,y_-0.5/b_rgb:${hex}/f_jpg/${m[2]}` : '';
+    return m ? `${m[1]}w_1200,c_limit/e_gradient_fade,y_-0.5/b_rgb:${hex}/f_jpg,q_auto/${m[2]}` : '';
 };
 
 /* ---------- Layout ---------- */

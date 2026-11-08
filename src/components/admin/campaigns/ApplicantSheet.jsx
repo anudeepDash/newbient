@@ -27,6 +27,7 @@ import { DeliveryDots } from './CampaignTickets';
 import { StageBadge, Spinner, ReferralTierBadge } from './parts';
 import { creatorHandle, creatorPhotoOf, formatCount, formatDay, inr, taskTypeOf, waNumber } from './campaignModel';
 import { isRequiredTask } from '../../../lib/creator/tasks';
+import { sizedImage } from '../../../lib/image';
 
 const SUB_STATUS = {
     not_started: { label: 'Not started', tone: 'gray' },
@@ -182,7 +183,7 @@ const ApplicantSheet = ({
                                                             )}
                                                             {sub?.proofUrl && (isImageUrl(sub.proofUrl) ? (
                                                                 <a href={sub.proofUrl} target="_blank" rel="noopener noreferrer" className="block h-16 w-16 overflow-hidden rounded-lg border border-black/10 dark:border-white/10" aria-label="Open proof image">
-                                                                    <img src={sub.proofUrl} alt="Proof" className="h-full w-full object-cover" loading="lazy" />
+                                                                    <img src={sizedImage(sub.proofUrl, 720)} alt="Proof" className="h-full w-full object-cover" loading="lazy" />
                                                                 </a>
                                                             ) : (
                                                                 <a href={sub.proofUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-black/10 px-3 text-[12px] font-semibold hover:border-black/25 dark:border-white/10">

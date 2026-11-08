@@ -38,6 +38,7 @@ import { ensureGigForm } from '../../components/admin/gigs/gigForm';
 import ResponsesSheet from '../../components/admin/forms/ResponsesSheet';
 import { countFormResponses } from '../../components/admin/forms/formResponses';
 import { formatDay, todayKey, toDate, useConfirm } from '../../components/admin/forms/kit';
+import { sizedImage } from '../../lib/image';
 
 const FILTERS = ['all', 'open', 'filling', 'closed', 'past'];
 const FILTER_LABEL = { all: 'All', open: 'Open', filling: 'Filling fast', closed: 'Closed', past: 'Past' };
@@ -418,7 +419,7 @@ const VolunteerGigManager = () => {
                             <article key={e.g.id} className={cn('flex flex-col overflow-hidden rounded-2xl border border-black/[0.06] bg-white transition-colors hover:border-black/15 dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:border-white/15', busyId === e.g.id && 'opacity-60')}>
                                 <button type="button" onClick={() => setParam({ edit: e.g.id })} className="relative block h-36 w-full overflow-hidden text-left" aria-label={`Edit ${e.g.title}`}>
                                     {e.g.image ? (
-                                        <img src={e.g.image} alt="" loading="lazy" className="h-full w-full object-cover" style={{ objectPosition: `${50 + (e.g.imageTransform?.x || 0)}% ${50 + (e.g.imageTransform?.y || 0)}%` }} />
+                                        <img src={sizedImage(e.g.image, 720)} alt="" loading="lazy" className="h-full w-full object-cover" style={{ objectPosition: `${50 + (e.g.imageTransform?.x || 0)}% ${50 + (e.g.imageTransform?.y || 0)}%` }} />
                                     ) : (
                                         <span className="flex h-full w-full items-center justify-center" style={{ backgroundColor: `${e.g.highlightColor || '#39FF14'}1f`, color: e.g.highlightColor || '#39FF14' }}><Zap size={30} /></span>
                                     )}
@@ -455,7 +456,7 @@ const VolunteerGigManager = () => {
                                     )}
                                     <button type="button" onClick={() => setParam({ edit: e.g.id })} className="flex min-w-0 flex-1 items-center gap-3 text-left">
                                         <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl" style={{ backgroundColor: `${e.g.highlightColor || '#39FF14'}1f`, color: e.g.highlightColor || '#39FF14' }}>
-                                            {e.g.image ? <img src={e.g.image} alt="" className="h-full w-full object-cover" loading="lazy" /> : <Zap size={18} />}
+                                            {e.g.image ? <img src={sizedImage(e.g.image, 160)} alt="" className="h-full w-full object-cover" loading="lazy" /> : <Zap size={18} />}
                                         </span>
                                         <span className="min-w-0">
                                             <span className="flex flex-wrap items-center gap-1.5">

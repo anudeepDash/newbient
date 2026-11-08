@@ -57,6 +57,7 @@ import GlobalLoader from '../components/ui/GlobalLoader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import artistantLogo from '../assets/logo/artistant.png';
 import GlassSelect from '../components/ui/GlassSelect';
+import { sizedImage } from '../lib/image';
 
 // Artistant Theme Colors: Coral/Orange & Purple/Blue
 const ARTISTANT_THEME = {
@@ -673,7 +674,7 @@ const ArtistAnt = () => {
                                                             <div className="relative group">
                                                                 <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] md:rounded-[3.5rem] bg-white dark:bg-black border-2 border-black/10 dark:border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-[#FF6B6B]/40">
                                                                     {artistData.image ? (
-                                                                        <img src={artistData.image} alt="Preview" className="w-full h-full object-cover" />
+                                                                        <img src={sizedImage(artistData.image, 640)} alt="Preview" className="w-full h-full object-cover" />
                                                                     ) : (
                                                                         <Camera size={40} className="text-gray-700 group-hover:text-[#FF6B6B] transition-colors" />
                                                                     )}
@@ -866,7 +867,7 @@ const ArtistAnt = () => {
                                 <div className="relative group">
                                     <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] md:rounded-[3.5rem] bg-white dark:bg-black border-2 border-black/10 dark:border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-[#FF6B6B]/40">
                                         {artistProfile.image ? (
-                                            <img src={artistProfile.image} alt="Profile" className="w-full h-full object-cover" />
+                                            <img src={sizedImage(artistProfile.image, 640)} alt="Profile" className="w-full h-full object-cover" />
                                         ) : (
                                             <Camera size={40} className="text-gray-700 group-hover:text-[#FF6B6B] transition-colors" />
                                         )}

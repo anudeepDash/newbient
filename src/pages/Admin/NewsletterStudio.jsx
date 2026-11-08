@@ -31,6 +31,7 @@ import { ConfirmDialog, useSuppression } from '../../components/admin/mailing/sh
 import { DEFAULT_AUDIENCE, buildAudience, describeAudience, normalizeEmail } from '../../components/admin/mailing/audience';
 import { stripHtml } from '../../components/admin/mailing/mailingApi';
 import { buildNewsletterHtml, defaultNewsletterSummary } from '../../components/admin/mailing/newsletterHtml';
+import { sizedImage } from '../../lib/image';
 
 /*
  * Newsletter studio: pick up to six published stories (the first is the
@@ -245,7 +246,7 @@ const NewsletterStudio = () => {
                                 <ol className="mb-4 space-y-2">
                                     {selectedPosts.map((p, i) => (
                                         <li key={p.id} className={cn('flex items-center gap-3 rounded-xl border p-2', i === 0 ? cn(moduleAccent.border, moduleAccent.soft) : 'border-black/[0.06] dark:border-white/[0.08]')}>
-                                            <img src={p.coverImage} alt="" className="h-12 w-16 shrink-0 rounded-lg bg-black/5 object-cover" />
+                                            <img src={sizedImage(p.coverImage, 160)} alt="" className="h-12 w-16 shrink-0 rounded-lg bg-black/5 object-cover" />
                                             <div className="min-w-0 flex-1">
                                                 <p className="flex items-center gap-1.5 text-[12px] font-bold text-gray-500">
                                                     {i === 0 ? <><Star size={12} className={moduleAccent.text} /> Featured</> : `Story ${i + 1}`}
@@ -279,7 +280,7 @@ const NewsletterStudio = () => {
                                                     picked ? cn(moduleAccent.border, moduleAccent.soft) : 'border-black/[0.08] hover:border-black/20 dark:border-white/[0.08] dark:hover:border-white/20')}
                                             >
                                                 <div className="relative aspect-[16/10] bg-black/5 dark:bg-white/5">
-                                                    {post.coverImage && <img src={post.coverImage} alt="" loading="lazy" className="h-full w-full object-cover" />}
+                                                    {post.coverImage && <img src={sizedImage(post.coverImage, 720)} alt="" loading="lazy" className="h-full w-full object-cover" />}
                                                     {picked && (
                                                         <span className={cn('absolute right-2 top-2 flex h-7 min-w-[28px] items-center justify-center rounded-full px-1.5 text-[12px] font-bold', moduleAccent.solid)}>
                                                             {index === 0 ? <Star size={13} /> : index + 1}
