@@ -66,6 +66,7 @@ const BlogPostEditor = lazy(() => import('./pages/Admin/BlogPostEditor'));
 const AgreementManagement = lazy(() => import('./pages/Admin/AgreementManagement'));
 const EventScanner = lazy(() => import('./pages/Admin/EventScanner'));
 const TicketingManagement = lazy(() => import('./pages/Admin/TicketingManagement'));
+const TicketResale = lazy(() => import('./pages/Admin/TicketResale'));
 const GuestlistManager = lazy(() => import('./pages/Admin/GuestlistManager'));
 const CreatorSettingsPage = lazy(() => import('./pages/Admin/CreatorSettingsPage'));
 const CreatorGroupsPage = lazy(() => import('./pages/Admin/CreatorGroupsPage'));
@@ -324,6 +325,7 @@ function AppContent() {
       <Route path="admin/newsletter/studio" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><NewsletterStudio /></MaintenanceGuard></AdminGuard>} />
       <Route path="admin/scanner" element={<AdminGuard><MaintenanceGuard featureId="ticketing"><EventScanner /></MaintenanceGuard></AdminGuard>} />
       <Route path="admin/ticketing" element={<AdminGuard><MaintenanceGuard featureId="ticketing"><TicketingManagement /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/ticket-resale" element={<AdminGuard><MaintenanceGuard featureId="ticketing"><TicketResale /></MaintenanceGuard></AdminGuard>} />
       <Route path="admin/documents" element={<Navigate to="/admin" replace />} />
       <Route path="admin/system-command" element={<AdminGuard><DevSettings /></AdminGuard>} />
       <Route path="admin/settings" element={<Navigate to="/admin/system-command" replace />} />

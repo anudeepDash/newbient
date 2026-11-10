@@ -4,14 +4,16 @@
  *
  * Confirms a payment even when the buyer closed the tab before checkout told us.
  * In Razorpay Dashboard → Webhooks: URL https://app.newbi.live/api/track?type=razorpay,
- * events payment.captured and order.paid, and the secret in RAZORPAY_WEBHOOK_SECRET.
+ * events payment.captured, order.paid and payment_link.paid (resale links), and the
+ * secret in RAZORPAY_WEBHOOK_SECRET.
  */
 import { getDb } from './db.js';
 import { webhookSignatureOk } from './razorpay.js';
 import { settleTicketByGatewayOrder } from './tickets.js';
 import { settleInvoicePayment } from './sharedDocs.js';
+import { settleResaleFromWebhook } from './ticketResale.js';
 
-const PAID_EVENTS = new Set(['payment.captured', 'order.paid']);
+const PAID_EVENTS = new Set(['payment.captured', 'order.paid', 'payment_link.paid']);
 
 export const handleRazorpayWebhook = async (req, res, rawBody) => {
     if (req.method !== 'POST') return res.status(405).json({ success: false, error: 'Method not allowed' });
@@ -24,6 +26,18 @@ export const handleRazorpayWebhook = async (req, res, rawBody) => {
     if (!PAID_EVENTS.has(event?.event)) return res.status(200).json({ success: true, ignored: true });
 
     const payment = event?.payload?.payment?.entity;
+
+    // A resale payment link (api/_lib/ticketResale.js) was paid.
+    if (event.event === 'payment_link.paid') {
+        try {
+            const ok = await settleResaleFromWebhook(getDb(), event?.payload?.payment_link?.entity, payment);
+            return res.status(200).json({ success: true, ...(ok ? { kind: 'resale' } : { ignored: true }) });
+        } catch (err) {
+            console.error('[API/RAZORPAY-WEBHOOK] resale failed:', err);
+            return res.status(500).json({ success: false, error: 'Try again.' });
+        }
+    }
+
     if (!payment?.id || !payment?.order_id || !['captured', 'authorized'].includes(payment.status)) {
         return res.status(200).json({ success: true, ignored: true });
     }

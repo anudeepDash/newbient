@@ -15,10 +15,12 @@
  *                         RAZORPAY_KEY_SECRET in the server env)
  *   ticket-gateway-confirm  checks Razorpay's signature (or, for staff, asks Razorpay,
  *                         or Razorpay's webhook) and confirms the order
+ *   ticket-resale-*       staff only: Razorpay payment links for resale tickets (ticketResale.js)
  */
 import crypto from 'node:crypto';
 import { FieldValue } from 'firebase-admin/firestore';
 import { sendOrderEmail } from './mail/events.js';
+import { RESALE_ACTIONS, ResaleError } from './ticketResale.js';
 import { razorpay, razorpayConfigured, razorpayKeyId, gatewaySignatureOk, paidPaymentFor } from './razorpay.js';
 import {
     computeAvailability, priceCart, applyCoupon, couponProblem, normalizeCouponCode, makeBookingRef,
@@ -398,6 +400,19 @@ const ACTIONS = {
     'ticket-gateway-start': gatewayStartAction,
     'ticket-gateway-confirm': gatewayConfirmAction,
 };
+
+// Resale payment links move money on the team's say-so, so only signed-in staff may use them.
+const staffOnly = (fn) => async (db, body, decodedToken, ctx = {}) => {
+    if (!decodedToken) throw new TicketError('AUTH', 'Please sign in to continue.', 401);
+    if (!(await ctx.isStaff?.())) throw new TicketError('FORBIDDEN', 'Only the Newbi team can do this.', 403);
+    try {
+        return await fn(db, body, { ...ctx, staffEmail: decodedToken.email || null });
+    } catch (err) {
+        if (err instanceof ResaleError) throw new TicketError(err.code, err.message, err.status);
+        throw err;
+    }
+};
+Object.entries(RESALE_ACTIONS).forEach(([name, fn]) => { ACTIONS[name] = staffOnly(fn); });
 
 export const isTicketAction = (action) => Object.prototype.hasOwnProperty.call(ACTIONS, action);
 

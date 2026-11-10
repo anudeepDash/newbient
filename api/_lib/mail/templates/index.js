@@ -30,6 +30,7 @@ import invoice from './invoice.js';
 import proposal from './proposal.js';
 import agreement from './agreement.js';
 import receipt from './receipt.js';
+import resalePaymentReceived from './resale-payment-received.js';
 
 export const TEMPLATES = {
     welcome,
@@ -58,6 +59,7 @@ export const TEMPLATES = {
     proposal,
     agreement,
     receipt,
+    'resale-payment-received': resalePaymentReceived,
 };
 
 /** Templates staff may send from the admin with their own data. */

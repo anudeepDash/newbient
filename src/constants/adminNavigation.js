@@ -15,6 +15,7 @@ import Radio from 'lucide-react/dist/esm/icons/radio';
 import PenSquare from 'lucide-react/dist/esm/icons/pen-square';
 import Music from 'lucide-react/dist/esm/icons/music';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
+import Link2 from 'lucide-react/dist/esm/icons/link-2';
 import ScanLine from 'lucide-react/dist/esm/icons/scan-line';
 import Users from 'lucide-react/dist/esm/icons/users';
 import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list';
@@ -94,6 +95,7 @@ export const ADMIN_NAV_GROUPS = [
         items: [
             { id: 'upcoming', accent: 'green', name: 'Events', path: '/admin/upcoming-events', icon: Calendar, card: 'upcoming_events', ...NOT_SCANNER },
             { id: 'ticketing', accent: 'orange', name: 'Ticket sales', path: '/admin/ticketing', icon: Ticket, card: 'ticketing' },
+            { id: 'resale', accent: 'amber', name: 'Resale links', path: '/admin/ticket-resale', icon: Link2, card: 'ticketing', ...OPERATIONS },
             { id: 'guestlists', accent: 'fuchsia', name: 'Guestlists', path: '/admin/guestlists', icon: ListChecks, card: 'guestlists', ...OPERATIONS },
             { id: 'scanner', accent: 'teal', name: 'Gate scanner', path: '/admin/scanner', icon: ScanLine, card: 'ticketing' },
         ],

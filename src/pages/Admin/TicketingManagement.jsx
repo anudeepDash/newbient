@@ -18,6 +18,7 @@ import IndianRupee from 'lucide-react/dist/esm/icons/indian-rupee';
 import ListChecks from 'lucide-react/dist/esm/icons/list-checks';
 import Pencil from 'lucide-react/dist/esm/icons/pencil';
 import Share2 from 'lucide-react/dist/esm/icons/share-2';
+import Link2 from 'lucide-react/dist/esm/icons/link-2';
 import ShareDraftsSheet from '../../components/admin/share/ShareDraftsSheet';
 import { APP_ORIGIN } from '../../app/host';
 import TicketSaleEditor from '../../components/admin/ticketing/TicketSaleEditor';
@@ -406,6 +407,7 @@ const TicketingManagement = ({ mode = 'tickets' }) => {
                 action={(
                     <div className="flex w-full gap-2 sm:w-auto">
                         <Button as={Link} to="/admin/scanner" variant="secondary" className="h-11 flex-1 sm:flex-none"><ScanLine size={15} /> Gate scanner</Button>
+                        {!guestlists && !isScanner && <Button as={Link} to="/admin/ticket-resale" variant="secondary" className="h-11 flex-1 sm:flex-none"><Link2 size={15} /> Resale links</Button>}
                         {guestlists && !isScanner && <Button variant="accent" className="h-11 flex-1 sm:flex-none" onClick={() => setEditor({ guestlist: null })}><Plus size={15} /> New guestlist</Button>}
                         {!guestlists && !isScanner && <Button variant="accent" className="h-11 flex-1 sm:flex-none" onClick={() => setSaleEditor({ event: null })}><Plus size={15} /> New ticket sale</Button>}
                     </div>
