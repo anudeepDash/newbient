@@ -17,8 +17,8 @@ export default (data = {}) => {
         title: 'We got your payment',
         blocks: [
             { p: `Hi ${firstName(data.name)}, thanks. We've received your payment for ${event}. Our team will send your tickets to you separately, and will reach out on this email or your phone.` },
-            { items: [{ name: data.ticketType || 'Tickets', count: qty, price: Number(data.unitPrice) || (Number(data.amount) || 0) / qty }], total: data.amount, totalLabel: 'Total paid' },
-            { details: [['Event', data.eventName], ['Date', formatDate(data.eventDate)], ['Venue', data.venue], ['Paid on', formatDate(data.paidAt, { withTime: true })], ['Razorpay payment ID', data.paymentId]] },
+            { items: [{ name: data.ticketType || data.eventName || 'Tickets', count: qty, price: Number(data.unitPrice) || (Number(data.amount) || 0) / qty }], total: data.amount, totalLabel: 'Total paid' },
+            { details: [['Date', formatDate(data.eventDate)], ['Venue', data.venue], ['Paid on', formatDate(data.paidAt, { withTime: true })], ['Razorpay payment ID', data.paymentId]] },
             { code: data.ref, label: 'Reference' },
             { note: 'Keep this email. Quote the reference if you contact us about this order.' },
         ],

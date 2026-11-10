@@ -1,8 +1,9 @@
 /**
- * Resale payment links: staff type in the ticket details and the buyer, Newbi
- * sends a Razorpay payment link, and when it's paid the buyer gets a "payment
- * received" email. Nothing else is automatic: no seats are held, no pass is
- * issued, and the tickets themselves are handed over by the team.
+ * Resale payment links: staff type the event name and the amount, Newbi makes
+ * a Razorpay payment link to share, and when it's paid the buyer gets a "payment
+ * received" email at the address they gave on Razorpay's page. Nothing else is
+ * automatic: no seats are held, no pass is issued, and the tickets themselves
+ * are handed over by the team.
  *
  * Served through /api/creator-join?action=ticket-resale-* (see tickets.js), staff only.
  *
@@ -23,7 +24,7 @@ export const RESALE_COLLECTION = 'ticket_resales';
 export const RESALE_STATUSES = ['awaiting', 'paid', 'cancelled', 'expired'];
 const REF_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_AMOUNT = 500000; // ₹5 lakh per link, a guard against a typo'd price
-const MAX_EXPIRY_DAYS = 30;
+const LINK_DAYS = 7;
 const LIST_LIMIT = 200;
 const REFRESH_ON_LIST = 10;
 
@@ -40,63 +41,20 @@ const str = (v, max) => String(v ?? '').trim().slice(0, max);
 export const makeResaleRef = (rand = () => crypto.randomInt(0, REF_ALPHABET.length)) =>
     `NR-${Array.from({ length: 6 }, () => REF_ALPHABET[rand()]).join('')}`;
 
-/** Razorpay wants +<country><number>. Ten Indian digits get +91. */
-export const normalizeContact = (phone) => {
-    const raw = String(phone || '').trim();
-    const digits = raw.replace(/\D/g, '');
-    if (!digits) return '';
-    if (digits.length === 10) return `+91${digits}`;
-    if (digits.length === 12 && digits.startsWith('91')) return `+${digits}`;
-    if (raw.startsWith('+') && digits.length >= 8 && digits.length <= 15) return `+${digits}`;
-    return '';
-};
-
-/** The form, checked and tidied. Throws ResaleError on anything we can't send. */
+/**
+ * The form: just the event name and the amount. The buyer types their own email
+ * and phone on Razorpay's payment page, and the confirmation goes to that email.
+ */
 export const readResaleInput = (body = {}, now = Date.now()) => {
     const eventName = str(body.eventName, 140);
-    const ticketType = str(body.ticketType, 80) || 'Ticket';
-    const quantity = Math.floor(Number(body.quantity));
-    const unitPrice = Math.round(Number(body.unitPrice) * 100) / 100;
-    const buyerName = str(body.buyerName, 120);
-    const buyerEmail = str(body.buyerEmail, 200).toLowerCase();
-    const buyerPhoneRaw = str(body.buyerPhone, 20);
-    const buyerPhone = normalizeContact(buyerPhoneRaw);
-
+    const amount = Math.round(Number(body.amount) * 100) / 100;
     if (!eventName) throw new ResaleError('VALIDATION', 'Add the event name.');
-    if (!Number.isFinite(quantity) || quantity < 1 || quantity > 100) throw new ResaleError('VALIDATION', 'Quantity should be between 1 and 100.');
-    if (!Number.isFinite(unitPrice) || unitPrice < 1) throw new ResaleError('VALIDATION', 'Price per ticket should be at least ₹1.');
-    const amount = Math.round(unitPrice * quantity * 100) / 100;
+    if (!Number.isFinite(amount) || amount < 1) throw new ResaleError('VALIDATION', 'The amount should be at least ₹1.');
     if (amount > MAX_AMOUNT) throw new ResaleError('VALIDATION', `A single link can be at most ₹${MAX_AMOUNT.toLocaleString('en-IN')}.`);
-    if (!buyerName) throw new ResaleError('VALIDATION', "Add the buyer's name.");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(buyerEmail)) throw new ResaleError('VALIDATION', "Check the buyer's email. The payment confirmation goes there.");
-    if (buyerPhoneRaw && !buyerPhone) throw new ResaleError('VALIDATION', "Check the buyer's phone number, or leave it empty.");
-
-    const days = Math.floor(Number(body.expiresInDays ?? 7));
-    const expiresInDays = Number.isFinite(days) ? Math.min(MAX_EXPIRY_DAYS, Math.max(1, days)) : 7;
-
-    return {
-        eventName,
-        eventDate: /^\d{4}-\d{2}-\d{2}$/.test(str(body.eventDate, 10)) ? str(body.eventDate, 10) : '',
-        venue: str(body.venue, 140),
-        ticketType,
-        quantity,
-        unitPrice,
-        amount,
-        buyerName,
-        buyerEmail,
-        buyerPhone,
-        note: str(body.note, 500),
-        notify: { email: body.notifyEmail !== false, sms: body.notifySms !== false && Boolean(buyerPhone) },
-        expiresAt: new Date(now + expiresInDays * 86400000).toISOString(),
-    };
+    return { eventName, amount, expiresAt: new Date(now + LINK_DAYS * 86400000).toISOString() };
 };
 
-const linkDescription = (r) => [
-    `${r.quantity} × ${r.ticketType}`,
-    r.eventName,
-    r.eventDate,
-    r.venue,
-].filter(Boolean).join(' · ').slice(0, 250);
+const linkDescription = (r) => `Tickets: ${r.eventName}`.slice(0, 250);
 
 /** Razorpay link statuses → ours. partially_paid can't happen (partial payments are off). */
 const fromRazorpayStatus = (status) => ({ paid: 'paid', cancelled: 'cancelled', expired: 'expired' }[status] || 'awaiting');
@@ -107,7 +65,7 @@ const publicRow = (id, d) => ({ id, ...d });
  * Marks a resale link paid and sends the "payment received" email. Safe to call
  * from the webhook and the staff "check" button for the same payment.
  */
-export const settleResale = async (db, resaleId, { linkId, paymentId, amount, method } = {}, { mail = sendTransactional, now = new Date().toISOString() } = {}) => {
+export const settleResale = async (db, resaleId, { linkId, paymentId, amount, method, email, contact } = {}, { mail = sendTransactional, now = new Date().toISOString() } = {}) => {
     const ref = db.collection(RESALE_COLLECTION).doc(String(resaleId));
     const result = await db.runTransaction(async (tx) => {
         const snap = await tx.get(ref);
@@ -121,6 +79,9 @@ export const settleResale = async (db, resaleId, { linkId, paymentId, amount, me
             paymentId: String(paymentId || ''),
             paidAmount: Number.isFinite(Number(amount)) ? Number(amount) : r.amount,
             ...(method ? { paymentMethod: String(method) } : {}),
+            // The buyer typed these on Razorpay's page.
+            ...(!r.buyerEmail && email ? { buyerEmail: String(email).trim().toLowerCase().slice(0, 200) } : {}),
+            ...(!r.buyerPhone && contact ? { buyerPhone: String(contact).slice(0, 20) } : {}),
             updatedAt: now,
         };
         tx.update(ref, patch);
@@ -130,7 +91,10 @@ export const settleResale = async (db, resaleId, { linkId, paymentId, amount, me
 
     const { resale } = result;
     // Sends once per link (the idempotency key), so a retry or a second report won't email twice.
-    if (resale.emailStatus !== 'sent') {
+    if (resale.emailStatus !== 'sent' && !resale.buyerEmail) {
+        await ref.update({ emailStatus: 'no_email' }).catch(() => {});
+        resale.emailStatus = 'no_email';
+    } else if (resale.emailStatus !== 'sent') {
         const sent = await mail('resale-payment-received', resale.buyerEmail, {
             name: resale.buyerName,
             eventName: resale.eventName,
@@ -168,6 +132,8 @@ export const settleResaleFromWebhook = async (db, link, payment, opts) => {
         paymentId: payment?.id,
         amount: Number(payment?.amount ?? link.amount_paid) / 100,
         method: payment?.method,
+        email: payment?.email,
+        contact: payment?.contact,
     }, opts);
     return out.found;
 };
@@ -179,11 +145,18 @@ const refreshFromRazorpay = async (db, id, r, opts) => {
     const status = fromRazorpayStatus(link.status);
     if (status === 'paid') {
         const payment = (link.payments || []).find(p => p.status === 'captured' || p.status === 'authorized') || (link.payments || [])[0] || {};
+        const paymentId = payment.payment_id || payment.id;
+        // The link only lists payment ids; the buyer's email is on the payment itself.
+        const full = paymentId && !r.buyerEmail
+            ? await razorpay(`/payments/${encodeURIComponent(paymentId)}`).catch(() => null)
+            : null;
         const out = await settleResale(db, id, {
             linkId: r.linkId,
-            paymentId: payment.payment_id || payment.id,
+            paymentId,
             amount: Number(payment.amount ?? link.amount_paid) / 100,
-            method: payment.method,
+            method: payment.method || full?.method,
+            email: full?.email,
+            contact: full?.contact,
         }, opts);
         return out.resale;
     }
@@ -223,15 +196,13 @@ const createAction = async (db, body, ctx) => {
         refCode = makeResaleRef();
     }
 
-    const { notify, ...fields } = input;
     const record = {
-        ...fields,
+        ...input,
         ref: refCode,
         status: 'awaiting',
         gateway: 'razorpay',
         linkId: '',
         shortUrl: '',
-        notifiedBy: notify,
         createdAt: now,
         updatedAt: now,
         createdBy: ctx.staffEmail || null,
@@ -248,13 +219,8 @@ const createAction = async (db, body, ctx) => {
                 reference_id: refCode,
                 description: linkDescription(input),
                 expire_by: Math.floor(new Date(input.expiresAt).getTime() / 1000),
-                customer: {
-                    name: input.buyerName,
-                    email: input.buyerEmail,
-                    ...(input.buyerPhone ? { contact: input.buyerPhone } : {}),
-                },
-                notify,
-                reminder_enable: notify.email || notify.sms,
+                // No customer: the buyer fills in their email and phone on Razorpay's page.
+                notify: { sms: false, email: false },
                 notes: { kind: 'resale', resaleId: docRef.id, ref: refCode, event: input.eventName.slice(0, 200) },
             },
         });
