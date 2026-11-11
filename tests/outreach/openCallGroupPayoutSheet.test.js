@@ -167,6 +167,44 @@ describe('Campaign open to registered creators', () => {
     });
 });
 
+describe('Campaign open to the people added on the People tab', () => {
+    beforeEach(() => {
+        db.store.set('campaigns/c1/applications/i1', { fullName: 'Sanchita Verma', phone: '+918471000001', status: 'applied', source: 'import', uid: null });
+        db.store.set('campaigns/c1/applications/i2', { fullName: 'Pratiksha', phone: '+918299000002', status: 'applied', source: 'import', uid: null });
+        db.store.set('campaigns/c1/applications/i3', { fullName: 'Gone', phone: '+918299000003', status: 'removed', source: 'import', uid: null });
+    });
+
+    it('goes only to the added people picked, never to registered creators, and once each', async () => {
+        let res = await call('outreach-open-send', { campaignId: 'c1', appIds: ['i1', 'i2', 'i3', 'a1'] });
+        expect(res.statusCode).toBe(200);
+        expect(res.body.queued).toBe(2);
+        // i3 was removed and a1 applied through the form: neither was added here.
+        expect(res.body.skipped.notEligible).toBe(2);
+        await drain();
+        expect(sent.map(m => m.to).sort()).toEqual(['918299000002', '918471000001']);
+        expect(sent[0].template.name).toBe('campaign_invite');
+        expect(sent.find(m => m.to === '918471000001').template.components.find(c => c.type === 'body').parameters[0].text).toBe('Sanchita');
+
+        res = await call('outreach-open-send', { campaignId: 'c1', appIds: ['i1'] });
+        expect(res.body.queued).toBe(0);
+        expect(res.body.skipped.already).toBe(1);
+    });
+
+    it('needs no criteria, and the list shows how it went to each', async () => {
+        await call('outreach-open-send', { campaignId: 'c1', appIds: ['i1'] });
+        await drain();
+        const res = await call('outreach-open-audience', { campaignId: 'c1' });
+        expect(Object.keys(res.body.people).sort()).toEqual(['i1', 'i2']);
+        expect(res.body.people.i1.status).toBe('sent');
+        expect(res.body.people.i2).toBeNull();
+    });
+
+    it('needs the campaign to be taking applications', async () => {
+        db.store.set('campaigns/c1', { ...db.store.get('campaigns/c1'), status: 'Closed' });
+        expect((await call('outreach-open-send', { campaignId: 'c1', appIds: ['i1'] })).statusCode).toBe(409);
+    });
+});
+
 describe('the campaign-live message with a View the brief button', () => {
     const CITY = { city: 'campaign', min: 0, niche: 'any', mode: 'all' };
 

@@ -12,6 +12,11 @@
  *   outreach-open-send { campaignId, creatorIds, criteria: { cities, min, niche, mode }, includeUnverified?, again? }
  *     (cities: the cities picked, empty = all; older pages send city: 'campaign'|'any' instead)
  *     → { queued, skipped: { noNumber, whatsappOff, already, notEligible, notMatching } }
+ *   outreach-open-send { campaignId, appIds, again? }
+ *     The same message to people the team added to this campaign (People → Add people, source 'import'),
+ *     and only to them: no registered creator gets it from this send. No criteria needed, since the team
+ *     picked these people by hand. → { queued, skipped: { noNumber, whatsappOff, already, notEligible } }
+ *   outreach-open-audience also returns people: { [appId]: message } for those added people.
  *
  * Who's listed: every creator registered on the portal (the creators collection)
  * whose profile isn't rejected or suspended. The
@@ -107,7 +112,7 @@ const messageStates = async (db, jobs) => {
 /* What the campaign already knows: who applied (by account and number) and how each message went. */
 const campaignState = async (db, campaignId, { receipts = false } = {}) => {
     const [apps, jobs] = await Promise.all([
-        db.collection('campaigns').doc(campaignId).collection('applications').select('uid', 'phone', 'creatorId').get(),
+        db.collection('campaigns').doc(campaignId).collection('applications').select('uid', 'phone', 'creatorId', 'source', 'status', 'fullName').get(),
         db.collection('outreach_queue').where('campaignId', '==', campaignId).where('kind', '==', 'template')
             .select('status', 'messageId', 'sentAt', 'createdAt', 'lastError', 'data.phone').get(),
     ]);
@@ -121,7 +126,9 @@ const campaignState = async (db, campaignId, { receipts = false } = {}) => {
     });
     const told = new Map(jobs.docs.map(d => [d.id, d.data().status]));
     const messages = receipts ? await messageStates(db, jobs.docs) : new Map();
-    return { appliedUids, appliedPhones, told, messages };
+    // The people the team added by hand (People → Add people), who can get this message too.
+    const added = apps.docs.filter(d => d.data().source === 'import' && d.data().status !== 'removed').map(d => ({ id: d.id, ...d.data() }));
+    return { appliedUids, appliedPhones, told, messages, added };
 };
 
 const applied = (state, c, phone) => state.appliedUids.has(c.uid) || state.appliedUids.has(c.id) || (phone && state.appliedPhones.has(phone));
@@ -159,9 +166,14 @@ export const handleOpenAudience = async (req, res, { db }) => {
             optedOut: Boolean(phone && optedOut.has(contactIdFor(phone))),
         };
     });
+    const people = Object.fromEntries(state.added.map((a) => {
+        const m = state.messages.get(inviteJobId(campaignId, a.uid, toE164(a.phone))) || null;
+        return [a.id, m ? { status: m.status, at: m.at, error: m.error, replied: m.replied, repliedAt: m.repliedAt } : null];
+    }));
     return send(res, 200, {
         success: true,
         creators,
+        people,
         criteria: { cities: campaignCities(campaign), minFollowers: minFollowersFor(campaign), niches: wantedNiches(campaign) },
         open: applicationsOpen(campaign).open,
         live: isWhatsAppConfigured() && Boolean(inviteTemplate()),
@@ -169,9 +181,42 @@ export const handleOpenAudience = async (req, res, { db }) => {
     });
 };
 
+/* The campaign's message to people the team added (imported numbers), only those picked. */
+const sendToAdded = async ({ res, db, actor, campRef, campaign, ids, again }) => {
+    const state = await campaignState(db, campaign.id);
+    const added = new Map(state.added.map(a => [a.id, a]));
+    const picked = ids.map(id => added.get(id)).filter(Boolean);
+    const notEligible = ids.length - picked.length;
+    // The team typed or imported these numbers (with where they came from), so they count as theirs to use.
+    // No id here: without an account the job is keyed by number (inviteJobId), which the audience reads back.
+    const people = picked.map(a => ({ uid: a.uid || null, phone: a.phone, isPhoneVerified: true, name: a.fullName || '' }));
+    const out = await queueCampaignInvites({ db, campaign, creators: people, again, createdBy: actor.actorEmail || 'Newbi team' });
+    if (out.off) return send(res, 409, { success: false, error: 'The campaign-open template isn’t switched on.' });
+    if (out.queued) {
+        await campRef.collection('audit').doc().set({
+            appId: null, field: 'campaign_open', from: null, to: `${out.queued} queued`, source: 'whatsapp_api',
+            note: `Campaign invite to ${out.queued} ${out.queued === 1 ? 'person' : 'people'} added to the campaign`, ...actor, at: nowIso(),
+        });
+    }
+    return send(res, 200, { success: true, queued: out.queued, skipped: { ...out.skipped, notEligible, notMatching: 0 } });
+};
+
 export const handleOpenSend = async (req, res, { db, actor }) => {
     const b = req.body || {};
     const campaignId = str(b.campaignId, 120);
+    if (Array.isArray(b.appIds)) {
+        const appIds = [...new Set(b.appIds.map(id => str(id, 128)).filter(Boolean))];
+        if (!campaignId || !appIds.length) return send(res, 400, { success: false, error: 'Choose at least one person.' });
+        if (appIds.length > MAX_SEND) return send(res, 400, { success: false, error: `Up to ${MAX_SEND} at a time.` });
+        if (!isWhatsAppConfigured()) return send(res, 409, { success: false, error: 'The WhatsApp API isn’t set up yet.' });
+        if (!inviteTemplate()) return send(res, 409, { success: false, error: 'Neither campaign_live_brief nor campaign_invite is switched on (WHATSAPP_TEMPLATE_CAMPAIGN_LIVE_BRIEF or _CAMPAIGN_INVITE).' });
+        const campRef = db.collection('campaigns').doc(campaignId);
+        const campSnap = await campRef.get();
+        if (!campSnap.exists) return send(res, 404, { success: false, error: 'Campaign not found.' });
+        const campaign = { id: campaignId, ...campSnap.data() };
+        if (!applicationsOpen(campaign).open) return send(res, 409, { success: false, error: 'This campaign isn’t taking applications. Set it to Open (and check the deadline) first.' });
+        return sendToAdded({ res, db, actor, campRef, campaign, ids: appIds, again: b.again === true });
+    }
     const ids = [...new Set((Array.isArray(b.creatorIds) ? b.creatorIds : []).map(id => str(id, 128)).filter(Boolean))];
     if (!campaignId || !ids.length) return send(res, 400, { success: false, error: 'Choose at least one creator.' });
     if (ids.length > MAX_SEND) return send(res, 400, { success: false, error: `Up to ${MAX_SEND} at a time.` });

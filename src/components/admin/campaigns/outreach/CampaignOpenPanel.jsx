@@ -25,6 +25,10 @@ import { Handle, Bubble, followers } from './parts';
  * pick other cities (or all), like the creator admin's city filter, add the
  * campaign's niches, choose all or any of the criteria, widen it,
  * untick people, and send. Server: api/_lib/outreachOpenCall.js.
+ *
+ * Or, with "People you added", the same message goes only to the people the
+ * team added on the People tab (Add people → import), never to registered
+ * creators. No criteria there: the team picked them by hand.
  */
 
 const fill = (body, params) => String(body || '').replace(/\{\{(\d+)\}\}/g, (_, n) => params[Number(n) - 1] ?? '');
@@ -45,9 +49,15 @@ const blockedLabel = (c) => (!c.phone ? 'No number' : c.optedOut ? 'Replied STOP
 const when = (iso) => (iso ? new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '');
 const FALLBACK_BUTTONS = { [LIVE_BRIEF_TEMPLATE]: ['↗ View the brief', 'Stop updates'], campaign_invite: ['↗ Apply'] };
 
-const CampaignOpenPanel = ({ campaign, live }) => {
+const isAdded = (a) => a.source === 'import' && a.status !== 'removed';
+
+const CampaignOpenPanel = ({ campaign, live, applications = [] }) => {
     const addToast = useStore(s => s.addToast);
-    const [state, setState] = useState({ loading: true, error: '', creators: [], criteria: { cities: [], minFollowers: 0, niches: [] }, open: true, template: null });
+    const addedApps = useMemo(() => applications.filter(isAdded), [applications]);
+    // Who it goes to: the people added to this campaign (when there are any), or registered creators who fit.
+    const [who, setWho] = useState(() => (applications.some(isAdded) ? 'added' : 'registered'));
+    const toAdded = who === 'added';
+    const [state, setState] = useState({ loading: true, error: '', creators: [], people: {}, criteria: { cities: [], minFollowers: 0, niches: [] }, open: true, template: null });
     const [templates, setTemplates] = useState([]);
     // The cities picked: starts with the campaign's once it loads; empty = all cities.
     const [pickedCities, setPickedCities] = useState(null);
@@ -67,7 +77,7 @@ const CampaignOpenPanel = ({ campaign, live }) => {
         setState(s => ({ ...s, loading: true, error: '' }));
         const r = await callOutreach('outreach-open-audience', { campaignId: campaign.id });
         if (!r.ok) { setState(s => ({ ...s, loading: false, error: r.error })); return; }
-        setState({ loading: false, error: '', creators: r.data.creators, criteria: { niches: [], ...r.data.criteria }, open: r.data.open, template: r.data.template || null });
+        setState({ loading: false, error: '', creators: r.data.creators, people: r.data.people || {}, criteria: { niches: [], ...r.data.criteria }, open: r.data.open, template: r.data.template || null });
         setMinFollowers(m => (m === '' ? String(r.data.criteria.minFollowers || 0) : m));
         setPickedCities(list => list ?? cleanCities(r.data.criteria.cities));
     };
@@ -104,9 +114,19 @@ const CampaignOpenPanel = ({ campaign, live }) => {
     // messaged yet, queued, sent, delivered, read, replied, didn't go, applied, or can't be messaged. Only "to send"
     // and "didn't go" are ticked; people who already have the message can be ticked with "Send again to people
     // already sent". Unverified numbers are left out unless included.
-    const audience = useMemo(() => state.creators
+    const registered = useMemo(() => state.creators
         .filter(c => matchesCriteria(c, criteria, mode) && (withUnverified || c.verified))
         .map(c => ({ ...c, status: statusOf(c) })), [state.creators, criteria, mode, withUnverified]);
+    // The people added on the People tab, with how this campaign's message went to each.
+    const added = useMemo(() => addedApps.map((a) => {
+        const c = {
+            id: a.id, name: a.fullName || 'Unnamed', handle: a.instagramHandle || '', city: a.city || '', followers: a.followerCount ?? null,
+            phone: a.phone || '', verified: true, optedOut: Boolean(a.whatsappOptOut), message: state.people[a.id] || null,
+        };
+        return { ...c, status: statusOf(c) };
+    }), [addedApps, state.people]);
+    const audience = toAdded ? added : registered;
+    useEffect(() => { setStatusFilter('all'); setQ(''); }, [who]);
     const canPick = useCallback((c) => needsMessage(c.status) || (withTold && hasMessage(c.status)), [withTold]);
     useEffect(() => { setPicked(new Set(audience.filter(canPick).map(c => c.id))); }, [audience, canPick]);
     const counts = useMemo(() => audience.reduce((m, c) => ({ ...m, [c.status]: (m[c.status] || 0) + 1 }), {}), [audience]);
@@ -130,19 +150,21 @@ const CampaignOpenPanel = ({ campaign, live }) => {
     const preview = fill(tpl?.body || (templateName === LIVE_BRIEF_TEMPLATE ? LIVE_BRIEF_BODY : FALLBACK_BODY), params);
     const buttons = tpl?.buttons?.length ? tpl.buttons.map(b => (b.url ? `↗ ${b.text}` : b.text)) : FALLBACK_BUTTONS[templateName] || FALLBACK_BUTTONS.campaign_invite;
     // Never every registered creator: at least one criterion has to narrow it (the server checks this too).
-    const canSend = live && state.open && criteria.length > 0 && recipients.length > 0 && !sending;
+    const canSend = live && state.open && (toAdded || criteria.length > 0) && recipients.length > 0 && !sending;
 
     const sendNow = async () => {
         setSending(true);
-        const r = await callOutreach('outreach-open-send', {
-            campaignId: campaign.id, creatorIds: recipients.map(c => c.id), includeUnverified: withUnverified, again,
-            criteria: { cities: chosenCities, min, niche, mode },
-        });
+        const r = await callOutreach('outreach-open-send', toAdded
+            ? { campaignId: campaign.id, appIds: recipients.map(c => c.id), again }
+            : {
+                campaignId: campaign.id, creatorIds: recipients.map(c => c.id), includeUnverified: withUnverified, again,
+                criteria: { cities: chosenCities, min, niche, mode },
+            });
         setSending(false);
         setConfirm(false);
         if (!r.ok) { addToast(r.error || 'Please try again.', 'error', { title: 'Not sent' }); return; }
         const s = r.data.skipped || {};
-        const notes = [s.already && `${s.already} already got it`, s.noNumber && `${s.noNumber} without a usable number`, s.whatsappOff && `${s.whatsappOff} turned WhatsApp off`, s.notEligible && `${s.notEligible} applied or can’t be messaged`, s.notMatching && `${s.notMatching} don’t fit the criteria`].filter(Boolean);
+        const notes = [s.already && `${s.already} already got it`, s.noNumber && `${s.noNumber} without a usable number`, s.whatsappOff && `${s.whatsappOff} turned WhatsApp off`, s.notEligible && (toAdded ? `${s.notEligible} no longer on the campaign` : `${s.notEligible} applied or can’t be messaged`), s.notMatching && `${s.notMatching} don’t fit the criteria`].filter(Boolean);
         addToast(`${r.data.queued} queued${notes.length ? `; ${notes.join(', ')}` : ''}. They go out a few a minute.`, r.data.queued ? 'success' : 'warning', { title: 'Campaign open on WhatsApp' });
         load();
     };
@@ -161,8 +183,28 @@ const CampaignOpenPanel = ({ campaign, live }) => {
                         <TriangleAlert size={15} className="mt-0.5 shrink-0" /> This campaign isn’t taking applications, so there’s nothing to apply to. Set it to Open (and check the deadline) first.
                     </p>
                 )}
-                <p className="text-[13px] leading-snug text-gray-500">Registered creators who haven’t applied yet and meet everything below. Each gets it once per campaign.</p>
+                <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Send to">
+                    {[['added', `People you added (${added.length})`], ['registered', 'Registered creators who fit']].map(([k, label]) => (
+                        <button
+                            key={k}
+                            type="button"
+                            role="tab"
+                            aria-selected={who === k}
+                            onClick={() => setWho(k)}
+                            className={cn('h-9 rounded-full px-3.5 text-[13px] font-semibold',
+                                who === k ? 'bg-gray-900 text-white dark:bg-white dark:text-black' : 'bg-black/[0.04] text-gray-600 dark:bg-white/[0.06] dark:text-zinc-300')}
+                        >
+                            {label}
+                        </button>
+                    ))}
+                </div>
+                <p className="text-[13px] leading-snug text-gray-500">
+                    {toAdded
+                        ? 'Only the people you added on the People tab (Add people). Registered creators don’t get it from here. Each gets it once per campaign.'
+                        : 'Registered creators who haven’t applied yet and meet everything below. Each gets it once per campaign.'}
+                </p>
 
+                {!toAdded && <>
                 <div className="space-y-3 rounded-2xl bg-black/[0.025] p-3 dark:bg-white/[0.03]">
                     <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_11rem]">
                         <Field label="Cities">
@@ -204,17 +246,21 @@ const CampaignOpenPanel = ({ campaign, live }) => {
                     ))}
                 </div>
 
+                </>}
+
                 <div className="flex flex-wrap gap-x-5 gap-y-2">
-                    <label className="flex items-center gap-2 text-[13px] font-medium">
-                        <input type="checkbox" checked={withUnverified} onChange={(e) => setWithUnverified(e.target.checked)} className="h-4 w-4 accent-emerald-600" />
-                        Include numbers not verified yet ({left.unverified})
-                    </label>
+                    {!toAdded && (
+                        <label className="flex items-center gap-2 text-[13px] font-medium">
+                            <input type="checkbox" checked={withUnverified} onChange={(e) => setWithUnverified(e.target.checked)} className="h-4 w-4 accent-emerald-600" />
+                            Include numbers not verified yet ({left.unverified})
+                        </label>
+                    )}
                     <label className="flex items-center gap-2 text-[13px] font-medium">
                         <input type="checkbox" checked={withTold} onChange={(e) => setWithTold(e.target.checked)} className="h-4 w-4 accent-emerald-600" />
                         Send again to people already sent ({left.told})
                     </label>
                 </div>
-                {withUnverified && <p className="text-[12px] text-amber-600 dark:text-amber-300">An unverified number was typed on the sign-up form and could belong to someone else. Messages to people who didn’t expect them hurt the number’s WhatsApp rating.</p>}
+                {!toAdded && withUnverified && <p className="text-[12px] text-amber-600 dark:text-amber-300">An unverified number was typed on the sign-up form and could belong to someone else. Messages to people who didn’t expect them hurt the number’s WhatsApp rating.</p>}
 
                 <div className="space-y-2">
                     <div className="overflow-hidden rounded-2xl border border-black/[0.06] dark:border-white/[0.08]">
@@ -246,7 +292,7 @@ const CampaignOpenPanel = ({ campaign, live }) => {
                             </div>
                         )}
                         {state.loading ? (
-                            <p className="flex items-center justify-center gap-2 px-4 py-8 text-[13px] text-gray-500"><Spinner /> Finding creators…</p>
+                            <p className="flex items-center justify-center gap-2 px-4 py-8 text-[13px] text-gray-500"><Spinner /> {toAdded ? 'Loading…' : 'Finding creators…'}</p>
                         ) : state.error ? (
                             <p className="px-4 py-6 text-center text-[13px] text-rose-600">{state.error}</p>
                         ) : shown.length ? (
@@ -257,7 +303,7 @@ const CampaignOpenPanel = ({ campaign, live }) => {
                                             <input type="checkbox" checked={picked.has(c.id) && canPick(c)} disabled={!canPick(c)} onChange={() => setPicked(s => { const n = new Set(s); if (n.has(c.id)) n.delete(c.id); else n.add(c.id); return n; })} className="h-4 w-4 accent-emerald-600" />
                                             <span className="min-w-0 flex-1">
                                                 <span className="block truncate text-[13.5px] font-semibold">{c.name}</span>
-                                                <span className="block truncate text-[12px] text-gray-500">{c.handle ? <><Handle handle={c.handle} /> · </> : null}{followers(c.followers)} · {c.city || 'No city'}</span>
+                                                <span className="block truncate text-[12px] text-gray-500">{c.handle ? <><Handle handle={c.handle} /> · </> : null}{toAdded ? [c.followers != null && followers(c.followers), c.city, c.phone].filter(Boolean).join(' · ') : `${followers(c.followers)} · ${c.city || 'No city'}`}</span>
                                             </span>
                                             {!c.verified && <Badge tone="amber">Not verified</Badge>}
                                             {c.status !== 'new' && (
@@ -273,7 +319,7 @@ const CampaignOpenPanel = ({ campaign, live }) => {
                                 ))}
                             </ul>
                         ) : (
-                            <p className="px-4 py-6 text-center text-[13px] text-gray-500">{audience.length ? (query ? 'Nobody matches that search.' : 'Nobody with this status.') : 'Nobody matches. Try more cities, a lower follower count, or include unverified numbers.'}</p>
+                            <p className="px-4 py-6 text-center text-[13px] text-gray-500">{audience.length ? (query ? 'Nobody matches that search.' : 'Nobody with this status.') : toAdded ? 'Nobody added yet. Use Add people on the People tab.' : 'Nobody matches. Try more cities, a lower follower count, or include unverified numbers.'}</p>
                         )}
                     </div>
                     {shown.length > 500 && <p className="text-[11.5px] text-gray-500">Showing 500 of {shown.length.toLocaleString('en-IN')}; everyone picked is sent to.</p>}
@@ -285,7 +331,7 @@ const CampaignOpenPanel = ({ campaign, live }) => {
                     <p className="text-[12px] font-bold text-gray-500">What {sample ? firstNameOf(sample.name) || 'they' : 'they'} will get{tpl ? '' : ' (roughly; the approved text loads from Meta)'}</p>
                     <Bubble text={preview} image={campaign.image || campaign.coverImage || campaign.bannerImage || campaign.thumbnail} buttons={buttons} />
                     <Button variant="success" className="h-11 w-full" disabled={!canSend} onClick={() => setConfirm(true)}>
-                        {sending ? <Spinner /> : <Send size={14} />} {!live ? 'Waiting for Meta approval' : !state.open ? 'Applications aren’t open' : !criteria.length ? 'Set a criterion first' : recipients.length ? `Send to ${recipients.length}` : 'Nobody picked'}
+                        {sending ? <Spinner /> : <Send size={14} />} {!live ? 'Waiting for Meta approval' : !state.open ? 'Applications aren’t open' : !toAdded && !criteria.length ? 'Set a criterion first' : recipients.length ? `Send to ${recipients.length}` : 'Nobody picked'}
                     </Button>
                 </Card>
             </div>
@@ -293,7 +339,7 @@ const CampaignOpenPanel = ({ campaign, live }) => {
             <ConfirmSheet
                 open={confirm}
                 onClose={() => setConfirm(false)}
-                title={`Tell ${recipients.length} creators on WhatsApp?`}
+                title={`Tell ${recipients.length} ${toAdded ? (recipients.length === 1 ? 'person' : 'people') : 'creators'} on WhatsApp?`}
                 message={`Each person gets this campaign’s message from the Newbi WhatsApp number, with ${templateName === LIVE_BRIEF_TEMPLATE ? 'a View the brief button that opens the campaign in the app' : 'an Apply button'}. It can’t be taken back once it’s sent.`}
                 confirmLabel={sending ? 'Sending…' : `Send to ${recipients.length}`}
                 onConfirm={sendNow}

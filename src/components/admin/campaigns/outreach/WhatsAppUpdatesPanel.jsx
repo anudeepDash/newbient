@@ -32,7 +32,8 @@ import UserCheck from 'lucide-react/dist/esm/icons/user-check';
  * place. Only messages whose template Meta approved (and is switched on) are
  * offered; the rest are named in one line at the bottom. The shortlist invite
  * is the existing invite flow (MessagesPanel, with the by-hand fallback), and
- * Campaign is live goes to registered creators who fit (CampaignOpenPanel).
+ * Campaign is live goes to the people added on the People tab, or to registered
+ * creators who fit (CampaignOpenPanel).
  *
  * The rest: the team picks a message, who gets it, and sends it
  * through the WhatsApp API (api/_lib/outreachBroadcast.js). The queue keeps to
@@ -44,7 +45,7 @@ import UserCheck from 'lucide-react/dist/esm/icons/user-check';
  */
 
 const MESSAGES = [
-    { kind: 'campaign_open', label: 'Campaign is live', icon: DoorOpen, tone: 'blue', hint: 'Registered creators who fit the campaign', segments: [] },
+    { kind: 'campaign_open', label: 'Campaign is live', icon: DoorOpen, tone: 'blue', hint: 'People you added, or registered creators who fit the campaign', segments: [] },
     { kind: 'invite', label: 'Shortlist invite', icon: UserCheck, tone: 'violet', hint: 'Shortlisted people: the brief and the group', segments: [] },
     { kind: 'task_live', label: 'Task is live', icon: ClipboardList, tone: 'green', hint: 'The brief, links and due date', segments: ['owes', 'approved'] },
     { kind: 'brief_changed', label: 'Brief changed', icon: FilePen, tone: 'amber', hint: 'What changed, with their task link', segments: ['approved', 'owes'] },
@@ -247,7 +248,7 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
 
             {pick === 'invite' ? (
                 <MessagesPanel campaign={campaign} applications={applications} settings={settings} api={api} wame={invite?.wame} onStatus={invite?.onStatus} onOpen={invite?.onOpen} onSetup={invite?.onSetup} onSendApi={invite?.onSendApi} onStopApi={invite?.onStopApi} onSentNow={onSent} />
-            ) : pick === 'campaign_open' ? <CampaignOpenPanel campaign={campaign} live={live('campaign_open')} /> : (
+            ) : pick === 'campaign_open' ? <CampaignOpenPanel campaign={campaign} live={live('campaign_open')} applications={applications} /> : (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,21rem)]">
                 <Card className="min-w-0 space-y-5 p-4">
                     {!api?.configured && <p className="flex items-start gap-2 rounded-xl bg-amber-500/10 p-3 text-[13px] font-medium text-amber-700 dark:text-amber-300"><TriangleAlert size={15} className="mt-0.5 shrink-0" /> The WhatsApp API isn’t set up yet.</p>}
