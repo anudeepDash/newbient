@@ -10,7 +10,8 @@
  *   ticket-resale-list     recent links; refreshes a few unpaid ones with Razorpay
  *   ticket-resale-create   save the details and open the Razorpay payment link
  *   ticket-resale-sync     ask Razorpay about one link (paid, expired, cancelled)
- *   ticket-resale-cancel   cancel an unpaid link
+ *   ticket-resale-cancel   cancel an unpaid link (or close a payment page)
+ *   ticket-resale-update   change a payment page's picture or name
  *
  * Razorpay's webhook (event payment_link.paid) settles links too: see razorpayWebhook.js.
  * Records live in `ticket_resales`, apart from `ticket_orders`, so they never
@@ -19,7 +20,7 @@
 import crypto from 'node:crypto';
 import { razorpay, razorpayConfigured } from './razorpay.js';
 import { sendTransactional } from './mail/send.js';
-import { PAGE_KIND, createPage, closePage, resendPageEmail } from './payPages.js';
+import { PAGE_KIND, createPage, updatePage, closePage, resendPageEmail } from './payPages.js';
 
 export const RESALE_COLLECTION = 'ticket_resales';
 export const RESALE_STATUSES = ['awaiting', 'paid', 'cancelled', 'expired'];
@@ -279,6 +280,7 @@ const cancelAction = async (db, body) => {
 
 export const RESALE_ACTIONS = {
     'ticket-resale-list': listAction,
+    'ticket-resale-update': (db, body) => updatePage(db, body),
     'ticket-resale-create': createAction,
     'ticket-resale-sync': syncAction,
     'ticket-resale-cancel': cancelAction,

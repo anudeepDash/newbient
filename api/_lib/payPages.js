@@ -26,6 +26,19 @@ const MAX_PAYMENTS = 1000; // per page, keeps the document well under Firestore'
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const str = (v, max) => String(v ?? '').trim().slice(0, max);
+
+/** The page's picture: an https link (an upload from the admin, or a pasted link), or ''. */
+export const readImage = (value) => {
+    const raw = str(value, 1000);
+    if (!raw) return '';
+    try {
+        const u = new URL(raw);
+        if (u.protocol !== 'https:') throw new Error('not https');
+        return u.toString();
+    } catch {
+        throw new ResaleError('VALIDATION', 'That image link doesn’t work. Upload the picture instead.');
+    }
+};
 const nowIso = () => new Date().toISOString();
 
 const loadPage = async (db, id) => {
@@ -57,15 +70,17 @@ export const readPayerInput = (body = {}) => {
     return { amount, name, email, phone: digits.length === 10 ? `+91${digits}` : `+${digits}` };
 };
 
-/** Staff: a new page, with just the event name. */
+/** Staff: a new page, with the event name and, if they like, a picture. */
 export const createPage = async (db, body, ctx = {}) => {
     const eventName = str(body.eventName, 140);
     if (!eventName) throw new ResaleError('VALIDATION', 'Add the event name.');
+    const image = readImage(body.image);
     const now = nowIso();
     const docRef = db.collection(RESALE_COLLECTION).doc();
     const record = {
         kind: PAGE_KIND,
         eventName,
+        image,
         ref: makeResaleRef(),
         status: 'open',
         gateway: 'razorpay',
@@ -78,6 +93,22 @@ export const createPage = async (db, body, ctx = {}) => {
     };
     await docRef.set(record);
     return { success: true, resale: { id: docRef.id, ...record } };
+};
+
+/** Staff: change a page's picture (or name). */
+export const updatePage = async (db, body) => {
+    const { ref, page } = await loadPage(db, body.id);
+    const patch = {};
+    if (body.image !== undefined) patch.image = readImage(body.image);
+    if (body.eventName !== undefined) {
+        const eventName = str(body.eventName, 140);
+        if (!eventName) throw new ResaleError('VALIDATION', 'Add the event name.');
+        patch.eventName = eventName;
+    }
+    if (!Object.keys(patch).length) return { success: true, resale: { id: ref.id, ...page } };
+    patch.updatedAt = nowIso();
+    await ref.update(patch);
+    return { success: true, resale: { id: ref.id, ...page, ...patch } };
 };
 
 /** Staff: stop a page taking payments. What was paid stays. */
@@ -93,6 +124,7 @@ const sendPaymentEmail = async (ref, page, entry, mail) => {
     const sent = await mail('resale-payment-received', entry.email, {
         name: entry.name,
         eventName: page.eventName,
+        image: page.image || '',
         amount: entry.amount,
         ref: page.ref,
         paymentId: entry.paymentId,
@@ -190,7 +222,7 @@ const viewAction = async (db, body) => {
     const { ref, page } = await loadPage(db, body.id);
     return {
         success: true,
-        page: { id: ref.id, eventName: page.eventName, open: page.status === 'open' && razorpayConfigured() },
+        page: { id: ref.id, eventName: page.eventName, image: page.image || '', open: page.status === 'open' && razorpayConfigured() },
     };
 };
 
@@ -266,7 +298,15 @@ const confirmAction = async (db, body, ctx = {}) => {
         phone: order.notes.phone || payment?.contact,
         method: payment?.method,
     }, ctx.mailOpts);
-    return { success: true, paid: true, paymentId, amount: out.entry?.amount, emailed: out.entry?.emailStatus === 'sent' };
+    return {
+        success: true,
+        paid: true,
+        paymentId,
+        amount: out.entry?.amount,
+        method: out.entry?.method || '',
+        paidAt: out.entry?.paidAt || null,
+        emailed: out.entry?.emailStatus === 'sent',
+    };
 };
 
 export const PAYPAGE_PUBLIC_ACTIONS = {

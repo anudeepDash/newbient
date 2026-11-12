@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import crypto from 'node:crypto';
 import { FakeFirestore } from './helpers/fakeFirestore.js';
 import {
-    PAYPAGE_PUBLIC_ACTIONS, readPayerInput, createPage, closePage, settlePagePayment, settlePageFromWebhook, resendPageEmail,
+    PAYPAGE_PUBLIC_ACTIONS, readPayerInput, createPage, updatePage, closePage, settlePagePayment, settlePageFromWebhook, resendPageEmail,
 } from '../api/_lib/payPages.js';
 import { RESALE_ACTIONS } from '../api/_lib/ticketResale.js';
 
@@ -42,6 +42,24 @@ describe('a payment page', () => {
         expect(resale.ref).toMatch(/^NR-/);
         const closed = await closePage(db, resale.id);
         expect(closed.resale.status).toBe('closed');
+    });
+
+    it('keeps a picture, lets staff change or remove it, and refuses a bad link', async () => {
+        const img = 'https://firebasestorage.googleapis.com/v0/b/x/o/media%2Fa%2Fw1280.webp?alt=media';
+        const { resale } = await createPage(db, { eventName: 'Coldplay', image: img });
+        expect(resale.image).toBe(img);
+        await fails(createPage(db, { eventName: 'Coldplay', image: 'javascript:alert(1)' }), 'VALIDATION');
+        await fails(createPage(db, { eventName: 'Coldplay', image: 'http://example.com/a.jpg' }), 'VALIDATION');
+        const changed = await updatePage(db, { id: resale.id, image: 'https://example.com/b.jpg' });
+        expect(changed.resale.image).toBe('https://example.com/b.jpg');
+        expect((await updatePage(db, { id: resale.id, image: '' })).resale.image).toBe('');
+        expect(db.dump('ticket_resales')[resale.id].image).toBe('');
+    });
+
+    it('puts the picture in the confirmation email', async () => {
+        const { resale } = await createPage(db, { eventName: 'Coldplay', image: 'https://example.com/p.jpg' });
+        await settlePagePayment(db, resale.id, { paymentId: 'pay_1', amount: 100, email: 'a@b.com' }, { mail });
+        expect(mail.mock.calls[0][2].image).toBe('https://example.com/p.jpg');
     });
 
     it('records each payment once, adds it up, and emails each buyer once', async () => {
@@ -115,7 +133,7 @@ describe('paying on a page', () => {
 
     it('shows the page, opens an order for the typed amount, and confirms by signature', async () => {
         const view = await PAYPAGE_PUBLIC_ACTIONS['ticket-paypage-view'](db, { id: pageId });
-        expect(view.page).toEqual({ id: pageId, eventName: 'Coldplay, Mumbai', open: true });
+        expect(view.page).toEqual({ id: pageId, eventName: 'Coldplay, Mumbai', image: '', open: true });
 
         const start = await PAYPAGE_PUBLIC_ACTIONS['ticket-paypage-start'](db, { id: pageId, ...payer() });
         expect(start).toMatchObject({ keyId: 'rzp_test_x', gatewayOrderId: 'order_1', amount: 450000 });

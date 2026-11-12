@@ -3,8 +3,11 @@ import { useParams } from 'react-router-dom';
 import IndianRupee from 'lucide-react/dist/esm/icons/indian-rupee';
 import Lock from 'lucide-react/dist/esm/icons/lock';
 import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
-import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
-import { Button, TextInput, INPUT, ERROR_RING } from '../../components/app';
+import CircleAlert from 'lucide-react/dist/esm/icons/circle-alert';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import { Button, TextInput, Sheet, INPUT, ERROR_RING } from '../../components/app';
+import PayReceipt from './PayReceipt';
 import useDynamicMeta from '../../hooks/useDynamicMeta';
 import { ActionBar, ExpandedHero, ExpandedPage, ExpandedSkeleton, ExpandedTitle } from '../pages/ExpandedCard';
 import { Notice } from '../creator/ui';
@@ -49,6 +52,50 @@ const verify = async (id, orderId, tries) => {
     return last;
 };
 
+/* The pop-up when a payment fails, is left unfinished, or went through but isn't confirmed yet. */
+const PayProblem = ({ problem, busy, onRetry, onCheck, onClose }) => {
+    const t = useT();
+    const unconfirmed = problem?.kind === 'unconfirmed';
+    const copy = {
+        failed: [t('Payment failed'), problem?.message || t('The payment didn’t go through.'), t('No money was taken. Try again, or use another way to pay.')],
+        unfinished: [t('Payment not finished'), t('You closed the payment window before paying.'), t('Nothing was charged. Try again when you’re ready.')],
+        error: [t('Couldn’t start the payment'), problem?.message, t('Nothing was charged.')],
+        unconfirmed: [t('We’re checking your payment'), t('Razorpay says it went through, but we couldn’t confirm it yet.'), problem?.checked
+            ? t('Still waiting. Don’t pay again. If money left your account, the team will confirm it; contact us with the payment ID.')
+            : t('Don’t pay again. Tap Check again in a few seconds.')],
+    }[problem?.kind] || [];
+    const Icon = unconfirmed ? Clock : CircleAlert;
+    return (
+        <Sheet
+            open={Boolean(problem)}
+            onClose={busy ? undefined : onClose}
+            dismissible={!busy}
+            title={copy[0]}
+            footer={(
+                <div className="flex gap-2">
+                    <Button variant="secondary" onClick={onClose} disabled={busy} className="flex-1">{t('Close')}</Button>
+                    {unconfirmed
+                        ? <Button icon={RefreshCw} loading={busy} onClick={onCheck} className="flex-[1.4]">{t('Check again')}</Button>
+                        : <Button icon={RefreshCw} loading={busy} onClick={() => onRetry()} className="flex-[1.4]">{t('Try again')}</Button>}
+                </div>
+            )}
+        >
+            <div className="flex gap-3">
+                <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full', unconfirmed ? 'bg-amber-500/15 text-amber-600 dark:text-amber-300' : 'bg-red-500/15 text-red-600 dark:text-red-300')}>
+                    <Icon size={22} />
+                </span>
+                <div className="min-w-0 space-y-1.5 text-[15px]">
+                    {copy[1] && <p className="font-semibold text-gray-900 dark:text-white">{copy[1]}</p>}
+                    {copy[2] && <p className="text-gray-600 dark:text-zinc-400">{copy[2]}</p>}
+                    {unconfirmed && problem.paymentId && (
+                        <p className="pt-1 text-[13px] text-gray-500 dark:text-zinc-400">{t('Payment ID')} <span className="font-mono font-bold text-gray-900 dark:text-white">{problem.paymentId}</span></p>
+                    )}
+                </div>
+            </div>
+        </Sheet>
+    );
+};
+
 const PayPage = ({ overlay, onClose }) => {
     const t = useT();
     const { id } = useParams();
@@ -58,6 +105,7 @@ const PayPage = ({ overlay, onClose }) => {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
     const [done, setDone] = useState(null);
+    const [problem, setProblem] = useState(null); // { kind: 'failed'|'unfinished'|'unconfirmed'|'error', message, orderId, amount }
 
     const load = useCallback(async () => {
         const r = await callTicketApi('ticket-paypage-view', { id });
@@ -66,11 +114,20 @@ const PayPage = ({ overlay, onClose }) => {
     useEffect(() => { load(); preloadRazorpay(); }, [load]);
 
     const page = state.page;
-    useDynamicMeta({ page: 'pay-page', title: page?.eventName ? t('Pay for {title}', { title: page.eventName }) : t('Payment'), noindex: true });
+    useDynamicMeta({ page: 'pay-page', title: page?.eventName ? t('Pay for {title}', { title: page.eventName }) : t('Payment'), image: page?.image || undefined, noindex: true });
     const set = (patch) => { setForm(f => ({ ...f, ...patch })); setErrors(e => ({ ...e, ...Object.fromEntries(Object.keys(patch).map(k => [k, undefined])) })); setError(''); };
 
     const finish = (data, amount) => {
-        setDone({ amount: data.amount || amount, paymentId: data.paymentId, email: form.email.trim().toLowerCase(), emailed: data.emailed !== false });
+        setProblem(null);
+        setDone({
+            amount: data.amount || amount,
+            paymentId: data.paymentId,
+            method: data.method || '',
+            paidAt: data.paidAt || new Date().toISOString(),
+            name: form.name.trim(),
+            email: form.email.trim().toLowerCase(),
+            emailed: data.emailed !== false,
+        });
         window.scrollTo?.({ top: 0, behavior: 'smooth' });
     };
 
@@ -79,28 +136,31 @@ const PayPage = ({ overlay, onClose }) => {
         if (busy) return;
         const local = checkLocally(form);
         setErrors(Object.fromEntries(Object.entries(local).map(([k, v]) => [k, t(v)])));
-        if (Object.keys(local).length) return;
+        if (Object.keys(local).length) { setProblem(null); return; }
         setBusy(true);
         setError('');
+        setProblem(null);
         try {
             const [Razorpay, res] = await Promise.all([
                 loadRazorpay().catch(() => null),
                 callTicketApi('ticket-paypage-start', { id, amount: Number(form.amount), name: form.name, email: form.email, phone: form.phone }, { timeoutMs: 20000 }),
             ]);
             if (!res.ok) {
-                if (res.errors) setErrors(Object.fromEntries(Object.entries(res.errors).map(([k, v]) => [k, t(v)])));
-                if (res.code === 'CLOSED') load();
-                setError(res.unavailable ? t(UNREACHABLE) : res.error);
+                if (res.errors) {
+                    // Something in the form: show it on the field, not in a pop-up.
+                    setErrors(Object.fromEntries(Object.entries(res.errors).map(([k, v]) => [k, t(v)])));
+                    setError(res.error);
+                    return;
+                }
+                if (res.code === 'CLOSED') { load(); return; }
+                setProblem({ kind: 'error', message: res.unavailable ? t(UNREACHABLE) : (res.error || t('Online payment isn’t working right now. Please try again in a moment.')) });
                 return;
             }
-            if (!Razorpay) { setError(t('The payment window didn’t load. Check your connection and try again.')); return; }
+            if (!Razorpay) { setProblem({ kind: 'error', message: t('The payment window didn’t load. Check your connection and try again.') }); return; }
             const start = res.data;
             const amount = start.amount / 100;
+            let lastFailure = '';
             await new Promise((resolve) => {
-                const settle = async (conf) => {
-                    if (conf?.ok && conf.data?.paid) finish(conf.data, amount);
-                    resolve();
-                };
                 const rzp = new Razorpay({
                     key: start.keyId,
                     order_id: start.gatewayOrderId,
@@ -116,8 +176,9 @@ const PayPage = ({ overlay, onClose }) => {
                         let conf = await callTicketApi('ticket-paypage-confirm', { id, ...resp }, { timeoutMs: 25000 });
                         if (!conf.ok || !conf.data?.paid) conf = await verify(id, start.gatewayOrderId, 4);
                         setBusy(false);
-                        if (!(conf?.ok && conf.data?.paid)) setError(t('Your payment went through, but we couldn’t confirm it yet. Keep the Razorpay payment ID from your SMS or email; the team will check it.'));
-                        settle(conf);
+                        if (conf?.ok && conf.data?.paid) finish(conf.data, amount);
+                        else setProblem({ kind: 'unconfirmed', orderId: start.gatewayOrderId, amount, paymentId: resp?.razorpay_payment_id || '' });
+                        resolve();
                     },
                     modal: {
                         confirm_close: true,
@@ -126,17 +187,30 @@ const PayPage = ({ overlay, onClose }) => {
                             setBusy(true);
                             const conf = await verify(id, start.gatewayOrderId, 2);
                             setBusy(false);
-                            settle(conf);
+                            if (conf?.ok && conf.data?.paid) finish(conf.data, amount);
+                            else setProblem({ kind: lastFailure ? 'failed' : 'unfinished', message: lastFailure, orderId: start.gatewayOrderId, amount });
+                            resolve();
                         },
                     },
                 });
-                rzp.on('payment.failed', (ev) => setError(ev?.error?.description || t('The payment didn’t go through. Please try again.')));
+                // Razorpay lets them retry inside its window; the pop-up comes when they close it.
+                rzp.on('payment.failed', (ev) => { lastFailure = ev?.error?.description || t('The payment didn’t go through.'); });
                 setBusy(false);
                 rzp.open();
             });
         } finally {
             setBusy(false);
         }
+    };
+
+    // "Check again" for a payment that went through but wasn't confirmed yet.
+    const checkAgain = async () => {
+        if (!problem?.orderId || busy) return;
+        setBusy(true);
+        const conf = await verify(id, problem.orderId, 3);
+        setBusy(false);
+        if (conf?.ok && conf.data?.paid) finish(conf.data, problem.amount);
+        else setProblem(p => ({ ...p, checked: true }));
     };
 
     if (state.loading) return <ExpandedPage overlay={overlay} onClose={onClose} label={t('Payment')} body={<ExpandedSkeleton />} />;
@@ -151,7 +225,7 @@ const PayPage = ({ overlay, onClose }) => {
         );
     }
 
-    const hero = <ExpandedHero icon={IndianRupee} chips={[{ label: done ? t('Paid') : t('Payment'), tone: done ? 'accent' : undefined }]} />;
+    const hero = <ExpandedHero image={page.image || null} icon={IndianRupee} chips={[{ label: done ? t('Paid') : t('Payment'), tone: done ? 'accent' : undefined }]} />;
     const eyebrow = <p className="text-[11px] font-black uppercase tracking-widest text-emerald-700 dark:text-neon-green">{t('Pay Newbi')}</p>;
 
     if (done) {
@@ -160,22 +234,9 @@ const PayPage = ({ overlay, onClose }) => {
                 <ExpandedTitle eyebrow={eyebrow} title={t('Payment received')}>
                     <p className="text-[15px] text-gray-600 dark:text-zinc-400">{t('Thanks! We got {amount} for {title}. The Newbi team will send your tickets to you.', { amount: rupees(done.amount), title: page.eventName })}</p>
                 </ExpandedTitle>
-                <Card>
-                    <div className="flex items-center gap-3">
-                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:bg-neon-green/15 dark:text-neon-green"><CircleCheck size={22} /></span>
-                        <div className="min-w-0">
-                            <p className="font-heading text-[26px] font-black leading-none tabular-nums">{rupees(done.amount)}</p>
-                            <p className="mt-1 truncate text-[13px] text-gray-500 dark:text-zinc-400">{page.eventName}</p>
-                        </div>
-                    </div>
-                    {done.paymentId && (
-                        <p className="border-t border-black/[0.06] pt-3 text-[13px] text-gray-600 dark:border-white/[0.08] dark:text-zinc-400">
-                            {t('Razorpay payment ID')} <span className="font-mono font-bold text-gray-900 dark:text-white">{done.paymentId}</span>
-                        </p>
-                    )}
-                </Card>
+                <PayReceipt receipt={{ ...done, eventName: page.eventName }} />
                 <Notice tone="success" title={done.emailed ? t('Confirmation sent to {email}', { email: done.email }) : t('Your payment is saved')}>
-                    {done.emailed ? t('Keep that email. Quote the payment ID if you contact us.') : t('The confirmation email is on its way. Keep the payment ID above.')}
+                    {done.emailed ? t('Keep that email. Quote the payment ID if you contact us.') : t('The confirmation email is on its way. Keep the payment ID on the receipt.')}
                 </Notice>
             </ExpandedPage>
         );
@@ -235,6 +296,7 @@ const PayPage = ({ overlay, onClose }) => {
             <p className="flex items-center justify-center gap-1.5 pb-1 text-[12px] text-gray-500 dark:text-zinc-500">
                 <ShieldCheck size={14} /> {t('Secured by Razorpay. Your card and bank details never reach Newbi.')}
             </p>
+            <PayProblem problem={problem} busy={busy} onRetry={pay} onCheck={checkAgain} onClose={() => setProblem(null)} />
         </ExpandedPage>
     );
 };

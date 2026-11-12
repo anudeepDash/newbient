@@ -3,7 +3,7 @@ import { firstName, formatDate } from '../layout.js';
 /**
  * A resale ticket paid through a Razorpay payment link the team sent by hand.
  * Only confirms the money: the tickets themselves go out separately, by hand.
- * data: { name, eventName, eventDate, venue, ticketType, quantity, unitPrice, amount, ref, paymentId, paidAt }
+ * data: { name, eventName, image, eventDate, venue, ticketType, quantity, unitPrice, amount, ref, paymentId, paidAt }
  */
 export default (data = {}) => {
     const event = data.eventName || 'your tickets';
@@ -15,6 +15,7 @@ export default (data = {}) => {
         preheader: `We've received your payment${data.amount ? ` of ₹${data.amount}` : ''}. Your tickets come from our team separately.`,
         eyebrow: 'Payment received',
         title: 'We got your payment',
+        hero: data.image ? { url: data.image, alt: data.eventName || '' } : null,
         blocks: [
             { p: `Hi ${firstName(data.name)}, thanks. We've received your payment for ${event}. Our team will send your tickets to you separately, and will reach out on this email or your phone.` },
             { items: [{ name: data.ticketType || data.eventName || 'Tickets', count: qty, price: Number(data.unitPrice) || (Number(data.amount) || 0) / qty }], total: data.amount, totalLabel: 'Total paid' },

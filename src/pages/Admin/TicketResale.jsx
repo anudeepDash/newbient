@@ -13,11 +13,14 @@ import Mail from 'lucide-react/dist/esm/icons/mail';
 import MoreHorizontal from 'lucide-react/dist/esm/icons/ellipsis';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import ImageIcon from 'lucide-react/dist/esm/icons/image';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import Sheet from '../../components/admin/Sheet';
 import { Button, Badge, SearchInput, SegmentedTabs, EmptyState, StatTile, Menu, MenuItem } from '../../components/admin/ui';
 import { Panel, CopyChip, ContactLinks, useConfirm, useBusy } from '../../components/admin/ticketing/kit';
 import { Field, Choice, fieldCls } from '../../components/admin/uploads/UploadKit';
+import { ImagePicker } from '../../components/admin/content/ContentKit';
+import { sizedImage } from '../../lib/image';
 import { inr, formatDateTime } from '../../components/admin/ticketing/format';
 import { callTicketApi } from '../../lib/ticketApi';
 import { copyToClipboard } from '../../lib/clipboard';
@@ -65,18 +68,19 @@ const NewLinkSheet = ({ open, onClose, onCreated }) => {
     const [kind, setKind] = useState('link');
     const [eventName, setEventName] = useState('');
     const [amount, setAmount] = useState('');
+    const [image, setImage] = useState('');
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
     const [created, setCreated] = useState(null);
 
-    useEffect(() => { if (open) { setKind('link'); setEventName(''); setAmount(''); setError(''); setCreated(null); } }, [open]);
+    useEffect(() => { if (open) { setKind('link'); setEventName(''); setAmount(''); setImage(''); setError(''); setCreated(null); } }, [open]);
 
     const submit = async (e) => {
         e?.preventDefault?.();
         if (busy) return;
         setBusy(true);
         setError('');
-        const res = await callTicketApi('ticket-resale-create', kind === 'page' ? { kind: 'page', eventName } : { eventName, amount: Number(amount) }, { timeoutMs: 25000 });
+        const res = await callTicketApi('ticket-resale-create', kind === 'page' ? { kind: 'page', eventName, image } : { eventName, amount: Number(amount) }, { timeoutMs: 25000 });
         setBusy(false);
         if (!res.ok) { setError(apiError(res, "Couldn't create the link.")); return; }
         setCreated(res.data.resale);
@@ -114,6 +118,9 @@ const NewLinkSheet = ({ open, onClose, onCreated }) => {
                 <Field label="Event name">
                     <input className={fieldCls} value={eventName} onChange={e => setEventName(e.target.value)} placeholder="e.g. Coldplay, Mumbai" maxLength={140} autoFocus required />
                 </Field>
+                {kind === 'page' && (
+                    <ImagePicker label="Picture" optional hint="Shown at the top of the page and in the confirmation email." value={image} onChange={setImage} />
+                )}
                 {kind === 'link' && (
                     <Field label="Amount (₹)">
                         <input className={fieldCls} type="number" inputMode="decimal" min="1" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" required />
@@ -176,8 +183,36 @@ const ResaleRow = ({ r, busy, onSync, onCancel }) => {
     );
 };
 
+// Change a payment page's picture.
+const PictureSheet = ({ page, onClose, onSaved }) => {
+    const [image, setImage] = useState('');
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState('');
+    useEffect(() => { if (page) { setImage(page.image || ''); setError(''); } }, [page]);
+    const save = async () => {
+        if (busy) return;
+        setBusy(true);
+        setError('');
+        const res = await callTicketApi('ticket-resale-update', { id: page.id, image });
+        setBusy(false);
+        if (!res.ok) { setError(apiError(res, "Couldn't save the picture.")); return; }
+        onSaved(res.data.resale);
+        toast(image ? 'Picture saved.' : 'Picture removed.');
+        onClose();
+    };
+    return (
+        <Sheet open={Boolean(page)} onClose={busy ? undefined : onClose} variant="dialog" size="sm" title="Page picture" subtitle={page?.eventName}
+            footer={<Button variant="accent" className="h-12 w-full" onClick={save} disabled={busy || image === (page?.image || '')}>{busy ? 'Saving…' : 'Save'}</Button>}>
+            <div className="space-y-3">
+                <ImagePicker label="Picture" optional hint="Shown at the top of the page and in the confirmation email." value={image} onChange={setImage} />
+                {error && <p role="alert" className="rounded-xl bg-red-500/10 px-3 py-2 text-[13px] font-semibold text-red-600 dark:text-red-300">{error}</p>}
+            </div>
+        </Sheet>
+    );
+};
+
 // A payment page: many buyers, each typing their own amount.
-const PageRow = ({ r, busy, onResend, onClose }) => {
+const PageRow = ({ r, busy, onResend, onClose, onPicture }) => {
     const [openList, setOpenList] = useState(false);
     const status = STATUS[r.status] || STATUS.open;
     const payments = r.payments || [];
@@ -185,6 +220,10 @@ const PageRow = ({ r, busy, onResend, onClose }) => {
     return (
         <li className="px-4 py-4 sm:px-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <button type="button" onClick={() => onPicture(r)} aria-label={r.image ? 'Change picture' : 'Add a picture'}
+                    className="hidden h-16 w-28 shrink-0 overflow-hidden rounded-xl border border-black/[0.06] bg-black/[0.03] text-gray-400 hover:border-black/20 dark:border-white/[0.08] dark:bg-white/[0.04] dark:hover:border-white/25 sm:flex sm:items-center sm:justify-center">
+                    {r.image ? <img src={sizedImage(r.image, 320)} alt="" className="h-full w-full object-cover" /> : <span className="flex flex-col items-center gap-0.5 text-[11px] font-semibold"><ImageIcon size={16} /> Add picture</span>}
+                </button>
                 <div className="min-w-0 flex-1 space-y-1.5">
                     <div className="flex flex-wrap items-center gap-2">
                         <p className="truncate text-[15px] font-bold">{r.eventName}</p>
@@ -203,6 +242,7 @@ const PageRow = ({ r, busy, onResend, onClose }) => {
                     {live && <Button as="a" href={whatsappUrl(r)} target="_blank" rel="noopener noreferrer" variant="secondary" className="h-10 w-10 px-0" aria-label="Share on WhatsApp"><Send size={14} /></Button>}
                     <Menu title="Page actions" trigger={({ toggle: t }) => <Button variant="ghost" onClick={t} aria-label={`More for ${r.eventName}`} className="h-10 w-10 px-0" disabled={Boolean(busy)}>{busy ? <RefreshCw size={16} className="animate-spin" /> : <MoreHorizontal size={17} />}</Button>}>
                         <MenuItem icon={ExternalLink} as="a" href={linkOf(r)} target="_blank" rel="noopener noreferrer">Open page</MenuItem>
+                        <MenuItem icon={ImageIcon} onClick={() => onPicture(r)}>{r.image ? 'Change picture' : 'Add a picture'}</MenuItem>
                         {live && <MenuItem icon={Ban} danger onClick={() => onClose(r)}>Close page</MenuItem>}
                     </Menu>
                 </div>
@@ -250,6 +290,7 @@ const TicketResale = () => {
     const [loadError, setLoadError] = useState('');
     const [refreshing, setRefreshing] = useState(false);
     const [creating, setCreating] = useState(false);
+    const [picturePage, setPicturePage] = useState(null);
     const [filter, setFilter] = useState('all');
     const [search, setSearch] = useState('');
     const [ask, confirmSheet] = useConfirm();
@@ -409,7 +450,7 @@ const TicketResale = () => {
                     <Panel className="overflow-hidden">
                         <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
                             {shown.map(r => (isPage(r)
-                                ? <PageRow key={r.id} r={r} busy={busy[r.id]} onResend={resendPageEmail} onClose={closePage} />
+                                ? <PageRow key={r.id} r={r} busy={busy[r.id]} onResend={resendPageEmail} onClose={closePage} onPicture={setPicturePage} />
                                 : <ResaleRow key={r.id} r={r} busy={busy[r.id]} onSync={sync} onCancel={cancel} />))}
                         </ul>
                     </Panel>
@@ -417,6 +458,7 @@ const TicketResale = () => {
             </div>
 
             <NewLinkSheet open={creating} onClose={() => setCreating(false)} onCreated={replace} />
+            <PictureSheet page={picturePage} onClose={() => setPicturePage(null)} onSaved={replace} />
             {confirmSheet}
         </AdminCommunityHubLayout>
     );
