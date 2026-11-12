@@ -265,7 +265,8 @@ const GiveawayParticipants = () => {
             { header: 'Points', key: 'points', type: 'number', value: e => entryPoints(e) },
             { header: 'Referrals', key: 'referrals', type: 'number', value: e => Number(e.referralCount) || 0 },
             { header: 'Tasks done', type: 'number', value: e => Object.values(e.completedTasks || {}).filter(Boolean).length },
-            { header: 'Spin reward', value: e => e.spinReward || '' },
+            { header: 'Spin reward', value: e => (Array.isArray(e.spins) && e.spins.length ? e.spins.map(x => x.label).join(', ') : e.spinReward || '') },
+            { header: 'Daily bonus days', type: 'number', value: e => Object.keys(e.checkins || {}).length },
             { header: 'Referred by', value: e => (e.referredBy ? (byCode[e.referredBy]?.name || e.referredBy) : '') },
             { header: 'Why they should win', width: 40, value: e => e.answer || '' },
             { header: 'Entered', type: 'datetime', value: e => toDate(e.createdAt || e.timestamp) },
@@ -514,7 +515,8 @@ const GiveawayParticipants = () => {
                                 <InfoRow label="College">{detail.college}</InfoRow>
                                 <InfoRow label="City">{detail.city}</InfoRow>
                                 <InfoRow label="Entered">{formatDateTime(detail.createdAt || detail.timestamp)}</InfoRow>
-                                <InfoRow label="Spin wheel">{detail.hasSpunWheel ? (detail.spinReward || 'Spun') : 'Not spun'}</InfoRow>
+                                <InfoRow label="Spin wheel">{Array.isArray(detail.spins) && detail.spins.length ? detail.spins.map(x => x.label).join(', ') : detail.hasSpunWheel ? (detail.spinReward || 'Spun') : 'Not spun'}</InfoRow>
+                                {Object.keys(detail.checkins || {}).length > 0 && <InfoRow label="Daily bonus">{Object.keys(detail.checkins).length} day{Object.keys(detail.checkins).length === 1 ? '' : 's'} claimed</InfoRow>}
                                 <InfoRow label="Why they should win" className="col-span-2">{detail.answer && <span className="whitespace-pre-line">{detail.answer}</span>}</InfoRow>
                             </div>
                         </SheetSection>
@@ -528,7 +530,11 @@ const GiveawayParticipants = () => {
                                         return (
                                             <li key={t.id} className="flex items-center gap-3">
                                                 <Icon size={15} className="shrink-0 text-gray-400" />
-                                                <span className={cn('min-w-0 flex-1 truncate text-[14px]', !done && 'text-gray-500')}>{t.label}</span>
+                                                <span className={cn('min-w-0 flex-1 truncate text-[14px]', !done && 'text-gray-500')}>
+                                                    {t.label}
+                                                    {t.type === 'quiz' && detail.quizAnswers?.[t.id] && !detail.quizAnswers[t.id].correct && <span className="ml-1.5 text-[12px] text-red-500">wrong answer</span>}
+                                                    {t.type === 'code' && !done && detail.codeTries?.[t.id] > 0 && <span className="ml-1.5 text-[12px] text-gray-400">{detail.codeTries[t.id]} wrong tr{detail.codeTries[t.id] === 1 ? 'y' : 'ies'}</span>}
+                                                </span>
                                                 <span className="text-[12px] font-semibold text-gray-500">+{t.entryScore || 0}</span>
                                                 {done ? <CheckCircle2 size={17} className="shrink-0 text-emerald-500" /> : <Circle size={17} className="shrink-0 text-gray-300 dark:text-zinc-600" />}
                                             </li>

@@ -10,6 +10,10 @@ import Music from 'lucide-react/dist/esm/icons/music';
 import Ghost from 'lucide-react/dist/esm/icons/ghost';
 import Globe from 'lucide-react/dist/esm/icons/globe';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Brain from 'lucide-react/dist/esm/icons/brain';
+import KeyRound from 'lucide-react/dist/esm/icons/key-round';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import X from 'lucide-react/dist/esm/icons/x';
 import ArrowUp from 'lucide-react/dist/esm/icons/arrow-up';
 import ArrowDown from 'lucide-react/dist/esm/icons/arrow-down';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
@@ -24,10 +28,12 @@ import CityInput, { cleanCity } from '../CityInput';
 import LivePreview from '../LivePreview';
 import { AmbientColorField, EditorBar, PhoneBar, slugify, todayKey, useConfirm, useImageField, useUnsavedWarning } from '../forms/kit';
 import { TASK_PRESETS, TASK_PRESET_MAP, giveawayEndsAt } from './giveawayUtils';
+import { DEFAULT_REFERRAL_POINTS, DEFAULT_WHEEL } from '../../../lib/giveawayRules';
 
 export const TASK_ICONS = {
     instagram: Instagram, instagram_like_comment: Instagram, youtube: Youtube, telegram: Send, twitter: Twitter,
     discord: MessageCircle, spotify: Music, snapchat: Ghost, website: Globe, custom: Sparkles,
+    quiz: Brain, code: KeyRound,
 };
 
 const EMPTY = {
@@ -37,6 +43,12 @@ const EMPTY = {
     prize: '',
     ticketsAvailable: 0,
     showSpinWheel: true,
+    winnerCount: 1,
+    referralPoints: DEFAULT_REFERRAL_POINTS,
+    referralMilestones: [{ at: 3, bonus: 5 }, { at: 5, bonus: 10 }, { at: 10, bonus: 25 }],
+    bonusSpinEvery: 2,
+    dailyBonus: { enabled: true, points: 2 },
+    wheel: [],
     endDate: '',
     endTime: '',
     winnerAnnouncementDate: '',
@@ -57,13 +69,26 @@ const EMPTY = {
 
 const taskId = () => Math.random().toString(36).slice(2, 11);
 
+/* What a new task of each kind starts with. */
+const taskConfig = (type) => {
+    if (type === 'quiz') return { url: '', question: '', options: ['', '', ''], answer: 0 };
+    if (type === 'code') return { url: '', code: '', hint: '' };
+    return { url: '' };
+};
+
+/* Giveaways made before boosters existed keep their old behaviour until someone turns them on. */
+const BOOSTERS_OFF = { winnerCount: 1, referralPoints: DEFAULT_REFERRAL_POINTS, referralMilestones: [], bonusSpinEvery: 0, dailyBonus: { enabled: false, points: 2 }, wheel: [] };
+const intOr = (v, d) => (v === '' || v === null || v === undefined || !Number.isFinite(Number(v)) ? d : Math.round(Number(v)));
+
 const GiveawayEditor = ({ giveaway, giveaways, onDone }) => {
     const addToast = useStore(s => s.addToast);
     const editing = Boolean(giveaway?.id);
     const [data, setData] = useState(() => (giveaway ? {
         ...EMPTY,
+        ...BOOSTERS_OFF,
         ...giveaway,
-        tasks: (giveaway.tasks || []).map(t => ({ ...t, config: t.config || { url: '' } })),
+        dailyBonus: { ...BOOSTERS_OFF.dailyBonus, ...(giveaway.dailyBonus || {}) },
+        tasks: (giveaway.tasks || []).map(t => ({ ...t, config: { ...taskConfig(t.type), ...(t.config || {}) } })),
         endDate: giveaway.endDate ? String(giveaway.endDate).slice(0, 10) : '',
     } : EMPTY));
     const [slugTouched, setSlugTouched] = useState(editing);
@@ -82,7 +107,15 @@ const GiveawayEditor = ({ giveaway, giveaways, onDone }) => {
 
     // ── tasks ──
     const tasks = data.tasks || [];
-    const addTask = (type) => set({ tasks: [...tasks, { id: taskId(), type, label: TASK_PRESET_MAP[type]?.label || 'New task', entryScore: 1, config: { url: '' } }] });
+    const addTask = (type) => set({ tasks: [...tasks, { id: taskId(), type, label: TASK_PRESET_MAP[type]?.label || 'New task', entryScore: type === 'quiz' ? 3 : type === 'code' ? 5 : 1, config: taskConfig(type) }] });
+    const setConfig = (i, patch) => updateTask(i, { config: { ...(tasks[i].config || {}), ...patch } });
+
+    // ── boosters ──
+    const milestones = data.referralMilestones || [];
+    const setMilestone = (i, patch) => set({ referralMilestones: milestones.map((m, j) => (j === i ? { ...m, ...patch } : m)) });
+    const wheel = data.wheel?.length ? data.wheel : [];
+    const setWheel = (next) => set({ wheel: next });
+    const customWheel = wheel.length > 0;
     const updateTask = (i, patch) => set({ tasks: tasks.map((t, j) => (j === i ? { ...t, ...patch } : t)) });
     const moveTask = (i, d) => {
         const j = i + d;
@@ -107,7 +140,17 @@ const GiveawayEditor = ({ giveaway, giveaways, onDone }) => {
             if (!String(t.label || '').trim()) p[`task_${i}`] = 'Give this task a label.';
             else if (t.config?.url && !/^https?:\/\/\S+/i.test(t.config.url.trim())) p[`task_${i}`] = 'The link should start with https://';
             else if (!(Number(t.entryScore) >= 0)) p[`task_${i}`] = 'Points must be 0 or more.';
+            else if (t.type === 'quiz') {
+                const opts = (t.config?.options || []).filter(o => String(o).trim());
+                if (!String(t.config?.question || '').trim()) p[`task_${i}`] = 'Write the quiz question.';
+                else if (opts.length < 2) p[`task_${i}`] = 'Give the quiz at least two answers.';
+                else if (!String(t.config?.options?.[Number(t.config.answer)] || '').trim()) p[`task_${i}`] = 'Mark which answer is right.';
+            } else if (t.type === 'code' && !String(t.config?.code || '').replace(/[^a-z0-9]/gi, '')) p[`task_${i}`] = 'Set the secret code.';
         });
+        if (!(Number(data.winnerCount) >= 1)) p.winnerCount = 'At least one winner.';
+        milestones.forEach((m, i) => { if (!(Number(m.at) >= 1) || !(Number(m.bonus) >= 1)) p[`milestone_${i}`] = 'Each milestone needs a number of friends and bonus points.'; });
+        if (wheel.length && (wheel.length < 2 || wheel.length > 8)) p.wheel = 'A wheel needs 2 to 8 segments.';
+        else if (wheel.some(w => !(Number(w.weight) > 0))) p.wheel = 'Every segment needs a chance above 0.';
         return p;
     }, [data, tasks, giveaways, giveaway?.id]);
 
@@ -140,7 +183,25 @@ const GiveawayEditor = ({ giveaway, giveaways, onDone }) => {
             city: cleanCity(data.city),
             ticketsAvailable: Number(data.ticketsAvailable) || 0,
             ticketCategories: (data.ticketCategories || []).map(c => ({ ...c, price: Number(c.price) || 0 })),
-            tasks: tasks.map(t => ({ ...t, label: t.label.trim(), entryScore: Math.round(Number(t.entryScore) || 0), config: { ...(t.config || {}), url: String(t.config?.url || '').trim() } })),
+            tasks: tasks.map(t => {
+                const config = { ...(t.config || {}), url: String(t.config?.url || '').trim() };
+                if (t.type === 'quiz') {
+                    // Drop empty answers and keep the right one pointing at the same text.
+                    const right = String(config.options?.[Number(config.answer)] || '').trim();
+                    const options = (config.options || []).map(o => String(o).trim()).filter(Boolean);
+                    config.question = String(config.question || '').trim();
+                    config.options = options;
+                    config.answer = Math.max(0, options.indexOf(right));
+                }
+                if (t.type === 'code') { config.code = String(config.code || '').trim(); config.hint = String(config.hint || '').trim(); }
+                return { ...t, label: t.label.trim(), entryScore: Math.round(Number(t.entryScore) || 0), config };
+            }),
+            winnerCount: Math.max(1, intOr(data.winnerCount, 1)),
+            referralPoints: Math.max(0, intOr(data.referralPoints, DEFAULT_REFERRAL_POINTS)),
+            referralMilestones: milestones.map(m => ({ at: intOr(m.at, 0), bonus: intOr(m.bonus, 0) })).filter(m => m.at > 0 && m.bonus > 0).sort((a, b) => a.at - b.at),
+            bonusSpinEvery: Math.max(0, intOr(data.bonusSpinEvery, 0)),
+            dailyBonus: { enabled: Boolean(data.dailyBonus?.enabled), points: Math.max(0, intOr(data.dailyBonus?.points, 2)) },
+            wheel: wheel.map((w, i) => ({ id: w.id || `seg_${i}`, label: String(w.label || '').trim() || (Number(w.points) === 1 ? '+1 point' : `+${intOr(w.points, 0)} points`), points: Math.max(0, intOr(w.points, 0)), weight: Math.max(0, intOr(w.weight, 0)) })),
             updatedAt: new Date().toISOString(),
         };
         if (String(payload.status).toLowerCase() === 'open' && String(giveaway?.status || '').toLowerCase() === 'closed') payload.closedAt = null;
@@ -249,7 +310,7 @@ const GiveawayEditor = ({ giveaway, giveaways, onDone }) => {
                                 })}
                             </div>
                             {tasks.length === 0 ? (
-                                <p className="rounded-xl bg-black/[0.03] p-4 text-center text-[13px] text-gray-500 dark:bg-white/[0.03]">No tasks yet. Everyone gets 1 point for entering and 3 for each friend they refer.</p>
+                                <p className="rounded-xl bg-black/[0.03] p-4 text-center text-[13px] text-gray-500 dark:bg-white/[0.03]">No tasks yet. Everyone gets 1 point for entering, plus whatever the boosters below add.</p>
                             ) : (
                                 <ul className="space-y-2">
                                     {tasks.map((t, i) => {
@@ -263,20 +324,128 @@ const GiveawayEditor = ({ giveaway, giveaways, onDone }) => {
                                                     <button type="button" onClick={() => moveTask(i, 1)} disabled={i === tasks.length - 1} aria-label="Move down" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-black/5 disabled:opacity-25 dark:hover:bg-white/5"><ArrowDown size={15} /></button>
                                                 </div>
                                                 <div className="mt-2 grid grid-cols-[minmax(0,1fr)_92px_40px] gap-2">
-                                                    <input className={cn(fieldCls, 'h-11 font-mono text-[13px]')} inputMode="url" autoCapitalize="off" value={t.config?.url || ''} onChange={(e) => updateTask(i, { config: { ...(t.config || {}), url: e.target.value } })} placeholder="https://… (where the button goes)" aria-label="Task link" />
+                                                    {t.type === 'quiz'
+                                                        ? <p className="flex h-11 items-center text-[12px] text-gray-500">One try each. Points only for the right answer.</p>
+                                                        : <input className={cn(fieldCls, 'h-11 font-mono text-[13px]')} inputMode="url" autoCapitalize="off" value={t.config?.url || ''} onChange={(e) => setConfig(i, { url: e.target.value })} placeholder={t.type === 'code' ? 'https://… (optional: the post with the code)' : 'https://… (where the button goes)'} aria-label="Task link" />}
                                                     <label className="relative">
                                                         <input className={cn(fieldCls, 'h-11 pr-9 text-[14px]')} type="number" min="0" inputMode="numeric" value={t.entryScore} onChange={(e) => updateTask(i, { entryScore: e.target.value })} aria-label="Points" />
                                                         <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12px] font-semibold text-gray-400">pts</span>
                                                     </label>
                                                     <button type="button" onClick={() => set({ tasks: tasks.filter((_, j) => j !== i) })} aria-label="Remove task" className="flex h-11 w-10 items-center justify-center rounded-lg text-red-500 hover:bg-red-500/10"><Trash2 size={15} /></button>
                                                 </div>
+                                                {t.type === 'quiz' && (
+                                                    <div className="mt-3 space-y-2 rounded-xl bg-black/[0.03] p-3 dark:bg-white/[0.03]">
+                                                        <input className={cn(fieldCls, 'h-11 text-[14px]')} value={t.config?.question || ''} onChange={(e) => setConfig(i, { question: e.target.value })} placeholder="Question, e.g. Which film is “Teri Ore” from?" aria-label="Quiz question" />
+                                                        {(t.config?.options || []).map((o, k) => (
+                                                            <div key={k} className="flex items-center gap-2">
+                                                                <button type="button" onClick={() => setConfig(i, { answer: k })} aria-label={`Mark answer ${k + 1} as right`} className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 text-[12px] font-black', Number(t.config.answer) === k ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-black/15 text-gray-400 dark:border-white/20')}>{String.fromCharCode(65 + k)}</button>
+                                                                <input className={cn(fieldCls, 'h-10 text-[14px]')} value={o} onChange={(e) => setConfig(i, { options: t.config.options.map((x, z) => (z === k ? e.target.value : x)) })} placeholder={`Answer ${k + 1}`} aria-label={`Answer ${k + 1}`} />
+                                                                {t.config.options.length > 2 && <button type="button" onClick={() => setConfig(i, { options: t.config.options.filter((_, z) => z !== k), answer: Number(t.config.answer) === k ? 0 : Number(t.config.answer) > k ? Number(t.config.answer) - 1 : Number(t.config.answer) })} aria-label="Remove answer" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:bg-black/5 dark:hover:bg-white/5"><X size={14} /></button>}
+                                                            </div>
+                                                        ))}
+                                                        <div className="flex items-center justify-between">
+                                                            {(t.config?.options || []).length < 6 && <button type="button" onClick={() => setConfig(i, { options: [...(t.config.options || []), ''] })} className="flex items-center gap-1 text-[12px] font-bold text-emerald-700 dark:text-neon-green"><Plus size={13} /> Add answer</button>}
+                                                            <span className="text-[11px] text-gray-500">Tap a letter to mark the right answer. Never shown to entrants.</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {t.type === 'code' && (
+                                                    <div className="mt-3 grid gap-2 rounded-xl bg-black/[0.03] p-3 sm:grid-cols-[180px_minmax(0,1fr)] dark:bg-white/[0.03]">
+                                                        <input className={cn(fieldCls, 'h-11 font-mono text-[14px] uppercase tracking-widest')} value={t.config?.code || ''} onChange={(e) => setConfig(i, { code: e.target.value })} placeholder="SHREYA26" aria-label="Secret code" autoCapitalize="characters" />
+                                                        <input className={cn(fieldCls, 'h-11 text-[14px]')} value={t.config?.hint || ''} onChange={(e) => setConfig(i, { hint: e.target.value })} placeholder="Hint, e.g. It's in our latest Instagram story" aria-label="Hint" />
+                                                        <p className="text-[11px] text-gray-500 sm:col-span-2">Post the code somewhere (a story, a reel caption, the event) and people type it to unlock the points. Spaces and dashes don't matter; 5 tries each. The code stays on the server.</p>
+                                                    </div>
+                                                )}
                                                 <Hint k={`task_${i}`} />
                                             </li>
                                         );
                                     })}
                                 </ul>
                             )}
-                            <Toggle label="Spin the wheel" hint="Entrants get one bonus spin for extra points" checked={data.showSpinWheel !== false} onChange={(v) => set({ showSpinWheel: v })} />
+                        </div>
+                    </BuilderCard>
+
+                    <BuilderCard title="Boosters" hint="Ways to keep people coming back and bringing friends. Points are counted on the server.">
+                        <div className="space-y-5">
+                            <div className="grid grid-cols-2 gap-3">
+                                <Field label="Winners" hint="Shown on the page and used for the odds">
+                                    <input className={cn(fieldCls, bad('winnerCount'))} type="number" min="1" inputMode="numeric" value={data.winnerCount} onChange={(e) => set({ winnerCount: e.target.value })} />
+                                </Field>
+                                <Field label="Points per friend" hint="For each friend who enters with their link">
+                                    <input className={fieldCls} type="number" min="0" inputMode="numeric" value={data.referralPoints} onChange={(e) => set({ referralPoints: e.target.value })} />
+                                </Field>
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-[13px] font-bold">Referral milestones</p>
+                                    {milestones.length < 6 && <button type="button" onClick={() => set({ referralMilestones: [...milestones, { at: (Number(milestones[milestones.length - 1]?.at) || 0) + 5, bonus: 10 }] })} className="flex items-center gap-1 text-[12px] font-bold text-emerald-700 dark:text-neon-green"><Plus size={13} /> Add</button>}
+                                </div>
+                                {milestones.length === 0 ? <p className="text-[12px] text-gray-500">None. Add one to give a bonus when someone reaches a number of friends.</p> : milestones.map((m, i) => (
+                                    <div key={i} className="flex items-center gap-2 text-[13px]">
+                                        <input className={cn(fieldCls, 'h-10 w-20 text-[14px]')} type="number" min="1" inputMode="numeric" value={m.at} onChange={(e) => setMilestone(i, { at: e.target.value })} aria-label="Friends" />
+                                        <span className="shrink-0 text-gray-500">friends →</span>
+                                        <input className={cn(fieldCls, 'h-10 w-20 text-[14px]')} type="number" min="1" inputMode="numeric" value={m.bonus} onChange={(e) => setMilestone(i, { bonus: e.target.value })} aria-label="Bonus points" />
+                                        <span className="shrink-0 text-gray-500">bonus pts</span>
+                                        <button type="button" onClick={() => set({ referralMilestones: milestones.filter((_, j) => j !== i) })} aria-label="Remove milestone" className="ml-auto flex h-9 w-9 items-center justify-center rounded-lg text-red-500 hover:bg-red-500/10"><Trash2 size={14} /></button>
+                                    </div>
+                                ))}
+                                {milestones.map((_, i) => <Hint key={i} k={`milestone_${i}`} />)}
+                            </div>
+
+                            <div className="space-y-3 border-t border-black/[0.06] pt-4 dark:border-white/[0.06]">
+                                <Toggle label="Daily bonus" hint="Points for every day someone comes back and claims it" checked={Boolean(data.dailyBonus?.enabled)} onChange={(v) => set({ dailyBonus: { ...(data.dailyBonus || {}), enabled: v } })} />
+                                {data.dailyBonus?.enabled && (
+                                    <Field label="Points a day">
+                                        <input className={cn(fieldCls, 'max-w-[120px]')} type="number" min="1" inputMode="numeric" value={data.dailyBonus.points} onChange={(e) => set({ dailyBonus: { ...data.dailyBonus, points: e.target.value } })} />
+                                    </Field>
+                                )}
+                            </div>
+
+                            <div className="space-y-3 border-t border-black/[0.06] pt-4 dark:border-white/[0.06]">
+                                <Toggle label="Spin the wheel" hint="Everyone gets one spin; every spin wins points" checked={data.showSpinWheel !== false} onChange={(v) => set({ showSpinWheel: v })} />
+                                {data.showSpinWheel !== false && (
+                                    <>
+                                        <Field label="Extra spins" hint="Earned by inviting friends">
+                                            <select className={cn(fieldCls, 'max-w-[260px]')} value={String(data.bonusSpinEvery || 0)} onChange={(e) => set({ bonusSpinEvery: Number(e.target.value) })}>
+                                                <option value="0">No extra spins</option>
+                                                <option value="1">One for every friend</option>
+                                                <option value="2">One for every 2 friends</option>
+                                                <option value="3">One for every 3 friends</option>
+                                                <option value="5">One for every 5 friends</option>
+                                            </select>
+                                        </Field>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-[13px] font-bold">Wheel</p>
+                                                <button type="button" onClick={() => setWheel(customWheel ? [] : DEFAULT_WHEEL.map(w => ({ ...w })))} className="text-[12px] font-bold text-emerald-700 dark:text-neon-green">{customWheel ? 'Use the standard wheel' : 'Customise'}</button>
+                                            </div>
+                                            {!customWheel ? (
+                                                <p className="text-[12px] text-gray-500">Standard: +1 (40%), +2 (30%), +5 (30%).</p>
+                                            ) : (
+                                                <>
+                                                    {wheel.map((w, i) => {
+                                                        const total = wheel.reduce((n, x) => n + (Number(x.weight) || 0), 0);
+                                                        return (
+                                                            <div key={i} className="flex items-center gap-2 text-[13px]">
+                                                                <input className={cn(fieldCls, 'h-10 min-w-0 flex-1 text-[14px]')} value={w.label} onChange={(e) => setWheel(wheel.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))} placeholder="Label, e.g. JACKPOT" aria-label="Segment label" />
+                                                                <input className={cn(fieldCls, 'h-10 w-16 text-[14px]')} type="number" min="0" inputMode="numeric" value={w.points} onChange={(e) => setWheel(wheel.map((x, j) => (j === i ? { ...x, points: e.target.value } : x)))} aria-label="Points" />
+                                                                <span className="shrink-0 text-gray-500">pts</span>
+                                                                <input className={cn(fieldCls, 'h-10 w-16 text-[14px]')} type="number" min="0" inputMode="numeric" value={w.weight} onChange={(e) => setWheel(wheel.map((x, j) => (j === i ? { ...x, weight: e.target.value } : x)))} aria-label="Chance weight" />
+                                                                <span className="w-10 shrink-0 text-right tabular-nums text-gray-500">{total ? Math.round(((Number(w.weight) || 0) / total) * 100) : 0}%</span>
+                                                                <button type="button" onClick={() => setWheel(wheel.filter((_, j) => j !== i))} disabled={wheel.length <= 2} aria-label="Remove segment" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-red-500 hover:bg-red-500/10 disabled:opacity-25"><Trash2 size={14} /></button>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                    {wheel.length < 8 && <button type="button" onClick={() => setWheel([...wheel, { label: '+10 points', points: 10, weight: 5 }])} className="flex items-center gap-1 text-[12px] font-bold text-emerald-700 dark:text-neon-green"><Plus size={13} /> Add segment</button>}
+                                                    <p className="text-[11px] text-gray-500">The second number is the chance weight: bigger means more likely.</p>
+                                                    <Hint k="wheel" />
+                                                </>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </BuilderCard>
 

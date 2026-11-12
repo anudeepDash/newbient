@@ -5,7 +5,7 @@ import { handleSubscribe } from './_lib/publicMail.js';
 import { handlePublicFeed, handlePublicArchive, handleAppFeed } from './_lib/publicFeed.js';
 import { handleEnquiry } from './_lib/enquiry.js';
 import { handlePasses } from './_lib/passes.js';
-import { handleCommunity } from './_lib/community.js';
+import { handleCommunity, giveawayBoard } from './_lib/community.js';
 import { handleSharedDoc } from './_lib/sharedDocs.js';
 import { handleHinglish } from './_lib/hinglish.js';
 
@@ -167,46 +167,17 @@ export default async function handler(req, res) {
         }
     }
 
-    // Public giveaway summary: top 10 names and scores, entry count and winner name only,
-    // so the giveaway page never downloads entrants' phones or colleges.
+    // Public giveaway summary (api/_lib/community.js giveawayBoard): first names and
+    // points only, so the giveaway page never downloads entrants' phones or colleges.
     if (req.query.type === 'giveaway-board') {
         const giveawayId = String(req.query.id || '').trim();
-        if (!giveawayId || !adminDb) {
-            return res.status(200).json({ success: true, leaderboard: [], totalEntries: 0, winner: null });
+        if (!giveawayId || !adminDb || !/^[\w-]{1,128}$/.test(giveawayId)) {
+            return res.status(200).json({ success: true, leaderboard: [], totalEntries: 0, totalPoints: 0, joinedLastHour: null, winners: [], winner: null });
         }
         try {
-            // Top 10, the count and the winner as three small queries instead of every entry.
-            // The top-10 query needs the giveaway_entries (campaignId ↑, entryScore ↓) index;
-            // until it exists, the old read of every entry.
-            const col = adminDb.collection('giveaway_entries').where('campaignId', '==', giveawayId);
-            const toRow = (e) => ({ id: e.id, name: e.name || 'Participant', entryScore: e.entryScore || 0 });
-            let leaderboard;
-            let totalEntries;
-            let winnerEntry;
-            try {
-                const [top, count, won] = await Promise.all([
-                    col.orderBy('entryScore', 'desc').limit(10).get(),
-                    col.count().get(),
-                    col.where('isWinner', '==', true).limit(1).get(),
-                ]);
-                leaderboard = top.docs.map(d => toRow({ id: d.id, ...d.data() }));
-                totalEntries = count.data().count;
-                winnerEntry = won.empty ? null : { id: won.docs[0].id, ...won.docs[0].data() };
-            } catch (indexErr) {
-                if (indexErr?.code !== 9 && !/index/i.test(String(indexErr?.message || ''))) throw indexErr;
-                const snap = await col.get();
-                const entries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                leaderboard = entries.sort((a, b) => (b.entryScore || 0) - (a.entryScore || 0)).slice(0, 10).map(toRow);
-                totalEntries = entries.length;
-                winnerEntry = entries.find(e => e.isWinner) || null;
-            }
-            res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
-            return res.status(200).json({
-                success: true,
-                leaderboard,
-                totalEntries,
-                winner: winnerEntry ? { id: winnerEntry.id, name: winnerEntry.name || 'Participant' } : null
-            });
+            const board = await giveawayBoard(adminDb, giveawayId);
+            res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
+            return res.status(200).json(board);
         } catch (err) {
             console.error('[API/FORMS] giveaway-board error:', err);
             return res.status(500).json({ success: false, error: 'Leaderboard is unavailable right now.' });

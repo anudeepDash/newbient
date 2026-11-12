@@ -4,26 +4,32 @@
  *
  * Served as /api/forms?type=community&action=…
  *
- *   GET  giveaway         {slug}                                     public view (+ your entry when signed in)
- *   POST giveaway-enter   {giveawayId, answer?, college?, city?, instagram?, referredBy?}
- *   POST giveaway-task    {giveawayId, taskId, instagram?}
- *   POST giveaway-spin    {giveawayId}
- *   POST gig-interest     {gigId, note?}                             older gigs without their form yet
- *   POST gig-form         {gigId}                                    team: give a gig its in-app application
- *   POST gig-application  {gigId}                                    your application's status (+ crew link)
- *   POST gig-withdraw     {gigId}                                    take back your application
+ *   GET  giveaway          {slug}                                    public view (+ your entry, rank when signed in)
+ *   POST giveaway-enter    {giveawayId, answer?, college?, city?, instagram?, referredBy?}
+ *   POST giveaway-task     {giveawayId, taskId, instagram?, choice?, code?}
+ *   POST giveaway-spin     {giveawayId}
+ *   POST giveaway-checkin  {giveawayId}                              the daily bonus, once per India day
+ *   POST gig-interest      {gigId, note?}                            older gigs without their form yet
+ *   POST gig-form          {gigId}                                   team: give a gig its in-app application
+ *   POST gig-application   {gigId}                                   your application's status (+ crew link)
+ *   POST gig-withdraw      {gigId}                                   take back your application
  *
- * Giveaway scores are worked out here, every time, from what the entry holds:
- *   1 for entering + each completed task's points + 3 per referral + the spin.
+ * Giveaway scores are worked out here, every time, from what the entry holds
+ * (src/lib/giveawayRules.js has the one rule). Quiz answers and secret codes
+ * never leave the server.
  */
 import crypto from 'node:crypto';
-import { getDb, FieldValue, nowIso } from './db.js';
+import { getDb, FieldValue, nowIso, istDate } from './db.js';
 import { verifyToken } from './auth.js';
 import { notify } from './notify.js';
 import { normalizeEmail, staffRoleOf } from './mailing.js';
 import { toE164 } from './whatsapp.js';
 import { cleanAmbient } from '../../src/lib/ambientColor.js';
 import { gigFormDoc, interestToAnswers, applicantStatus, canWithdraw } from '../../src/lib/gigApplications.js';
+import {
+    DEFAULT_REFERRAL_POINTS, DEFAULT_WHEEL, MAX_CODE_TRIES, checkinDays, dailyOf, milestonesOf, normalizeCode, pickSegment,
+    publicTask, referralPointsOf, scoreFor, spinEveryOf, spinsAllowed, spinsUsed, streakOf, wheelOf,
+} from '../../src/lib/giveawayRules.js';
 
 class CommunityError extends Error {
     constructor(code, message, status = 400, extra = {}) {
@@ -39,13 +45,9 @@ const idOk = (v) => typeof v === 'string' && /^[\w-]{1,128}$/.test(v);
 const present = (v) => v !== undefined && v !== null && String(v).trim() !== '';
 const pick = (...values) => values.find(present) ?? null;
 
-export const REFERRAL_POINTS = 3;
-/* The bonus wheel, same odds as the public page has always shown. */
-export const WHEEL = [
-    { id: 'points_1', label: '+1 point', points: 1, probability: 0.4 },
-    { id: 'points_2', label: '+2 points', points: 2, probability: 0.3 },
-    { id: 'points_5', label: '+5 points', points: 5, probability: 0.3 },
-];
+export { scoreFor };
+export const REFERRAL_POINTS = DEFAULT_REFERRAL_POINTS;
+export const WHEEL = DEFAULT_WHEEL;
 
 /* "2026-10-20" + optional "18:30", read in India time. */
 export const giveawayEndsAt = (g) => {
@@ -66,14 +68,6 @@ export const giveawayHasEnded = (g, now = new Date()) => {
     return Boolean(end && end < now);
 };
 
-/** The one scoring rule. */
-export const scoreFor = (entry = {}, giveaway = {}) => {
-    const tasks = Array.isArray(giveaway.tasks) ? giveaway.tasks : [];
-    const done = entry.completedTasks || {};
-    const taskPoints = tasks.reduce((n, t) => n + (done[t.id] ? Math.max(0, Math.round(Number(t.entryScore) || 0)) : 0), 0);
-    return 1 + taskPoints + Math.max(0, Number(entry.referralCount) || 0) * REFERRAL_POINTS + Math.max(0, Number(entry.spinPoints) || 0);
-};
-
 const callerFrom = async (req) => {
     const token = await verifyToken(req);
     return token ? { uid: token.uid, email: normalizeEmail(token.email), token } : { uid: null };
@@ -92,6 +86,20 @@ const loadGiveaway = async (db, { giveawayId, slug }) => {
     return null;
 };
 
+const loadOpenGiveaway = async (db, body) => {
+    const g = await loadGiveaway(db, { giveawayId: str(body.giveawayId, 128) });
+    if (!g) throw new CommunityError('NOT_FOUND', "We couldn't find this giveaway.", 404);
+    if (giveawayHasEnded(g)) throw new CommunityError('ENDED', 'This giveaway has ended.', 409);
+    return g;
+};
+
+const toIso = (v) => {
+    if (!v) return null;
+    if (typeof v.toDate === 'function') return v.toDate().toISOString();
+    const d = new Date(v);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString();
+};
+
 const publicGiveaway = (g) => ({
     id: g.id,
     slug: g.slug,
@@ -100,28 +108,43 @@ const publicGiveaway = (g) => ({
     posterUrl: g.posterUrl || null,
     ambientColor: cleanAmbient(g.ambientColor),
     prize: pick(g.prize, g.prizes) || null,
+    winnerCount: Math.max(1, Math.min(100, Math.round(Number(g.winnerCount) || 1))),
     city: str(g.city, 80) || null,
+    startsAt: toIso(g.createdAt),
     endsAt: giveawayEndsAt(g)?.toISOString() || null,
     ended: giveawayHasEnded(g),
+    winnersOn: /^\d{4}-\d{2}-\d{2}$/.test(String(g.winnerAnnouncementDate || '')) ? g.winnerAnnouncementDate : null,
     question: str(g.question || g.entryQuestion, 300) || null,
     askCollege: g.askCollege !== false && g.collectCollege !== false,
     askInstagram: (g.tasks || []).some(t => t.type === 'instagram'),
     showSpinWheel: g.showSpinWheel !== false,
-    tasks: (g.tasks || []).map(t => ({ id: t.id, type: t.type, label: str(t.label, 200), points: Math.max(0, Math.round(Number(t.entryScore) || 0)), url: /^https?:\/\//.test(t.config?.url || '') ? t.config.url : null })),
-    referralPoints: REFERRAL_POINTS,
-    wheel: WHEEL.map(({ id, label, points }) => ({ id, label, points })),
+    tasks: (g.tasks || []).map(publicTask),
+    referralPoints: referralPointsOf(g),
+    referralMilestones: milestonesOf(g),
+    bonusSpinEvery: spinEveryOf(g),
+    dailyBonus: dailyOf(g),
+    wheel: wheelOf(g).map(({ id, label, points }) => ({ id, label, points })),
+    today: istDate(),
 });
 
-const ownEntryView = (e) => (e ? {
+const ownEntryView = (e, g = {}) => (e ? {
     id: e.id,
     entryScore: Number(e.entryScore) || 0,
     completedTasks: e.completedTasks || {},
+    quizAnswers: Object.fromEntries(Object.entries(e.quizAnswers || {}).map(([k, v]) => [k, { choice: v.choice, correct: Boolean(v.correct) }])),
+    codeTries: e.codeTries || {},
     referralCode: e.referralCode,
     referralCount: Number(e.referralCount) || 0,
     hasSpunWheel: Boolean(e.hasSpunWheel),
     spinReward: e.spinReward || null,
+    spins: Array.isArray(e.spins) ? e.spins.map(s => ({ label: s.label, points: s.points })) : (e.hasSpunWheel ? [{ label: e.spinReward || '', points: Number(e.spinPoints) || 0 }] : []),
+    spinsUsed: spinsUsed(e),
+    spinsAllowed: spinsAllowed(e, g),
+    checkins: checkinDays(e),
+    streak: streakOf(e, istDate()),
     isWinner: Boolean(e.isWinner),
     prize: e.prize || null,
+    createdAt: e.createdAt || null,
 } : null);
 
 const findOwnEntry = async (db, giveawayId, uid, tx = null) => {
@@ -135,19 +158,48 @@ const findOwnEntry = async (db, giveawayId, uid, tx = null) => {
     return { ref, data: null };
 };
 
+/* Your place: 1 + how many have more points (the leaderboard's index). Null if it can't be counted. */
+const rankOf = async (db, giveawayId, score) => {
+    try {
+        const snap = await db.collection('giveaway_entries')
+            .where('campaignId', '==', giveawayId)
+            .where('entryScore', '>', score)
+            .orderBy('entryScore', 'desc')
+            .count()
+            .get();
+        return 1 + (snap.data().count || 0);
+    } catch (err) {
+        console.warn('[COMMUNITY] rank not counted:', err.message);
+        return null;
+    }
+};
+
+/* Applies a change to your own entry in a transaction and rescores it. */
+const changeOwnEntry = async (db, g, uid, change) => db.runTransaction(async (tx) => {
+    const own = await findOwnEntry(db, g.id, uid, tx);
+    if (!own.data) throw new CommunityError('NOT_ENTERED', 'Enter the giveaway first.', 409);
+    const result = change(own.data);
+    if (!result) return { entry: own.data };
+    const next = { ...own.data, ...result.patch };
+    const patch = { ...result.patch, entryScore: scoreFor(next, g) };
+    tx.update(own.ref, patch);
+    return { entry: { ...next, ...patch }, extra: result.extra };
+});
+
 const giveawayAction = async (db, body, caller) => {
     const g = await loadGiveaway(db, { giveawayId: str(body.id, 128), slug: body.slug });
     if (!g || String(g.status || '').toLowerCase() === 'draft') throw new CommunityError('NOT_FOUND', "We couldn't find this giveaway.", 404);
     const view = publicGiveaway(g);
-    if (caller.uid) view.me = ownEntryView((await findOwnEntry(db, g.id, caller.uid)).data);
+    if (caller.uid) {
+        view.me = ownEntryView((await findOwnEntry(db, g.id, caller.uid)).data, g);
+        if (view.me) view.me.rank = await rankOf(db, g.id, view.me.entryScore);
+    }
     return { success: true, giveaway: view };
 };
 
 const enterAction = async (db, body, caller) => {
     requireUser(caller);
-    const g = await loadGiveaway(db, { giveawayId: str(body.giveawayId, 128) });
-    if (!g) throw new CommunityError('NOT_FOUND', "We couldn't find this giveaway.", 404);
-    if (giveawayHasEnded(g)) throw new CommunityError('ENDED', 'This giveaway has ended.', 409);
+    const g = await loadOpenGiveaway(db, body);
 
     const userSnap = await db.collection('users').doc(caller.uid).get().catch(() => null);
     const u = userSnap?.exists ? userSnap.data() : {};
@@ -228,60 +280,150 @@ const enterAction = async (db, body, caller) => {
     } catch (err) {
         console.warn('[COMMUNITY] giveaway email not sent:', err.message);
     }
-    const fresh = await entryRef.get();
-    return { success: true, entry: ownEntryView({ id: fresh.id, ...fresh.data() }) };
+    const fresh = { id: entryRef.id, ...(await entryRef.get()).data() };
+    const me = ownEntryView(fresh, g);
+    me.rank = await rankOf(db, g.id, me.entryScore);
+    return { success: true, entry: me };
 };
 
 const taskAction = async (db, body, caller) => {
     requireUser(caller);
-    const g = await loadGiveaway(db, { giveawayId: str(body.giveawayId, 128) });
-    if (!g) throw new CommunityError('NOT_FOUND', "We couldn't find this giveaway.", 404);
-    if (giveawayHasEnded(g)) throw new CommunityError('ENDED', 'This giveaway has ended.', 409);
+    const g = await loadOpenGiveaway(db, body);
     const task = (g.tasks || []).find(t => t.id === body.taskId);
     if (!task) throw new CommunityError('VALIDATION', 'That task isn’t part of this giveaway.');
     const instagram = str(body.instagram, 60).replace(/^@+/, '');
     if (task.type === 'instagram' && !/^[A-Za-z0-9._]{1,30}$/.test(instagram)) throw new CommunityError('VALIDATION', 'Enter your Instagram username.');
 
-    const entry = await db.runTransaction(async (tx) => {
-        const own = await findOwnEntry(db, g.id, caller.uid, tx);
-        if (!own.data) throw new CommunityError('NOT_ENTERED', 'Enter the giveaway first.', 409);
-        if (own.data.completedTasks?.[task.id]) return own.data;
-        const next = { ...own.data, completedTasks: { ...(own.data.completedTasks || {}), [task.id]: nowIso() } };
-        const patch = { completedTasks: next.completedTasks, entryScore: scoreFor(next, g) };
-        if (task.type === 'instagram') { patch.instagramUsername = instagram; patch.hasFollowedInsta = true; }
-        tx.update(own.ref, patch);
-        return { ...next, ...patch };
-    });
-    return { success: true, entry: ownEntryView(entry) };
-};
-
-const pickReward = () => {
-    const roll = crypto.randomInt(1_000_000) / 1_000_000;
-    let acc = 0;
-    for (const r of WHEEL) {
-        acc += r.probability;
-        if (roll < acc) return r;
+    let choice = null;
+    if (task.type === 'quiz') {
+        choice = Number(body.choice);
+        const options = Array.isArray(task.config?.options) ? task.config.options.filter(o => present(o)) : [];
+        if (!Number.isInteger(choice) || choice < 0 || choice >= options.length) throw new CommunityError('VALIDATION', 'Pick an answer.');
     }
-    return WHEEL[WHEEL.length - 1];
+    const code = task.type === 'code' ? normalizeCode(body.code) : '';
+    if (task.type === 'code' && !code) throw new CommunityError('VALIDATION', 'Type the code.');
+
+    const { entry, extra } = await changeOwnEntry(db, g, caller.uid, (own) => {
+        if (own.completedTasks?.[task.id]) return null;
+        const completed = { ...(own.completedTasks || {}), [task.id]: nowIso() };
+
+        if (task.type === 'quiz') {
+            if (own.quizAnswers?.[task.id]) throw new CommunityError('DUPLICATE', 'You’ve already answered this one.', 409);
+            const correct = choice === Number(task.config?.answer);
+            const quizAnswers = { ...(own.quizAnswers || {}), [task.id]: { choice, correct, at: nowIso() } };
+            return { patch: correct ? { quizAnswers, completedTasks: completed } : { quizAnswers }, extra: { correct } };
+        }
+
+        if (task.type === 'code') {
+            const tries = Number(own.codeTries?.[task.id]) || 0;
+            if (tries >= MAX_CODE_TRIES) throw new CommunityError('LOCKED', 'No tries left on this code.', 409);
+            const correct = Boolean(normalizeCode(task.config?.code)) && code === normalizeCode(task.config.code);
+            const codeTries = { ...(own.codeTries || {}), [task.id]: tries + 1 };
+            return { patch: correct ? { codeTries, completedTasks: completed } : { codeTries }, extra: { correct, triesLeft: MAX_CODE_TRIES - tries - 1 } };
+        }
+
+        const patch = { completedTasks: completed };
+        if (task.type === 'instagram') { patch.instagramUsername = instagram; patch.hasFollowedInsta = true; }
+        return { patch };
+    });
+    const me = ownEntryView(entry, g);
+    me.rank = await rankOf(db, g.id, me.entryScore);
+    return { success: true, entry: me, ...(extra || {}) };
 };
 
 const spinAction = async (db, body, caller) => {
     requireUser(caller);
-    const g = await loadGiveaway(db, { giveawayId: str(body.giveawayId, 128) });
-    if (!g) throw new CommunityError('NOT_FOUND', "We couldn't find this giveaway.", 404);
+    const g = await loadOpenGiveaway(db, body);
     if (g.showSpinWheel === false) throw new CommunityError('VALIDATION', 'This giveaway has no bonus spin.');
-    if (giveawayHasEnded(g)) throw new CommunityError('ENDED', 'This giveaway has ended.', 409);
-    const reward = pickReward();
-    const entry = await db.runTransaction(async (tx) => {
-        const own = await findOwnEntry(db, g.id, caller.uid, tx);
-        if (!own.data) throw new CommunityError('NOT_ENTERED', 'Enter the giveaway first.', 409);
-        if (own.data.hasSpunWheel) throw new CommunityError('DUPLICATE', 'You’ve already used your spin.', 409);
-        const next = { ...own.data, hasSpunWheel: true, spinPoints: reward.points, spinReward: reward.label };
-        const patch = { hasSpunWheel: true, spinPoints: reward.points, spinReward: reward.label, entryScore: scoreFor(next, g) };
-        tx.update(own.ref, patch);
-        return { ...next, ...patch };
+    const wheel = wheelOf(g);
+    const { segment, index } = pickSegment(wheel, crypto.randomInt(1_000_000) / 1_000_000);
+    const { entry } = await changeOwnEntry(db, g, caller.uid, (own) => {
+        if (spinsUsed(own) >= spinsAllowed(own, g)) throw new CommunityError('DUPLICATE', 'No spins left. Invite friends to earn more.', 409);
+        const earlier = Array.isArray(own.spins) ? own.spins : (own.hasSpunWheel ? [{ label: own.spinReward || '', points: Number(own.spinPoints) || 0, at: own.spunAt || null }] : []);
+        const spins = [...earlier, { label: segment.label, points: segment.points, at: nowIso() }];
+        return { patch: { spins, hasSpunWheel: true, spinPoints: spins.reduce((n, s) => n + (Number(s.points) || 0), 0), spinReward: segment.label } };
     });
-    return { success: true, reward: { id: reward.id, label: reward.label, points: reward.points }, entry: ownEntryView(entry) };
+    const me = ownEntryView(entry, g);
+    me.rank = await rankOf(db, g.id, me.entryScore);
+    return { success: true, reward: { id: segment.id, label: segment.label, points: segment.points, index }, entry: me };
+};
+
+const checkinAction = async (db, body, caller) => {
+    requireUser(caller);
+    const g = await loadOpenGiveaway(db, body);
+    if (!dailyOf(g).enabled) throw new CommunityError('VALIDATION', 'This giveaway has no daily bonus.');
+    const today = istDate();
+    const { entry } = await changeOwnEntry(db, g, caller.uid, (own) => {
+        if (own.checkins?.[today]) throw new CommunityError('DUPLICATE', 'You’ve already claimed today’s bonus. Come back tomorrow.', 409);
+        return { patch: { checkins: { ...(own.checkins || {}), [today]: nowIso() } } };
+    });
+    const me = ownEntryView(entry, g);
+    me.rank = await rankOf(db, g.id, me.entryScore);
+    return { success: true, entry: me, points: dailyOf(g).points };
+};
+
+/* "Asha Rao" → "Asha R.": the public board shows first names and an initial. */
+export const boardName = (name) => {
+    const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return 'Participant';
+    return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.` : parts[0];
+};
+
+/**
+ * The public summary behind the giveaway page: the top 10 (first name and an
+ * initial, and points), how many have entered, how many points are in the
+ * draw, how many joined in the last hour, and the winners' names. Never a
+ * phone, email or college. Every part is a small query; the parts that need
+ * an index that isn't built yet fall back or are left out.
+ */
+export const giveawayBoard = async (db, giveawayId) => {
+    const col = db.collection('giveaway_entries').where('campaignId', '==', giveawayId);
+    const toRow = (e) => ({ id: e.id, name: boardName(e.name), entryScore: Number(e.entryScore) || 0 });
+    let leaderboard;
+    let totalEntries;
+    let totalPoints = null;
+    let winners;
+    try {
+        const [top, count, won] = await Promise.all([
+            col.orderBy('entryScore', 'desc').limit(10).get(),
+            col.count().get(),
+            col.where('isWinner', '==', true).limit(20).get(),
+        ]);
+        leaderboard = top.docs.map(d => toRow({ id: d.id, ...d.data() }));
+        totalEntries = count.data().count;
+        winners = won.docs.map(d => ({ id: d.id, name: boardName(d.data().name) }));
+    } catch (indexErr) {
+        if (indexErr?.code !== 9 && !/index/i.test(String(indexErr?.message || ''))) throw indexErr;
+        const snap = await col.get();
+        const entries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        leaderboard = [...entries].sort((a, b) => (b.entryScore || 0) - (a.entryScore || 0)).slice(0, 10).map(toRow);
+        totalEntries = entries.length;
+        totalPoints = entries.reduce((n, e) => n + (Number(e.entryScore) || 0), 0);
+        winners = entries.filter(e => e.isWinner).map(e => ({ id: e.id, name: boardName(e.name) }));
+    }
+    if (totalPoints === null) {
+        try {
+            const { AggregateField } = await import('firebase-admin/firestore');
+            const sum = await col.aggregate({ total: AggregateField.sum('entryScore') }).get();
+            totalPoints = Number(sum.data().total) || 0;
+        } catch {
+            totalPoints = null;
+        }
+    }
+    let joinedLastHour = null;
+    try {
+        const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+        joinedLastHour = (await col.where('createdAt', '>=', since).count().get()).data().count;
+    } catch { /* needs the (campaignId, createdAt) index */ }
+    return {
+        success: true,
+        leaderboard,
+        totalEntries,
+        totalPoints,
+        joinedLastHour,
+        winners,
+        winner: winners[0] || null,
+    };
 };
 
 /** "I'm interested" on a gig: saved before the person is sent to WhatsApp. */
@@ -418,6 +560,7 @@ const ACTIONS = {
     'giveaway-enter': enterAction,
     'giveaway-task': taskAction,
     'giveaway-spin': spinAction,
+    'giveaway-checkin': checkinAction,
     'gig-interest': gigInterestAction,
     'gig-form': gigFormAction,
     'gig-application': gigApplicationAction,

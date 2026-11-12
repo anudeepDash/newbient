@@ -60,6 +60,8 @@ class Query {
     // Field masks don't matter here: every field comes back.
     select() { return this; }
     count() { return { get: async () => { const snap = await this.get(); return { data: () => ({ count: snap.size }) }; } }; }
+    // aggregate({ total: AggregateField.sum('field') }): sums only.
+    aggregate(spec) { return { get: async () => { const snap = await this.get(); const out = {}; Object.entries(spec).forEach(([k, f]) => { const field = f?._field ?? f?.field; out[k] = snap.docs.reduce((n, d) => n + (Number(d.data()[field]) || 0), 0); }); return { data: () => out }; } }; }
     async get() {
         const prefix = `${this.path}/`;
         let docs = [...this.db.store.entries()]

@@ -122,6 +122,8 @@ export const TASK_PRESETS = [
     { type: 'spotify', label: 'Follow on Spotify', short: 'Spotify', tone: 'green' },
     { type: 'snapchat', label: 'Add us on Snapchat', short: 'Snapchat', tone: 'amber' },
     { type: 'website', label: 'Visit our website', short: 'Website', tone: 'cyan' },
+    { type: 'quiz', label: 'Quick quiz', short: 'Quiz', tone: 'violet' },
+    { type: 'code', label: 'Find the secret code', short: 'Secret code', tone: 'pink' },
     { type: 'custom', label: 'New task', short: 'Custom', tone: 'violet' },
 ];
 export const TASK_PRESET_MAP = Object.fromEntries(TASK_PRESETS.map(t => [t.type, t]));
