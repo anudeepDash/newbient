@@ -48,6 +48,7 @@ import { sendShortlistWelcome } from './mail/events.js';
 import { taskWindow } from '../../src/lib/creator/tasks.js';
 import { FieldPath } from 'firebase-admin/firestore';
 import { tellPhoneChanged } from './securityAlerts.js';
+import { saveMedia } from './media.js';
 
 /* The app's own origin (links in emails, the OAuth fallback). PUBLIC_APP_URL overrides it on previews. */
 const APP_URL = (process.env.PUBLIC_APP_URL || 'https://app.newbi.live').replace(/\/+$/, '');
@@ -219,17 +220,18 @@ const withParams = (origin, path, params) => {
     return url.toString();
 };
 
-/* Best effort: Instagram picture URLs expire, so keep a copy on Cloudinary. */
+/* Best effort: Instagram picture URLs expire, so keep a copy in Firebase Storage. */
 const persistPicture = async (url) => {
     if (!url) return '';
     try {
-        const cloud = process.env.CLOUDINARY_CLOUD_NAME || process.env.VITE_CLOUDINARY_CLOUD_NAME || 'dgtalrz4n';
-        const preset = process.env.CLOUDINARY_UPLOAD_PRESET || process.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'maw1e4ud';
-        const body = new URLSearchParams({ file: url, upload_preset: preset });
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), 4000);
-        const r = await fetch(`https://api.cloudinary.com/v1_1/${cloud}/image/upload`, { method: 'POST', body, signal: ctrl.signal }).finally(() => clearTimeout(timer));
-        if (r.ok) return (await r.json()).secure_url || url;
+        const r = await fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(timer));
+        const type = (r.headers?.get?.('content-type') || '').split(';')[0].trim();
+        if (!r.ok || !/^image\/(jpeg|png|webp)$/.test(type)) return url;
+        const buf = Buffer.from(await r.arrayBuffer());
+        if (!buf.length || buf.length > 5 * 1024 * 1024) return url;
+        return await saveMedia(buf, { name: `instagram.${type === 'image/jpeg' ? 'jpg' : type.split('/')[1]}`, contentType: type });
     } catch { /* keep Instagram's URL */ }
     return url;
 };

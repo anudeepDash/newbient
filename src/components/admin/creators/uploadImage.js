@@ -12,7 +12,7 @@ export const uploadImage = async (file) => {
     }
     let url = null;
     try {
-        url = await useStore.getState().uploadToCloudinary(file);
+        url = await useStore.getState().uploadFile(file);
     } catch (err) {
         console.error('Image upload failed:', err);
     }

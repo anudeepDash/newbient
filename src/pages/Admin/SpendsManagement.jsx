@@ -208,7 +208,7 @@ const upiFrom = (dest = '') => (dest.includes('UPI:') ? dest.split('UPI:')[1].tr
 
 const SpendsManagement = () => {
     useStoreSubscription(['spends', 'financePayees', 'invoices', 'upcomingEvents']);
-    const { spends, addSpend, updateSpend, deleteSpend, uploadToCloudinary, user, financePayees, invoices, upcomingEvents, addUpcomingEvent } = useStore();
+    const { spends, addSpend, updateSpend, deleteSpend, uploadFile, user, financePayees, invoices, upcomingEvents, addUpcomingEvent } = useStore();
     
     // Filters live in the URL so a filtered view can be shared or reloaded.
     // No month in the URL means this month (IST), as before; "all" means all time.
@@ -749,7 +749,7 @@ const SpendsManagement = () => {
         if (!file) return;
         setUploadingReceipt(true);
         try {
-            const url = await uploadToCloudinary(file);
+            const url = await uploadFile(file);
             setUrl(url);
             useStore.getState().addToast('Receipt uploaded.', 'success');
         } catch (err) {

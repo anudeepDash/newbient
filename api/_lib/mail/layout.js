@@ -333,7 +333,7 @@ ${heroSrc ? `<tr><td class="herobg" style="padding:0;font-size:0;line-height:0;b
         const alt = esc(model.hero.alt || model.title || '');
         const img = (src, cls, hide) => `<img${cls ? ` class="${cls}"` : ''} src="${esc(src)}" alt="${alt}" width="600" style="display:${hide ? 'none' : 'block'};width:100%;max-width:600px;height:auto;border:0" />`;
         const dark = heroFaded(heroSrc, '0b0f17');
-        return dark ? `${img(dark, 'dk')}${img(heroFaded(heroSrc, 'ffffff'), 'lt', true)}` : img(heroSrc);
+        return dark ? `${img(dark, 'dk')}${img(heroFaded(heroSrc, 'ffffff'), 'lt', true)}` : img(sizedJpeg(heroSrc, 1200));
     })()}</td></tr>` : ''}
 <tr><td class="pad" background="${esc(`${origin}/brand/email/card-bg.png`)}" bgcolor="#0b0f17" valign="top" style="padding:${heroSrc ? '28px' : '10px'} 32px 12px;background:#0b0f17 url('${esc(`${origin}/brand/email/card-bg.png`)}') right bottom no-repeat">
 ${isPresent(model.title) ? `<h1 class="title" style="margin:0 0 22px;font-size:30px;line-height:1.15;font-weight:900;letter-spacing:-0.8px;color:#ffffff">${esc(model.title)}</h1>` : ''}

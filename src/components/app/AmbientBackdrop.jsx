@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { cn } from '../../lib/utils';
 import { isIOS } from '../../lib/platform';
 import { AMBIENT_OFF, cleanAmbient, hexToHsl } from '../../lib/ambientColor';
+import { sizedImage } from '../../lib/image';
 
 /*
  * The ambient glow behind a hero: the image's own colours, blurred and faded
@@ -10,8 +11,8 @@ import { AMBIENT_OFF, cleanAmbient, hexToHsl } from '../../lib/ambientColor';
  *
  * Here there is at most one blur layer. On iPhone there is none: the glow is a
  * tiny version of the image stretched to size, which the browser smooths into
- * a blur for free (Cloudinary sends a pre-blurred 64px thumbnail; other hosts
- * draw into a 32px canvas). Live CSS blur over large areas is what makes iOS
+ * a blur for free (Cloudinary sends a pre-blurred 64px thumbnail; Firebase
+ * uploads draw their 160px copy into a 32px canvas, other hosts the original). Live CSS blur over large areas is what makes iOS
  * Safari stutter and run out of GPU memory.
  *
  *   <div className="relative">
@@ -28,8 +29,8 @@ export const tinyBlurredUrl = (url) => {
     return url.replace(CLOUDINARY_UPLOAD, '$1w_64,e_blur:800,e_saturation:60,q_50,f_auto/');
 };
 
-/* A small (not blurred) Cloudinary rendition for the live-blur layer, or the original. */
-const smallUrl = (url) => (url && CLOUDINARY_UPLOAD.test(url) ? url.replace(CLOUDINARY_UPLOAD, '$1w_480,q_60,f_auto/') : url);
+/* A small (not blurred) rendition for the live-blur layer: Cloudinary's, a Firebase upload's 480px copy, or the original. */
+const smallUrl = (url) => (url && CLOUDINARY_UPLOAD.test(url) ? url.replace(CLOUDINARY_UPLOAD, '$1w_480,q_60,f_auto/') : sizedImage(url, 480));
 
 const FADE = 'linear-gradient(to bottom, rgba(0,0,0,1) 30%, rgba(0,0,0,0.55) 70%, rgba(0,0,0,0) 100%)';
 
@@ -82,7 +83,7 @@ const AmbientBackdrop = ({
                 tiny ? (
                     <div className={cn(layer, 'bg-cover bg-center')} style={{ backgroundImage: `url("${tiny}")`, opacity: intensity, filter: 'saturate(1.6) brightness(0.9)' }} />
                 ) : (
-                    <TinyCanvas src={image} className={cn(layer, 'object-cover')} style={{ opacity: intensity }} />
+                    <TinyCanvas src={sizedImage(image, 160)} className={cn(layer, 'object-cover')} style={{ opacity: intensity }} />
                 )
             ) : (
                 <div
@@ -100,8 +101,8 @@ export default AmbientBackdrop;
 
 const colorCache = new Map();
 
-/* A tiny rendition for sampling (Cloudinary resizes on the fly; others load as they are). */
-const sampleUrl = (url) => (url && CLOUDINARY_UPLOAD.test(url) ? url.replace(CLOUDINARY_UPLOAD, '$1w_24,h_24,c_fill,f_png/') : url);
+/* A tiny rendition for sampling (Cloudinary resizes on the fly; Firebase uploads have a 160px copy; others load as they are). */
+const sampleUrl = (url) => (url && CLOUDINARY_UPLOAD.test(url) ? url.replace(CLOUDINARY_UPLOAD, '$1w_24,h_24,c_fill,f_png/') : sizedImage(url, 160));
 
 const toHsl = (r, g, b) => {
     r /= 255; g /= 255; b /= 255;

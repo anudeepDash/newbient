@@ -39,7 +39,7 @@ const FileInput = ({ field, value, onChange, disabled, accent }) => {
         if (disabled) { onChange([{ url: 'https://example.com/preview', name: file.name, size: file.size, type: file.type }]); return; }
         setUploading(true);
         try {
-            const url = await useStore.getState().uploadToCloudinary(file);
+            const url = await useStore.getState().uploadFile(file);
             if (!url) throw new Error('No URL');
             onChange([{ url, name: file.name, size: file.size, type: file.type }]);
         } catch {

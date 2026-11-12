@@ -1,5 +1,6 @@
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
+import { uploadFile } from './media';
 
 /*
  * The picture a shared document link shows in WhatsApp and other chats: the
@@ -74,14 +75,10 @@ async function fingerprint(dataUrl) {
 }
 
 async function uploadCard(dataUrl) {
-    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dgtalrz4n';
-    const form = new FormData();
-    form.append('file', dataUrl);
-    form.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'maw1e4ud');
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: form });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok || !json.secure_url) throw new Error(json.error?.message || `Upload failed (${res.status})`);
-    return json.secure_url;
+    const blob = await (await fetch(dataUrl)).blob();
+    const ext = blob.type === 'image/png' ? 'png' : 'jpg';
+    // Kept as it is (no WebP copies): it is a link-preview image for crawlers.
+    return uploadFile(new File([blob], `share-card.${ext}`, { type: blob.type || 'image/jpeg' }), { resize: false });
 }
 
 // Who may save a card: the staff roles firestore.rules allows to write documents.

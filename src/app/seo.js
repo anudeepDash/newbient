@@ -3,6 +3,8 @@
 // function (api/og.js), so keep it plain JavaScript: no React, no
 // import.meta.env, no window.
 
+import { isSizedMedia, sizedJpeg } from '../lib/image.js';
+
 export const LANDING_ORIGIN = 'https://www.newbi.live';
 export const APP_ORIGIN = 'https://app.newbi.live';
 export const ADMIN_ORIGIN = 'https://admin.newbi.live';
@@ -424,6 +426,9 @@ export const toOgImage = (input, base = LANDING_ORIGIN) => {
 
     const known = KNOWN_DEFAULTS.find((img) => img.path === url.pathname);
     if (known) return { url: url.href, width: known.width, height: known.height, type: known.type };
+
+    // A Firebase upload (src/lib/media.js): its email.jpg, a JPEG at most 1200 wide.
+    if (isSizedMedia(url.href)) return { url: sizedJpeg(url.href), type: 'image/jpeg' };
 
     const isCloudinary = url.hostname === 'res.cloudinary.com' || url.hostname.endsWith('.cloudinary.com');
     if (isCloudinary) {

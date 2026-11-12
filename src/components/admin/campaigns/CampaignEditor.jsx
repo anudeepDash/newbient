@@ -240,7 +240,7 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
         if (!file.type?.startsWith('image/')) { addToast('Choose an image file, like a JPG or PNG.', 'warning'); return; }
         setUploading(u => ({ ...u, [key]: true }));
         try {
-            const url = await useStore.getState().uploadToCloudinary(file);
+            const url = await useStore.getState().uploadFile(file);
             if (!url) throw new Error('No URL');
             apply(url);
         } catch {

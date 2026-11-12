@@ -143,7 +143,7 @@ const AttachmentField = ({ url, uploading, onPick, onRemove, label = 'Attach pro
 
 const OtherIncomeManagement = () => {
     useStoreSubscription(['otherIncomes']);
-    const { otherIncomes, addOtherIncome, updateOtherIncome, deleteOtherIncome, uploadToCloudinary, user } = useStore();
+    const { otherIncomes, addOtherIncome, updateOtherIncome, deleteOtherIncome, uploadFile, user } = useStore();
     // Filters live in the URL so a filtered view can be shared or reloaded.
     // No month in the URL means this month, as before; "all" means all time.
     const [params, setParams] = useSearchParams();
@@ -259,7 +259,7 @@ const OtherIncomeManagement = () => {
         if (!file) return;
         setUploadingAttachment(true);
         try {
-            const url = await uploadToCloudinary(file);
+            const url = await uploadFile(file);
             setUrl(url);
             useStore.getState().addToast('Attachment uploaded.', 'success');
         } catch (err) {

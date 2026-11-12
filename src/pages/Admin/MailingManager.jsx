@@ -201,13 +201,13 @@ const MailingManager = () => {
 
     /* ---------- Images in the message ---------- */
 
-    const uploadToCloudinary = useStore(s => s.uploadToCloudinary);
+    const uploadFile = useStore(s => s.uploadFile);
     const [heroUploading, setHeroUploading] = useState(false);
     const onHeroFile = async (file) => {
         if (!file?.type?.startsWith('image/')) { addToast('Pick an image file, like a JPG or PNG.', 'warning'); return; }
         setHeroUploading(true);
         try {
-            const url = await uploadToCloudinary(file);
+            const url = await uploadFile(file);
             if (!url) throw new Error('No URL');
             patch({ heroImage: url });
         } catch (err) {
@@ -223,7 +223,7 @@ const MailingManager = () => {
     mailRef.current = mail;
     const hostInlineImages = async () => {
         const current = mailRef.current;
-        const { html, uploaded } = await uploadInlineImages(current.messageBody, uploadToCloudinary);
+        const { html, uploaded } = await uploadInlineImages(current.messageBody, uploadFile);
         const ready = uploaded ? { ...current, messageBody: html } : current;
         if (uploaded) setMail(m => ({ ...m, messageBody: html }));
         return ready;

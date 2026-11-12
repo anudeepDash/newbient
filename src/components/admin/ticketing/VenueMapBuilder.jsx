@@ -135,7 +135,7 @@ const VenueMapBuilder = ({ value, onChange, tiers = [] }) => {
         if (!file?.type?.startsWith('image/')) { addToast('Pick an image file, like a JPG or PNG.', 'warning'); return; }
         setUploading(true);
         try {
-            const url = await useStore.getState().uploadToCloudinary(file);
+            const url = await useStore.getState().uploadFile(file);
             if (!url) throw new Error('No URL');
             const base = map || { w: MAP_W, h: 700, elements: [] };
             commit({ ...base, background: { url, opacity: 0.6, show: false } });

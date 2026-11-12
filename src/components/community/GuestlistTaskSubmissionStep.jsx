@@ -28,7 +28,7 @@ export const GuestlistTaskSubmissionStep = ({
     loading = false,
     accentColor = '#2ebfff'
 }) => {
-    const uploadToCloudinary = useStore.getState().uploadToCloudinary;
+    const uploadFile = useStore.getState().uploadFile;
     const addToast = useStore.getState().addToast;
 
     const fileInputRef = useRef(null);
@@ -76,7 +76,7 @@ export const GuestlistTaskSubmissionStep = ({
         setIsUploadingFile(true);
 
         try {
-            const uploadedUrl = await uploadToCloudinary(selectedFile);
+            const uploadedUrl = await uploadFile(selectedFile);
             if (!uploadedUrl) throw new Error("Upload did not return a valid file URL.");
             setFileUrl(uploadedUrl);
             addToast('Attachment uploaded.', 'success');

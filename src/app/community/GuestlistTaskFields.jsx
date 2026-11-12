@@ -41,7 +41,7 @@ const GuestlistTaskFields = ({ task, value, onChange, onUploading }) => {
         setUploading(true);
         onUploading?.(true);
         try {
-            const url = await useLegacyStore.getState().uploadToCloudinary(file);
+            const url = await useLegacyStore.getState().uploadFile(file);
             if (!url) throw new Error('no url');
             set({ fileUrl: url, fileName: file.name, fileType: file.type, fileSize: file.size });
         } catch {

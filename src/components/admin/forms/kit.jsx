@@ -100,7 +100,7 @@ export const useImageField = (value, onChange) => {
         }
         setUploading(true);
         try {
-            const url = await useStore.getState().uploadToCloudinary(file);
+            const url = await useStore.getState().uploadFile(file);
             if (!url) throw new Error('No URL');
             onChange(url);
         } catch (err) {

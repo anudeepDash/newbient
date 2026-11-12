@@ -247,14 +247,14 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
         setForm(prev => ({ ...prev, profilePicture: localPreview }));
         setIsUploadingPhoto(true);
         try {
-            const uploadFn = useStore.getState().uploadToCloudinary;
+            const uploadFn = useStore.getState().uploadFile;
             if (uploadFn) {
                 const url = await uploadFn(file);
                 setForm(prev => ({ ...prev, profilePicture: url }));
                 addToast("Profile photo uploaded.", "success");
             }
         } catch (err) {
-            console.error("Cloudinary upload failed, using local preview fallback:", err);
+            console.error("Upload failed, using local preview fallback:", err);
             const reader = new FileReader();
             reader.onloadend = () => {
                 setForm(prev => ({ ...prev, profilePicture: reader.result }));

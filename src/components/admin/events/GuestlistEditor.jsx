@@ -88,7 +88,7 @@ const GuestlistEditor = ({ open, onClose, guestlist, onSaved }) => {
         if (!file?.type?.startsWith('image/')) { addToast('Pick an image file, like a JPG or PNG.', 'warning'); return; }
         setUploading(true);
         try {
-            const url = await useStore.getState().uploadToCloudinary(file);
+            const url = await useStore.getState().uploadFile(file);
             if (!url) throw new Error('No URL');
             set({ image: url });
         } catch (err) {

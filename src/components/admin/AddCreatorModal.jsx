@@ -104,7 +104,7 @@ const Block = React.forwardRef(({ title, hint, children }, ref) => (
 Block.displayName = 'Block';
 
 const AddCreatorModal = ({ onClose, onCreated }) => {
-    const { addCreator, creators, uploadToCloudinary, addToast, siteSettings } = useStore();
+    const { addCreator, creators, uploadFile, addToast, siteSettings } = useStore();
 
     const [isSaving, setIsSaving] = useState(false);
     const [sendWelcomeMail, setSendWelcomeMail] = useState(false);
@@ -366,15 +366,15 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
         setForm(prev => ({ ...prev, profilePicture: localPreview }));
         setIsUploadingPhoto(true);
         try {
-            if (uploadToCloudinary) {
-                const url = await uploadToCloudinary(file);
+            if (uploadFile) {
+                const url = await uploadFile(file);
                 if (url) {
                     setForm(prev => ({ ...prev, profilePicture: url }));
                     addToast("Profile photo uploaded.", "success");
                 }
             }
         } catch (err) {
-            console.error("Cloudinary upload failed, using local preview:", err);
+            console.error("Upload failed, using local preview:", err);
             addToast("We're using the preview for now. You can try uploading it again later.", "warning", { title: "Photo not uploaded" });
         } finally {
             setIsUploadingPhoto(false);

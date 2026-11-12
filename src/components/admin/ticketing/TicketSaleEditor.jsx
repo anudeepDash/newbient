@@ -237,7 +237,7 @@ const TicketSaleEditor = ({ open, onClose, event, onSaved, initialSection }) => 
         if (!file?.type?.startsWith('image/')) { addToast('Pick an image file, like a JPG or PNG.', 'warning'); return; }
         setUploading(key);
         try {
-            const url = await useStore.getState().uploadToCloudinary(file);
+            const url = await useStore.getState().uploadFile(file);
             if (!url) throw new Error('No URL');
             apply(url);
         } catch (err) {

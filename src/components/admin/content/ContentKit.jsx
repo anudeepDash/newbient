@@ -7,12 +7,12 @@ import PenSquare from 'lucide-react/dist/esm/icons/pen-square';
 import Music from 'lucide-react/dist/esm/icons/music';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 import { cn } from '../../../lib/utils';
-import { useStore } from '../../../lib/store';
 import Sheet from '../Sheet';
 import { Button } from '../ui';
 import { fieldCls } from '../uploads/UploadKit';
 import { imageProblem, MAX_IMAGE_MB } from './contentRules';
 import { sizedImage } from '../../../lib/image';
+import { uploadFile } from '../../../lib/media';
 
 /* Pieces shared by the Content screens (site content, announcements, blog, portfolio). */
 
@@ -65,55 +65,14 @@ export const LabelRow = ({ label, optional, right }) => (
     </span>
 );
 
-const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dgtalrz4n';
-const PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'maw1e4ud';
-
-/**
- * Upload an image with progress. Uses Cloudinary directly (so we can report
- * progress), and falls back to the store's uploader (which can also use
- * Firebase Storage) if that fails. Resolves to the hosted URL.
- */
-export const uploadImageWithProgress = (file, onProgress) => new Promise((resolve, reject) => {
+/* Upload an image with progress (Firebase Storage, see src/lib/media.js). Resolves to the hosted URL. */
+export const uploadImageWithProgress = async (file, onProgress) => {
     const problem = imageProblem(file);
-    if (problem) { reject(new Error(problem)); return; }
-    const fallback = async () => {
-        try {
-            onProgress?.(60);
-            const result = await useStore.getState().uploadToCloudinary(file);
-            const url = typeof result === 'string' ? result : result?.url;
-            if (!url) throw new Error('Upload failed');
-            onProgress?.(100);
-            resolve(url);
-        } catch (err) {
-            reject(err);
-        }
-    };
-    try {
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`);
-        xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress?.(Math.min(95, Math.round((e.loaded / e.total) * 95))); };
-        xhr.onload = () => {
-            try {
-                const json = JSON.parse(xhr.responseText || '{}');
-                if (xhr.status >= 200 && xhr.status < 300 && json.secure_url) {
-                    onProgress?.(100);
-                    resolve(json.secure_url);
-                } else {
-                    fallback();
-                }
-            } catch {
-                fallback();
-            }
-        };
-        xhr.onerror = () => fallback();
-        const data = new FormData();
-        data.append('file', file);
-        data.append('upload_preset', PRESET);
-        xhr.send(data);
-    } catch {
-        fallback();
-    }
-});
+    if (problem) throw new Error(problem);
+    const url = await uploadFile(file, { onProgress });
+    if (!url) throw new Error('Upload failed');
+    return url;
+};
 
 /** Upload state for one image slot: { busy, percent, error, upload(file) }. */
 export const useImageUpload = (onDone) => {

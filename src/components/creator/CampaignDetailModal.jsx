@@ -631,8 +631,8 @@ const CampaignDetailModal = ({
                     useStore.getState().addToast("Uploading your proof file.", 'info');
                     if (typeof useStore.getState().uploadTaskProof === 'function') {
                         proofUrl = await useStore.getState().uploadTaskProof(proofFile, creatorUid, campaign.id, taskId);
-                    } else if (typeof useStore.getState().uploadToCloudinary === 'function') {
-                        proofUrl = await useStore.getState().uploadToCloudinary(proofFile);
+                    } else if (typeof useStore.getState().uploadFile === 'function') {
+                        proofUrl = await useStore.getState().uploadFile(proofFile);
                     }
                 }
             }

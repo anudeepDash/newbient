@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { db, storage, auth } from './firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, getDocsFromCache, where, setDoc, getDoc, increment, arrayUnion, arrayRemove, collectionGroup, serverTimestamp, limit, getCountFromServer, startAfter, writeBatch, runTransaction, FieldPath, deleteField } from 'firebase/firestore';
-import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { uploadFile } from './media';
 import { notifyEvent, subscribeToNewsletter } from './mailApi';
 import { normalizePhoneNumber } from './utils';
 import { isGuestAdmissible, orderItems, orderTicketCount } from './ticketing';
@@ -86,71 +87,34 @@ const getSessionTimestamp = () => {
 };
 
 
-const uploadBase64ToStorage = async (base64String, path) => {
+/* Uploads a pasted data: URL (an image dropped into a document) and returns its link. */
+const uploadBase64ToStorage = async (base64String) => {
     if (!base64String || typeof base64String !== 'string' || !base64String.startsWith('data:') || !base64String.includes(';base64,')) {
         return base64String;
     }
-    
+
     let blob = null;
-    let mimeType = 'image/png';
-    let extension = 'png';
     try {
-        const response = await fetch(base64String);
-        blob = await response.blob();
-        mimeType = blob.type || 'image/png';
-        extension = mimeType.split('/')[1] || 'png';
+        blob = await (await fetch(base64String)).blob();
     } catch (e) {
         console.error("Failed to parse base64 data URL to Blob:", e);
         throw new Error(`Invalid base64 payload: ${e.message}`);
     }
+    const mimeType = blob.type || 'image/png';
+    const extension = (mimeType.split('/')[1] || 'png').replace(/[^a-z0-9]/gi, '') || 'png';
 
     try {
-        const storageRef = ref(storage, path);
-        const uploadPromise = uploadBytes(storageRef, blob).then(() => getDownloadURL(storageRef));
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase Storage timeout')), 2000));
-        return await Promise.race([uploadPromise, timeoutPromise]);
-    } catch (e) {
-        console.warn("Firebase Storage unavailable, falling back to Cloudinary...", e);
-        try {
-            const preset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "maw1e4ud";
-            const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dgtalrz4n";
-            const data = new FormData();
-            data.append("file", blob, `asset.${extension}`);
-            data.append("upload_preset", preset);
-            data.append("cloud_name", cloudName);
-
-            let resourceType = "image";
-            if (mimeType.startsWith("video/")) resourceType = "video";
-            else if (mimeType.startsWith("audio/")) resourceType = "video";
-            else if (!mimeType.startsWith("image/")) resourceType = "raw";
-
-            const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, { 
-                method: "POST", 
-                body: data 
-            });
-            if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.error?.message || "Cloudinary upload failed");
-            }
-            const uploadedFile = await res.json();
-            return uploadedFile.secure_url;
-        } catch (cloudinaryError) {
-            console.warn("Storage upload failed, preserving base64 asset locally:", cloudinaryError);
-            if (base64String.length < 800000) {
-                return base64String;
-            }
-            throw new Error(`Upload failed for file asset. Original storage error: ${e.message}. Cloudinary fallback error: ${cloudinaryError.message}`);
-        }
+        return await uploadFile(new File([blob], `asset.${extension}`, { type: mimeType }));
+    } catch (error) {
+        console.warn("Storage upload failed, preserving base64 asset locally:", error);
+        if (base64String.length < 800000) return base64String;
+        throw new Error(`Upload failed for file asset: ${error.message}`);
     }
 };
 
 const processAndUploadBase64Fields = async (obj, pathPrefix) => {
     if (typeof obj === 'string' && obj.startsWith('data:') && obj.includes(';base64,')) {
-        const uniqueId = Math.random().toString(36).substring(2, 9);
-        const mimeType = obj.match(/data:([a-zA-Z0-9.+\-_/]+);base64/)?.[1] || 'image/png';
-        const extension = mimeType.split('/')[1] || 'png';
-        const storagePath = `${pathPrefix}_file_${uniqueId}.${extension}`;
-        return await uploadBase64ToStorage(obj, storagePath);
+        return await uploadBase64ToStorage(obj);
     }
 
     if (typeof obj === 'string' && obj.includes(';base64,')) {
@@ -166,12 +130,8 @@ const processAndUploadBase64Fields = async (obj, pathPrefix) => {
         }
 
         for (const base64Str of uploads) {
-            const uniqueId = Math.random().toString(36).substring(2, 9);
-            const mimeType = base64Str.match(/data:([a-zA-Z0-9.+\-_/]+);base64/)?.[1] || 'image/png';
-            const extension = mimeType.split('/')[1] || 'png';
-            const storagePath = `${pathPrefix}_embedded_${uniqueId}.${extension}`;
             try {
-                const url = await uploadBase64ToStorage(base64Str, storagePath);
+                const url = await uploadBase64ToStorage(base64Str);
                 newStr = newStr.replaceAll(base64Str, url);
             } catch (e) {
                 console.error("Failed to upload embedded base64:", e);
@@ -411,77 +371,8 @@ const revokeEntryPass = async (entry, reason) => {
 export const useStore = create((set, get) => ({
     // ... existing state ...
     
-    // Centralized Cloudinary Upload Utility
-    uploadToCloudinary: async (file) => {
-        if (!file) return null;
-
-        const extension = file.name?.split('.').pop()?.toLowerCase();
-        const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'flv', 'wmv'];
-        const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico', 'tiff'];
-        const isVideo = file.type?.startsWith("video/") || videoExtensions.includes(extension);
-
-        // Try Firebase Storage first for PDF/SVG files with strict 2s timeout
-        if (file.type === "application/pdf" || file.type.includes("svg") || file.name?.toLowerCase().endsWith(".svg")) {
-            try {
-                const uniqueId = Math.random().toString(36).substring(2, 9);
-                const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-                const storagePath = `uploads/file_${uniqueId}_${cleanName}`;
-                const storageRef = ref(storage, storagePath);
-                const uploadPromise = uploadBytes(storageRef, file, { contentType: file.type || 'application/pdf' }).then(() => getDownloadURL(storageRef));
-                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase Storage timeout')), 2000));
-                return await Promise.race([uploadPromise, timeoutPromise]);
-            } catch (firebaseError) {
-                console.warn("Firebase Storage fast-fallback to Cloudinary:", firebaseError);
-            }
-        }
-
-        const data = new FormData();
-        data.append("file", file);
-        data.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "maw1e4ud");
-        data.append("cloud_name", import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dgtalrz4n");
-
-        let resourceType = "image";
-        if (isVideo) {
-            resourceType = "video";
-        } else if (file.type === "application/pdf" || file.type?.startsWith("application/") || (extension && !imageExtensions.includes(extension))) {
-            resourceType = "raw";
-        }
-
-        const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dgtalrz4n";
-
-        try {
-            const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, { 
-                method: "POST", 
-                body: data 
-            });
-            
-            if (!res.ok) {
-                const errorData = await res.json();
-                console.error("Cloudinary Response Error:", errorData);
-                throw new Error(errorData.error?.message || "Upload failed");
-            }
-            
-            const uploadedFile = await res.json();
-            return uploadedFile.secure_url;
-        } catch (error) {
-            console.warn("Cloudinary upload failed, falling back to Firebase Storage:", error);
-            try {
-                const uniqueId = Math.random().toString(36).substring(2, 9);
-                const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-                const storagePath = `uploads/fallback_${uniqueId}_${cleanName}`;
-                const storageRef = ref(storage, storagePath);
-                const metadata = file.type ? { contentType: file.type } : (resourceType === 'video' ? { contentType: 'video/mp4' } : undefined);
-                await uploadBytes(storageRef, file, metadata);
-                return await getDownloadURL(storageRef);
-            } catch (firebaseError) {
-                console.error("Firebase fallback also failed:", firebaseError);
-                const message = (!error.message || error.message.includes("failed") || error.message.includes("Failed"))
-                    ? "Couldn't upload your file. Please check your internet connection or try a smaller file." 
-                    : error.message;
-                throw new Error(message);
-            }
-        }
-    },
+    /* Uploads a file and resolves to its public link (see src/lib/media.js). */
+    uploadFile: (file, options) => uploadFile(file, options),
 
     // Dedicated Resumable Video Upload Utility with Real-time Progress Tracking
     uploadVideoFile: async (file, onProgress = null) => {
@@ -4246,7 +4137,7 @@ export const useStore = create((set, get) => ({
 
     uploadTaskProof: async (file) => {
         if (!file) return '';
-        return await get().uploadToCloudinary(file);
+        return await get().uploadFile(file);
     },
 
     reviewTaskSubmission: async (campaignId, taskId, creatorUid, status, rejectionReason = '') => {

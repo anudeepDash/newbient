@@ -246,7 +246,7 @@ const StudioRichEditor = ({
 
             setIsUploading(true);
             try {
-                const url = await useStore.getState().uploadToCloudinary(file);
+                const url = await useStore.getState().uploadFile(file);
                 if (url) {
                     if (savedRange) {
                         selection.removeAllRanges();
@@ -738,7 +738,7 @@ const StudioRichEditor = ({
 
                                     setIsUploading(true);
                                     try {
-                                        const url = await useStore.getState().uploadToCloudinary(file);
+                                        const url = await useStore.getState().uploadFile(file);
                                         if (url) {
                                             // Restore selection
                                             if (savedRange) {
@@ -842,7 +842,7 @@ const StudioRichEditor = ({
                                     if (file.type.startsWith('image/')) {
                                         setIsUploading(true);
                                         try {
-                                            const url = await useStore.getState().uploadToCloudinary(file);
+                                            const url = await useStore.getState().uploadFile(file);
                                             if (url) {
                                                 // Restore drop position
                                                 if (dropRange) {

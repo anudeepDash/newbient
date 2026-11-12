@@ -1,5 +1,6 @@
 import { t } from '../../i18n';
 import { auth } from '../../lib/firebase';
+import { uploadFile } from '../../lib/media';
 
 /*
  * The creator module's server calls (api/creator-join.js → api/_lib/creatorApp.js).
@@ -45,15 +46,8 @@ export async function callCreatorApi(action, body = {}, { method = 'POST', timeo
     }
 }
 
-/* Uploads a proof screenshot to Cloudinary (the same unsigned preset the rest of the site uses). */
+/* Uploads a proof screenshot (Firebase Storage, see src/lib/media.js). */
 export async function uploadProof(file) {
     if (!file) return '';
-    const cloud = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dgtalrz4n';
-    const data = new FormData();
-    data.append('file', file);
-    data.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'maw1e4ud');
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloud}/image/upload`, { method: 'POST', body: data });
-    if (!res.ok) throw new Error('upload failed');
-    const json = await res.json();
-    return json.secure_url || '';
+    return (await uploadFile(file)) || '';
 }

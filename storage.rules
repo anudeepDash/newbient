@@ -1,0 +1,26 @@
+rules_version = '2';
+
+// Cloud Storage for Firebase (bucket newbi-ent-v2.firebasestorage.app, us-central1).
+// Deploy: npx -y firebase-tools@14 deploy --only storage --project newbi-ent-v2
+// The bucket's CORS setting (so pages can read a poster's colours) is in storage.cors.json.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Uploads from the app (src/lib/media.js, api/_lib/media.js): pictures,
+    // receipts, proofs, posters. Public to read, so links need no token.
+    // Anyone may add a new file, as Cloudinary's unsigned preset allowed
+    // (some upload buttons are on public forms), but never replace or
+    // delete one, and never a web page.
+    match /media/{id}/{name} {
+      allow read: if true;
+      allow create: if resource == null
+        && id.matches('[a-f0-9]{32}')
+        && name.matches('[A-Za-z0-9._-]{1,120}')
+        && request.resource.size < 100 * 1024 * 1024
+        && !request.resource.contentType.matches('(?i)text/html.*|application/xhtml.*');
+    }
+
+    // Everything else (ticket PDFs under passes/, etc.) is written and read
+    // by the server only, through signed links.
+  }
+}

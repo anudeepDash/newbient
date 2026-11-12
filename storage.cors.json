@@ -1,0 +1,8 @@
+[
+  {
+    "origin": ["https://app.newbi.live", "https://admin.newbi.live", "https://www.newbi.live", "https://newbi.live", "https://artistant.in", "http://localhost:5173"],
+    "method": ["GET", "HEAD"],
+    "responseHeader": ["Content-Type", "Cache-Control"],
+    "maxAgeSeconds": 3600
+  }
+]

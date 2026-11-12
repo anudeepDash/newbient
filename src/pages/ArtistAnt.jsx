@@ -131,7 +131,7 @@ const ArtistAnt = () => {
     useStoreSubscription(['artists']);
     const { 
         user, authInitialized, setAuthModal, artists, addArtist, 
-        addClientRequest, deleteArtist, updateArtist, uploadToCloudinary, addToast 
+        addClientRequest, deleteArtist, updateArtist, uploadFile, addToast 
     } = useStore();
     const navigate = useNavigate();
     const isArtistantDomain = typeof window !== 'undefined' && window.location.hostname.includes('artistant');
@@ -180,7 +180,7 @@ const ArtistAnt = () => {
         
         setIsSubmitting(true);
         try {
-            const url = await uploadToCloudinary(file);
+            const url = await uploadFile(file);
             if (isSettings) {
                 setArtistProfile(prev => ({ ...prev, image: url }));
             } else {

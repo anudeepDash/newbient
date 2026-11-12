@@ -401,7 +401,7 @@ const ContractGenerator = () => {
         setSigUploading(true);
         try {
             const file = await dataUrlToFile(dataUrl, 'newbi-signature.png');
-            const url = await useStore.getState().uploadToCloudinary(file);
+            const url = await useStore.getState().uploadFile(file);
             if (url) setFormData(prev => (prev.providerSignature === dataUrl ? { ...prev, providerSignature: url } : prev));
         } catch (err) {
             console.warn('Signature upload deferred to save', err);
