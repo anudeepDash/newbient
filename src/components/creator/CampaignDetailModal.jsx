@@ -792,7 +792,7 @@ const CampaignDetailModal = ({
                     )}
 
                     {/* Full-Bleed Hero Banner with Crisp Image and Natural Ambient Presence */}
-                    <div className="relative w-full aspect-[16/10] sm:aspect-[2/1] sm:min-h-[440px] shrink-0 overflow-hidden z-10">
+                    <div className="relative w-full aspect-video shrink-0 overflow-hidden z-10">
                         <div 
                             className="absolute inset-0 pointer-events-none"
                             style={{

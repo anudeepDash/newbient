@@ -62,7 +62,7 @@ export const ShareButton = ({ onClick, label = 'Share' }) => {
 export const DetailSkeleton = () => (
     <PageBody>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-12">
-            <div className="aspect-video animate-pulse rounded-3xl bg-black/[0.05] dark:bg-white/[0.05] lg:aspect-[4/5]" />
+            <div className="aspect-video animate-pulse rounded-3xl bg-black/[0.05] dark:bg-white/[0.05]" />
             <div className="space-y-4">
                 <div className="h-10 w-2/3 animate-pulse rounded-full bg-black/[0.06] dark:bg-white/[0.06]" />
                 <div className="h-40 animate-pulse rounded-[1.75rem] bg-black/[0.04] dark:bg-white/[0.04]" />
@@ -82,7 +82,7 @@ const DetailLayout = ({ back, image, badges, eyebrow, title, onShare, aside, chi
                     {hasImage && (
                         <div className="space-y-5 lg:sticky lg:top-24 lg:self-start">
                             <div className="relative overflow-hidden rounded-3xl border border-black/[0.06] bg-black/[0.04] shadow-[0_30px_80px_-40px_rgba(0,0,0,0.6)] dark:border-white/[0.08] dark:bg-white/[0.04]">
-                                <img src={sizedImage(image, 1600)} alt="" decoding="async" className="aspect-video w-full object-cover lg:aspect-auto lg:max-h-[calc(100dvh-9rem)] lg:object-contain" />
+                                <img src={sizedImage(image, 1600)} alt="" decoding="async" className="aspect-video w-full object-cover" />
                                 {badges && <div className="absolute left-3 top-3 flex flex-wrap gap-2">{badges}</div>}
                             </div>
                             {aside && <div className="hidden lg:block">{aside}</div>}

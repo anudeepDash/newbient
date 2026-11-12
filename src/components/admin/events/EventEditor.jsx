@@ -417,7 +417,7 @@ const EventEditor = ({ event, orders = [], categories = [], onDone }) => {
 
                     <BuilderCard id="ev-images" title="Images" hint="Upload, paste (Ctrl/Cmd+V) or use a link">
                         <div className="grid gap-5 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-                            <ImageSlot label={poster.uploading ? 'Poster · uploading…' : 'Poster (4:5)'} hint="Event cards and the Tickets tab" {...poster.slotProps} />
+                            <ImageSlot label={poster.uploading ? 'Poster · uploading…' : 'Poster (16:9)'} hint="Event cards and the Tickets tab" {...poster.slotProps} />
                             <div className="space-y-5">
                                 <ImageSlot label={banner.uploading ? 'Banner · uploading…' : 'Banner (16:9)'} hint="Community cards and the guestlist page. Optional: the poster is used if empty" aspect="aspect-video" {...banner.slotProps} />
                                 <ImageSlot label={layout.uploading ? 'Venue map · uploading…' : 'Venue map'} hint="Optional. Shown at checkout; ticket types can be marked on it" aspect="aspect-[16/10]" contain {...layout.slotProps} />

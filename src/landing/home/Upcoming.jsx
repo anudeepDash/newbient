@@ -37,9 +37,9 @@ export default function Upcoming({ events = [], index = '06' }) {
                                         <span className="block font-heading font-extrabold text-4xl md:text-6xl leading-none tracking-[-0.04em]">{day}</span>
                                         <span className="block mt-1 font-mono text-[11px] font-bold tracking-[0.2em] text-gray-500 dark:text-zinc-500">{mon} · {wd}</span>
                                     </span>
-                                    <span className="relative block w-14 sm:w-20 md:w-24 aspect-[4/5] rounded-xl md:rounded-2xl overflow-hidden ring-1 ring-black/10 dark:ring-white/10" style={{ background: e.ambientColor || undefined }} aria-hidden="true">
+                                    <span className="relative block w-24 sm:w-32 md:w-44 aspect-video rounded-xl md:rounded-2xl overflow-hidden ring-1 ring-black/10 dark:ring-white/10" style={{ background: e.ambientColor || undefined }} aria-hidden="true">
                                         {e.image
-                                            ? <img src={sizedImage(e.image, 240)} alt="" width="240" height="300" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                            ? <img src={sizedImage(e.image, 360)} alt="" width="352" height="198" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                             : <span className="absolute inset-0 bg-gradient-to-br from-neon-green/40 to-sky-400/30" />}
                                     </span>
                                     <span className="min-w-0">

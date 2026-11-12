@@ -84,7 +84,7 @@ const PassTicket = ({ pass, from = null, className }) => {
                 <PosterGlow image={event.image} color={event.ambientColor} height="70%" strength={0.8} />
 
                 {/* The poster, fading into the ticket. */}
-                <div className="relative aspect-[2/1] w-full shrink-0 overflow-hidden">
+                <div className="relative aspect-video w-full shrink-0 overflow-hidden">
                     {isPresent(event.image) ? (
                         <img
                             src={sizedImage(event.image, 960)}

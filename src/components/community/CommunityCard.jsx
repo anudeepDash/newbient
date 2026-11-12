@@ -122,7 +122,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
 
     return (
         <div 
-            className="perspective-1000 w-full aspect-[4/5] flex group"
+            className="perspective-1000 w-full aspect-video flex group"
             onMouseMove={handleMouseMove}
         >
             <motion.div

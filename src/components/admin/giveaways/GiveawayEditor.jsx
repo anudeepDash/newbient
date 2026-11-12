@@ -451,7 +451,7 @@ const GiveawayEditor = ({ giveaway, giveaways, onDone }) => {
 
                     <BuilderCard title="Poster" hint="Upload, paste or link · portrait works best">
                         <div className="grid gap-5 sm:grid-cols-[240px_minmax(0,1fr)]">
-                            <ImageSlot label={poster.uploading ? 'Uploading…' : 'Poster'} hint="4:5 portrait" aspect="aspect-[4/5]" {...poster.slotProps} />
+                            <ImageSlot label={poster.uploading ? 'Uploading…' : 'Poster'} hint="16:9 landscape" aspect="aspect-video" {...poster.slotProps} />
                             <AmbientColorField image={data.posterUrl} value={data.ambientColor} onChange={(v) => set({ ambientColor: v })} />
                         </div>
                     </BuilderCard>

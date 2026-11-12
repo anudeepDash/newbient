@@ -212,7 +212,7 @@ const EventList = ({ events, ordersByEvent, onOpen, canSeeMoney, onNewGuestlist,
                         return (
                             <button key={event.id} type="button" onClick={() => onOpen(event.id)}
                                 className="group flex flex-col overflow-hidden rounded-2xl border border-black/[0.06] bg-white text-left transition-all hover:-translate-y-0.5 hover:border-black/15 dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:border-white/20">
-                                <EventThumb event={event} className="aspect-[16/8] w-full" />
+                                <EventThumb event={event} className="aspect-video w-full" />
                                 <div className="flex flex-1 flex-col gap-2 p-4">
                                     <p className="line-clamp-2 text-[15px] font-bold leading-snug">{event.title || 'Untitled event'}</p>
                                     <p className="flex items-center gap-1.5 truncate text-[12px] text-gray-500 dark:text-zinc-400">

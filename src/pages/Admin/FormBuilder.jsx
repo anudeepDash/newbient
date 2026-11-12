@@ -412,7 +412,7 @@ const FormBuilder = () => {
                                 <ImageSlot
                                     label={image.uploading ? 'Uploading…' : 'Cover image'}
                                     hint="Paste works too"
-                                    aspect="aspect-[4/3]"
+                                    aspect="aspect-video"
                                     {...image.slotProps}
                                     transform={form.imageTransform}
                                     onTransform={(t) => set({ imageTransform: t })}

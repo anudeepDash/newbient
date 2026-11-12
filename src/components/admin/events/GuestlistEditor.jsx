@@ -278,7 +278,7 @@ const GuestlistEditor = ({ open, onClose, guestlist, onSaved }) => {
                         <ImageSlot
                             label={uploading ? 'Cover image · uploading…' : 'Cover image'}
                             hint="Paste works too"
-                            aspect="aspect-[16/10]"
+                            aspect="aspect-video"
                             previewUrl={form.image}
                             url={form.image}
                             onFile={upload}

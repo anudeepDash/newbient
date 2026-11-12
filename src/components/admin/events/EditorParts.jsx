@@ -47,7 +47,7 @@ const Slider = ({ label, value, min, max, step, onChange, suffix = '' }) => (
  * or link, with optional framing controls (zoom and position).
  */
 export const ImageSlot = ({
-    label, hint, aspect = 'aspect-[4/5]', previewUrl, url, onFile, onUrl, onClear, onPaste,
+    label, hint, aspect = 'aspect-video', previewUrl, url, onFile, onUrl, onClear, onPaste,
     transform, onTransform, contain = false,
 }) => {
     const [framing, setFraming] = useState(false);

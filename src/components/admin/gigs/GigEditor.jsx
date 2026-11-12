@@ -325,7 +325,7 @@ const GigEditor = ({ gig, forms, onDone }) => {
 
                     <BuilderCard title="Look" hint="Card image and colour on the community page">
                         <div className="grid gap-5 sm:grid-cols-[220px_minmax(0,1fr)]">
-                            <ImageSlot label={image.uploading ? 'Uploading…' : 'Image'} hint="Paste works too" aspect="aspect-[4/3]" {...image.slotProps} transform={data.imageTransform} onTransform={(t) => set({ imageTransform: t })} />
+                            <ImageSlot label={image.uploading ? 'Uploading…' : 'Image'} hint="16:9 · paste works too" aspect="aspect-video" {...image.slotProps} transform={data.imageTransform} onTransform={(t) => set({ imageTransform: t })} />
                             <div className="space-y-4">
                                 <div>
                                     <p className="mb-2 text-[12px] font-bold text-gray-500">Highlight colour</p>
