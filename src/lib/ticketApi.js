@@ -29,7 +29,7 @@ export const callTicketApi = async (action, body = {}, { timeoutMs = 15000 } = {
 
         if (res.ok && data?.success) return { ok: true, data };
         if (data && res.status >= 400 && res.status < 500 && data.code) {
-            return { ok: false, code: data.code, error: data.error, status: res.status };
+            return { ok: false, code: data.code, error: data.error, status: res.status, ...(data.errors ? { errors: data.errors } : {}) };
         }
         return { ok: false, unavailable: true, error: data?.error };
     } catch {

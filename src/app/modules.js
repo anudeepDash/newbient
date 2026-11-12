@@ -45,6 +45,7 @@ const DeliverablesPage = lazy(() => import('./creator/campaign/apply/Deliverable
 const FeedbackPage = lazy(() => import('./creator/campaign/feedback/FeedbackPage'));
 const PayoutDetailsPage = lazy(() => import('./creator/campaign/payout/PayoutDetailsPage'));
 const PayoutFormPage = lazy(() => import('./creator/campaign/payout/PayoutFormPage'));
+const PayPage = lazy(() => import('./tickets/PayPage'));
 
 export const APP_MODULES = [
     {
@@ -161,6 +162,8 @@ export const STANDALONE_ROUTES = [
     { path: 'pay/:token', Component: PayoutDetailsPage },
     // A campaign's open payout form: one link for every creator on it, shared by the team (no sign-in).
     { path: 'pay/c/:token', Component: PayoutFormPage },
+    // A payment page the team shares for an event: type the amount and pay with Razorpay (no sign-in).
+    { path: 'pay/t/:id', Component: PayPage },
 ];
 
 /* Route definitions for the router, relative to the app root. */

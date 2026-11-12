@@ -12,6 +12,7 @@ import { webhookSignatureOk } from './razorpay.js';
 import { settleTicketByGatewayOrder } from './tickets.js';
 import { settleInvoicePayment } from './sharedDocs.js';
 import { settleResaleFromWebhook } from './ticketResale.js';
+import { settlePageFromWebhook } from './payPages.js';
 
 const PAID_EVENTS = new Set(['payment.captured', 'order.paid', 'payment_link.paid']);
 
@@ -44,6 +45,8 @@ export const handleRazorpayWebhook = async (req, res, rawBody) => {
     try {
         const db = getDb();
         if (await settleTicketByGatewayOrder(db, payment.order_id, payment.id)) return res.status(200).json({ success: true, kind: 'ticket' });
+        // A payment page (api/_lib/payPages.js): the notes name the page.
+        if (await settlePageFromWebhook(db, payment, event?.payload?.order?.entity)) return res.status(200).json({ success: true, kind: 'paypage' });
         const invoiceId = payment.notes?.invoiceId;
         if (payment.notes?.kind === 'invoice' && invoiceId) {
             await settleInvoicePayment(db, String(invoiceId), { orderId: payment.order_id, paymentId: payment.id, amount: payment.amount / 100 });

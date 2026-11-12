@@ -19,6 +19,7 @@
 import crypto from 'node:crypto';
 import { razorpay, razorpayConfigured } from './razorpay.js';
 import { sendTransactional } from './mail/send.js';
+import { PAGE_KIND, createPage, closePage, resendPageEmail } from './payPages.js';
 
 export const RESALE_COLLECTION = 'ticket_resales';
 export const RESALE_STATUSES = ['awaiting', 'paid', 'cancelled', 'expired'];
@@ -185,6 +186,8 @@ const listAction = async (db, body, ctx) => {
 
 const createAction = async (db, body, ctx) => {
     if (!razorpayConfigured()) throw new ResaleError('GATEWAY', 'Razorpay isn’t set up on the server yet.', 503);
+    // A payment page: the buyer types the amount on Newbi's own page (payPages.js).
+    if (body.kind === PAGE_KIND) return createPage(db, body, ctx);
     const input = readResaleInput(body);
     const docRef = db.collection(RESALE_COLLECTION).doc();
     const now = new Date().toISOString();
@@ -245,6 +248,7 @@ const loadResale = async (db, body) => {
 const syncAction = async (db, body, ctx) => {
     if (!razorpayConfigured()) throw new ResaleError('GATEWAY', 'Razorpay isn’t set up on the server yet.', 503);
     const { id, r } = await loadResale(db, body);
+    if (r.kind === PAGE_KIND) return resendPageEmail(db, id, str(body.paymentId, 80), ctx.mailOpts);
     // Paid but the email didn't go: this tries it again.
     if (r.status === 'paid') {
         const out = await settleResale(db, id, { linkId: r.linkId, paymentId: r.paymentId, amount: r.paidAmount }, ctx.mailOpts);
@@ -255,6 +259,7 @@ const syncAction = async (db, body, ctx) => {
 
 const cancelAction = async (db, body) => {
     const { id, r } = await loadResale(db, body);
+    if (r.kind === PAGE_KIND) return closePage(db, id);
     if (r.status === 'paid') throw new ResaleError('VALIDATION', 'This link is already paid. Refunds are done in the Razorpay dashboard.');
     if (r.status !== 'awaiting') return { success: true, resale: publicRow(id, r) };
     if (r.linkId) {

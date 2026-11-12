@@ -16,11 +16,13 @@
  *   ticket-gateway-confirm  checks Razorpay's signature (or, for staff, asks Razorpay,
  *                         or Razorpay's webhook) and confirms the order
  *   ticket-resale-*       staff only: Razorpay payment links for resale tickets (ticketResale.js)
+ *   ticket-paypage-*      anyone: a payment page where the buyer types the amount (payPages.js)
  */
 import crypto from 'node:crypto';
 import { FieldValue } from 'firebase-admin/firestore';
 import { sendOrderEmail } from './mail/events.js';
 import { RESALE_ACTIONS, ResaleError } from './ticketResale.js';
+import { PAYPAGE_PUBLIC_ACTIONS } from './payPages.js';
 import { razorpay, razorpayConfigured, razorpayKeyId, gatewaySignatureOk, paidPaymentFor } from './razorpay.js';
 import {
     computeAvailability, priceCart, applyCoupon, couponProblem, normalizeCouponCode, makeBookingRef,
@@ -414,6 +416,19 @@ const staffOnly = (fn) => async (db, body, decodedToken, ctx = {}) => {
 };
 Object.entries(RESALE_ACTIONS).forEach(([name, fn]) => { ACTIONS[name] = staffOnly(fn); });
 
+// Payment pages are public: anyone with the link can pay on them.
+const asTicketError = (fn) => async (db, body, decodedToken, ctx = {}) => {
+    try {
+        return await fn(db, body, ctx);
+    } catch (err) {
+        if (!(err instanceof ResaleError)) throw err;
+        const out = new TicketError(err.code, err.message, err.status);
+        if (err.errors) out.errors = err.errors;
+        throw out;
+    }
+};
+Object.entries(PAYPAGE_PUBLIC_ACTIONS).forEach(([name, fn]) => { ACTIONS[name] = asTicketError(fn); });
+
 export const isTicketAction = (action) => Object.prototype.hasOwnProperty.call(ACTIONS, action);
 
 export const handleTicketAction = async (action, req, res, db, decodedToken, ctx = {}) => {
@@ -423,7 +438,7 @@ export const handleTicketAction = async (action, req, res, db, decodedToken, ctx
         return res.status(200).json(result);
     } catch (err) {
         if (err instanceof TicketError) {
-            return res.status(err.status).json({ success: false, code: err.code, error: err.message });
+            return res.status(err.status).json({ success: false, code: err.code, error: err.message, ...(err.errors ? { errors: err.errors } : {}) });
         }
         console.error(`[API/TICKETS] ${action} failed:`, err);
         return res.status(500).json({ success: false, code: 'SERVER', error: 'Ticketing is temporarily unavailable.' });
