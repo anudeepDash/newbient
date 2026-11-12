@@ -116,6 +116,7 @@ if (!keyCred && !useCliLogin()) {
 }
 initializeApp({ ...(keyCred ? { credential: keyCred } : { credential: applicationDefault() }), projectId, storageBucket: bucketName });
 const db = getFirestore();
+if (process.env.FIRESTORE_REST) db.settings({ preferRest: true }); // REST instead of gRPC when gRPC keeps timing out
 const bucket = getStorage().bucket(bucketName);
 
 /* ---------- finding links ---------- */
@@ -215,8 +216,13 @@ const pool = async (items, n, fn) => {
 
 /* ---------- rewriting documents ---------- */
 
+// A changed document (precondition) or a slow/busy write (deadline, unavailable,
+// aborted) is read again and retried. A timed-out write may still have landed;
+// the fresh read then has nothing left to change.
+const RETRYABLE = /FAILED_PRECONDITION|precondition|DEADLINE_EXCEEDED|UNAVAILABLE|ABORTED|RESOURCE_EXHAUSTED/i;
 const rewrite = async (snap, pairs) => {
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < 4; attempt++) {
+        if (!snap.exists) return 0;
         const data = snap.data();
         const updates = [];
         for (const [key, value] of Object.entries(data)) {
@@ -228,7 +234,8 @@ const rewrite = async (snap, pairs) => {
             await snap.ref.update(...updates, { lastUpdateTime: snap.updateTime });
             return updates.length / 2;
         } catch (err) {
-            if (attempt === 0 && /FAILED_PRECONDITION|precondition/i.test(String(err.message || err.code))) {
+            if (attempt < 3 && RETRYABLE.test(`${err.code} ${err.message}`)) {
+                await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
                 snap = await snap.ref.get();
                 continue;
             }
@@ -319,13 +326,22 @@ const main = async () => {
 
     // 3. Point documents at the copies (only links copied so far).
     const pairs = new Map(Object.entries(map).sort((a, b) => b[0].length - a[0].length)); // longest first
-    let docs = 0; let fields = 0;
+    let docs = 0; let fields = 0; const notUpdated = [];
     for (const { snap, links } of found) {
         if (!links.some((l) => map[l])) continue;
-        const n = await rewrite(snap, pairs);
-        if (n) { docs++; fields += n; }
+        try {
+            const n = await rewrite(snap, pairs);
+            if (n) { docs++; fields += n; }
+        } catch (err) {
+            notUpdated.push({ path: snap.ref.path, error: err.code || err.message });
+        }
     }
     console.log(`Updated ${fields} fields in ${docs} documents. Old Cloudinary files were left in place.`);
+    if (notUpdated.length) {
+        console.log(`${notUpdated.length} documents could not be updated (run again to retry):`);
+        for (const f of notUpdated.slice(0, 20)) console.log(`  ✗ ${f.path} — ${f.error}`);
+        process.exitCode = 1;
+    }
 };
 
 main().catch((err) => { console.error(err); process.exit(1); });
