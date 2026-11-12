@@ -406,8 +406,15 @@ export const giveawayBoard = async (db, giveawayId) => {
             const { AggregateField } = await import('firebase-admin/firestore');
             const sum = await col.aggregate({ total: AggregateField.sum('entryScore') }).get();
             totalPoints = Number(sum.data().total) || 0;
-        } catch {
-            totalPoints = null;
+        } catch (err) {
+            console.warn('[COMMUNITY] points sum not available, adding up instead:', err?.message);
+            // Small giveaways: read just the scores. The response is cached for 30s at the edge.
+            if (totalEntries <= 5000) {
+                try {
+                    const q = typeof col.select === 'function' ? col.select('entryScore') : col;
+                    totalPoints = (await q.get()).docs.reduce((n, d) => n + (Number(d.data().entryScore) || 0), 0);
+                } catch { totalPoints = null; }
+            }
         }
     }
     let joinedLastHour = null;

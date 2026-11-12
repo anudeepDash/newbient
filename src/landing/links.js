@@ -17,6 +17,7 @@ export const APP_LINKS = {
     community: appUrl('/community'),
     campaign: (id) => appUrl(`/c/${encodeURIComponent(id)}`),
     event: (id) => appUrl(`/community/g/${encodeURIComponent(id)}`),
+    giveaway: (slug) => appUrl(`/community/giveaways/${encodeURIComponent(slug)}`),
 };
 
 export const FEED_URL = '/api/forms?type=public-feed';

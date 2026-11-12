@@ -139,6 +139,8 @@ function upcomingEvents(list, guestlists = []) {
             guestlistId: str(e.guestlistId, 128) || undefined,
             // A volunteer gig's card: it opens that gig in the app (older cards only have the link).
             gigId: str(e.gigId || e.relatedVolunteerGigId || (String(e.link || '').match(/[?&]gig=([\w-]+)/) || [])[1], 128) || undefined,
+            // A giveaway's home card: it opens that giveaway (older cards only have the /giveaway/<slug> link).
+            giveawaySlug: str(e.giveawaySlug || (String(e.link || '').match(/^\/giveaway\/([\w-]+)/) || [])[1], 120) || undefined,
             // Guestlists opt in to the app's Home; events opt out.
             showInApp: e.standaloneList ? e.showInApp === true : e.showInApp !== false,
         }));

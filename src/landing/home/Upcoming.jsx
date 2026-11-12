@@ -10,7 +10,9 @@ const parts = (iso) => {
     return { day: f({ day: '2-digit' }), mon: f({ month: 'short' }).toUpperCase(), wd: f({ weekday: 'short' }).toUpperCase() };
 };
 
-const cta = (e) => (e.isTicketed ? 'Get tickets' : e.hasGuestlist ? 'Get on the list' : 'See event');
+const cta = (e) => (e.isTicketed ? 'Get tickets' : e.hasGuestlist ? 'Get on the list' : e.giveawaySlug ? 'Enter giveaway' : 'See event');
+// A giveaway's card opens the giveaway; everything else opens its event page.
+const hrefOf = (e) => (!e.isTicketed && !e.hasGuestlist && e.giveawaySlug ? APP_LINKS.giveaway(e.giveawaySlug) : APP_LINKS.event(e.id));
 
 // The next three public events, laid out like a tour-date list with each poster. Each row opens the event page.
 export default function Upcoming({ events = [], index = '06' }) {
@@ -30,7 +32,7 @@ export default function Upcoming({ events = [], index = '06' }) {
                         const { day, mon, wd } = parts(e.date);
                         return (
                             <li key={e.id} className="nb-reveal border-b border-gray-950/10 dark:border-white/10">
-                                <a href={APP_LINKS.event(e.id)} className="group grid grid-cols-[auto_auto_1fr_auto] items-center gap-4 md:gap-8 py-6 md:py-8 hover:bg-gray-950/[0.03] dark:hover:bg-white/[0.03] transition-colors -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
+                                <a href={hrefOf(e)} className="group grid grid-cols-[auto_auto_1fr_auto] items-center gap-4 md:gap-8 py-6 md:py-8 hover:bg-gray-950/[0.03] dark:hover:bg-white/[0.03] transition-colors -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
                                     <span className="w-16 md:w-24 text-gray-950 dark:text-white">
                                         <span className="block font-heading font-extrabold text-4xl md:text-6xl leading-none tracking-[-0.04em]">{day}</span>
                                         <span className="block mt-1 font-mono text-[11px] font-bold tracking-[0.2em] text-gray-500 dark:text-zinc-500">{mon} · {wd}</span>

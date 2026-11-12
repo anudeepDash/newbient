@@ -97,13 +97,29 @@ export function feedCard(item, { from = null } = {}) {
 
 /*
  * An upcoming show on Home: ticket sales, an event or a guestlist, each as
- * { id, title, image, ambientColor, day: 'YYYY-MM-DD', time, venue, city, category, ticketed, guestlist, price, gigId }.
+ * { id, title, image, ambientColor, day: 'YYYY-MM-DD', time, venue, city, category, ticketed, guestlist, price, gigId, giveawaySlug }.
  * from: the current location, so a guestlist opens as a sheet over the list.
  * A volunteer gig's card opens the gig on Community, like the community rail.
  */
 export function showCard(e, { from = null } = {}) {
     const day = e.day ? new Date(`${e.day}T00:00:00`) : null;
     const gig = !e.ticketed && !e.guestlist && e.gigId;
+    // A giveaway's home card opens the giveaway, as a sheet over Home.
+    if (!e.ticketed && !e.guestlist && e.giveawaySlug) {
+        return {
+            type: 'giveaway',
+            image: e.image || null,
+            ambientColor: e.ambientColor,
+            title: e.title,
+            eyebrow: t('Giveaway'),
+            chips: [{ icon: MapPin, label: e.city }],
+            meta: [{ icon: CalendarDays, label: day && !Number.isNaN(day.getTime()) ? t('Closes {date}', { date: dateLabel(day) }) : null }],
+            stats: [{ label: t('Entry'), value: t('Free'), tone: 'accent' }],
+            cta: { label: t('Enter giveaway') },
+            to: appPath(`/community/giveaways/${encodeURIComponent(e.giveawaySlug)}`),
+            linkState: from ? { backgroundLocation: from } : undefined,
+        };
+    }
     return {
         type: gig ? 'gig' : 'event',
         image: e.image || null,
