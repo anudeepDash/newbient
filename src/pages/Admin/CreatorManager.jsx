@@ -5,6 +5,8 @@ import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { PREDEFINED_CITIES, CREATOR_NICHES, nicheKey, creatorHasCollegeNiche } from '../../lib/constants';
 import { buildSocialUrl } from '../../lib/socialUtils';
+import { CREATOR_GENDER_OPTIONS, hasCreatorGender } from '../../lib/creator/options';
+import { sendTemplateEmail } from '../../lib/mailApi';
 import { cn } from '../../lib/utils';
 import { copyToClipboard } from '../../lib/clipboard';
 import { safeLocalStorage } from '../../lib/storage';
@@ -36,6 +38,7 @@ import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
 import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
 import SlidersHorizontal from 'lucide-react/dist/esm/icons/sliders-horizontal';
+import UserRound from 'lucide-react/dist/esm/icons/user-round';
 import BroadcastGroupsModal from '../../components/admin/BroadcastGroupsModal';
 import AddCityCreatorsModal from '../../components/admin/AddCityCreatorsModal';
 import AddCreatorModal from '../../components/admin/AddCreatorModal';
@@ -107,6 +110,7 @@ const exportSpecFor = (rows, label) => ({
         { header: 'Phone verified', value: c => (c.isPhoneVerified ? 'Yes' : 'No') },
         { header: 'City', value: c => c.city || '' },
         { header: 'College', value: c => c.collegeName || '' },
+        { header: 'Gender', value: c => (hasCreatorGender(c) ? c.gender : '') },
         { header: 'Instagram', value: c => (c.instagram ? buildSocialUrl(c.instagram, 'instagram') : '') },
         { header: 'Instagram followers', key: 'igf', type: 'number', value: c => Number(c.instagramFollowers) || 0 },
         { header: 'LinkedIn', value: c => (c.linkedin ? buildSocialUrl(c.linkedin, 'linkedin') : '') },
@@ -144,6 +148,8 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
     const niche = searchParams.get('niche') || 'all';
     const college = searchParams.get('college') || 'all';
     const platform = searchParams.get('platform') || 'all';
+    // ?gender= one of the options, or 'missing' for creators who haven't said yet.
+    const gender = searchParams.get('gender') || 'all';
     // Follower range: ?min= and ?max= (either can be left open).
     const minFollowers = Number(searchParams.get('min')) || null;
     const maxFollowers = Number(searchParams.get('max')) || null;
@@ -197,6 +203,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
     const [cityInvite, setCityInvite] = useState(null); // { city, uids }
     const [confirm, setConfirm] = useState(null); // { kind, targets, bulk }
     const [includeNoCollege, setIncludeNoCollege] = useState(false);
+    const [genderAsk, setGenderAsk] = useState(null); // creators to email "add your gender"
     const [bulkProgress, setBulkProgress] = useState(null); // { label, done, total }
     const [filtersOpen, setFiltersOpen] = useState(false); // phones only
 
@@ -243,6 +250,14 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
     }, [creators, counts.collegeMissing]);
 
     const nicheOptions = useMemo(() => [{ value: 'all', label: 'All niches' }, ...CREATOR_NICHES.map(n => ({ value: n, label: n }))], []);
+    const genderOptions = useMemo(() => {
+        const missing = creators.filter(c => !hasCreatorGender(c)).length;
+        return [
+            { value: 'all', label: 'Any gender' },
+            ...CREATOR_GENDER_OPTIONS.map(g => ({ value: g.id, label: g.label })),
+            { value: 'missing', label: `Not added yet (${missing.toLocaleString()})` },
+        ];
+    }, [creators]);
 
     const bangaloreCount = useMemo(
         () => creators.filter(c => /bangalore|banglore/i.test(String(c.city || ''))).length,
@@ -267,6 +282,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
             if (!creatorHasCollegeNiche(c) || String(c.collegeName || '').trim()) return false;
         } else if (college !== 'all' && String(c.collegeName || '').trim().toLowerCase() !== college.toLowerCase()) return false;
         if (platform !== 'all' && !String(c[platform] || '').trim()) return false;
+        if (gender === 'missing' ? hasCreatorGender(c) : gender !== 'all' && c.gender !== gender) return false;
         if (!skipFollowers) {
             const { min, max } = range || { min: minFollowers, max: maxFollowers };
             const reach = creatorReach(c);
@@ -275,7 +291,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
         }
         if (joinedSince && creatorJoinedAt(c) < joinedSince) return false;
         return true;
-    }, [q, field, status, manualOnly, cities, niche, college, platform, minFollowers, maxFollowers, joined]);
+    }, [q, field, status, manualOnly, cities, niche, college, platform, gender, minFollowers, maxFollowers, joined]);
 
     const filtered = useMemo(() => {
         const list = creators.filter(c => matches(c));
@@ -310,7 +326,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
     const currentPage = Math.min(page, pageCount);
     const pageRows = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-    const activeFilters = [q, cities.length > 0, niche !== 'all', college !== 'all', platform !== 'all', minFollowers || maxFollowers, joined, manualOnly].filter(Boolean).length;
+    const activeFilters = [q, cities.length > 0, niche !== 'all', college !== 'all', platform !== 'all', gender !== 'all', minFollowers || maxFollowers, joined, manualOnly].filter(Boolean).length;
     const hasFilters = activeFilters > 0 || status !== 'all';
     const panelFilters = activeFilters - (q ? 1 : 0) - (manualOnly ? 1 : 0);
 
@@ -399,6 +415,42 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
         if (newStatus === 'pending') { applyStatus(c, newStatus); return; }
         setIncludeNoCollege(false);
         setConfirm({ kind: newStatus, targets: [c], bulk: false });
+    };
+
+    // "Add your gender" email to the selected creators who haven't said yet (and have an email).
+    const genderAskTargets = (genderAsk || []).filter(c => !hasCreatorGender(c) && c.email);
+    const runGenderAsk = async () => {
+        const targets = genderAskTargets;
+        setGenderAsk(null);
+        if (!targets.length) return;
+        setBulkProgress({ label: 'Emailing', done: 0, total: targets.length });
+        const failed = [];
+        let cursor = 0;
+        const worker = async () => {
+            while (cursor < targets.length) {
+                const c = targets[cursor++];
+                try {
+                    await sendTemplateEmail({ template: 'creator-gender-ask', to: c.email, data: { name: c.name || 'Creator' } });
+                } catch (err) {
+                    console.error(`Gender ask failed for ${creatorKey(c)}:`, err);
+                    failed.push(c);
+                }
+                setBulkProgress(p => (p ? { ...p, done: p.done + 1 } : p));
+            }
+        };
+        await Promise.all(Array.from({ length: Math.min(BULK_CONCURRENCY, targets.length) }, worker));
+        setBulkProgress(null);
+        const ok = targets.length - failed.length;
+        if (failed.length) {
+            toast(`${plural(failed.length, 'email')} couldn't be sent.`, ok ? 'warning' : 'error', {
+                title: `Sent ${ok} of ${targets.length}`,
+                hint: `${failed.length === 1 ? "That creator is" : 'Those creators are'} still selected, so you can try again.`,
+            });
+            setSelected(new Set(failed.map(creatorKey)));
+        } else {
+            toast(`Asked ${plural(ok, 'creator')} to add their gender.`);
+            setSelected(new Set());
+        }
     };
 
     const runConfirmed = async () => {
@@ -634,6 +686,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                 {collegeOptions.length > 1 && (
                     <Select label="College" value={college} onChange={(v) => updateParams({ college: v })} options={collegeOptions} className="lg:w-52" />
                 )}
+                <Select label="Gender" value={gender} onChange={(v) => updateParams({ gender: v })} options={genderOptions} className="lg:w-48" />
                 <Select
                     label="Platform"
                     value={platform}
@@ -793,6 +846,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                                         <MenuItem icon={X} onClick={() => requestBulk('rejected')}>Reject</MenuItem>
                                         <MenuItem icon={Clock} onClick={() => requestBulk('pending')}>Move back to pending</MenuItem>
                                         <MenuItem icon={Ban} onClick={() => requestBulk('blocked')}>Block</MenuItem>
+                                        <MenuItem icon={UserRound} onClick={() => setGenderAsk(selectedCreators)} hint="Emails those without one">Ask to add gender</MenuItem>
                                         <MenuItem icon={FileSpreadsheet} onClick={exportSelected} hint="Excel file of the selection">Export selected</MenuItem>
                                         {googleSheetsEnabled && <MenuItem icon={SheetIcon} onClick={() => openInGoogleSheets(exportSpecFor(selectedCreators, 'selected'))} hint="Saves a copy in your Drive to edit there">Selected to Google Sheets</MenuItem>}
                                         <div className="my-1 border-t border-black/[0.05] dark:border-white/[0.08]" />
@@ -848,6 +902,21 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                     <p className="text-[12px] text-gray-500">
                         {confirmEligible.slice(0, 5).map(c => c.name || 'Unnamed').join(', ')}{confirmEligible.length > 5 ? ` and ${confirmEligible.length - 5} more` : ''}
                     </p>
+                )}
+            </ConfirmSheet>
+
+            <ConfirmSheet
+                open={Boolean(genderAsk)}
+                onClose={() => setGenderAsk(null)}
+                title={`Ask ${plural(genderAskTargets.length, 'creator')} to add their gender?`}
+                tone="accent"
+                confirmLabel={`Send ${plural(genderAskTargets.length, 'email')}`}
+                onConfirm={runGenderAsk}
+                disabled={genderAskTargets.length === 0}
+            >
+                <p>Each one gets an email from creators@newbi.live with a button to their dashboard, where they pick Female, Male, Non-binary or Prefer not to say in one tap.</p>
+                {genderAsk && genderAsk.length > genderAskTargets.length && (
+                    <p className="mt-2 text-[13px] text-gray-500">{plural(genderAsk.length - genderAskTargets.length, 'creator')} already added it or {genderAsk.length - genderAskTargets.length === 1 ? 'has' : 'have'} no email, and will be skipped.</p>
                 )}
             </ConfirmSheet>
 

@@ -15,7 +15,7 @@ import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
 import { useStore as useLegacyStore } from '../../../lib/store.js';
 import { Button, Field, Section, Sheet, TextInput, hasContent } from '../../../components/app';
-import { CREATOR_NICHE_OPTIONS, COLLAB_OPTIONS } from '../../../lib/creator/options';
+import { CREATOR_NICHE_OPTIONS, COLLAB_OPTIONS, GENDER_IDS } from '../../../lib/creator/options';
 import { appPath } from '../../host';
 import { callCreatorApi } from '../api';
 import { compactCount, handleOf } from '../format';
@@ -56,6 +56,7 @@ const detailsFrom = (c) => ({
     customNiche: c.customNiche || '',
     cityPageFocus: c.cityPageFocus || '',
     collegeName: c.collegeName || '',
+    gender: GENDER_IDS.has(c.gender) ? c.gender : '',
     collaboration: COLLAB_OPTIONS.some(o => o.id === c.doBarter) ? c.doBarter : 'both',
     commercials: c.commercials || '',
     bio: c.bio || '',
@@ -180,7 +181,9 @@ const ProfileTab = ({ creator, profile }) => {
         setFieldError(invalid);
         if (invalid) return;
         setSaving(true);
-        const res = await callCreatorApi('creator-apply', { ...details, city: city.trim(), handle: cleanHandle });
+        // Gender goes only once picked; the server ignores an empty one.
+        const { gender, ...rest } = details;
+        const res = await callCreatorApi('creator-apply', { ...rest, ...(gender ? { gender } : {}), city: city.trim(), handle: cleanHandle });
         setSaving(false);
         if (!res.ok) {
             if (res.code === 'connect_required') setError(t('To use a new Instagram account, connect it with "Connect Instagram" on this page.'));
@@ -217,6 +220,7 @@ const ProfileTab = ({ creator, profile }) => {
             <FieldCard title={t('Creator details')} always action={<Button variant="ghost" size="sm" onClick={openEdit}>{t('Edit')}</Button>}>
                 <Field label={t('Niche')} icon={Sparkles} value={nicheLabel(creator)} />
                 <Field label={t('College')} icon={GraduationCap} value={creator.collegeName} />
+                <Field label={t('Gender')} icon={UserRound} value={GENDER_IDS.has(creator.gender) ? t(creator.gender) : null} />
                 <Field label={t('Works on')} icon={Handshake} value={collab} />
                 <Field label={t('Rate')} icon={IndianRupee} value={creator.commercials} />
                 <Field label={t('About')} value={creator.bio} valueClassName="font-medium" />

@@ -27,6 +27,7 @@ import DeliverablesTab from './DeliverablesTab';
 import ReferralsTab from './ReferralsTab';
 import ReferBanner from './ReferBanner';
 import CityGroupBanner from './CityGroupBanner';
+import GenderPrompt from './GenderPrompt';
 import ProfileTab from './ProfileTab';
 import MyOutreachCampaigns from './MyOutreachCampaigns';
 import BadgesTab from '../badges/BadgesTab';
@@ -313,6 +314,7 @@ const CreatorHome = () => {
                 <>
                     <CreatorHeader creator={creator} profile={profile} stats={stats} badges={badges} />
                     <StatusNotice creator={creator} settings={settings} />
+                    <GenderPrompt creator={creator} />
                     <div ref={tabsRef} className="scroll-mt-[calc(4.25rem+env(safe-area-inset-top))] lg:scroll-mt-[5.5rem]">
                         <SubTabs tabs={tabs} />
                     </div>

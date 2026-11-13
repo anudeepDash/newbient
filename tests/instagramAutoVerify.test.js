@@ -5,7 +5,7 @@ const notified = [];
 vi.mock('../api/_lib/notify.js', () => ({ notify: async (event, uid) => { notified.push({ event, uid }); } }));
 vi.mock('../api/_lib/mail/send.js', () => ({ sendTransactional: async () => ({ ok: true }) }));
 
-const { handleApply, handleCallback, handleLookup, handleCron, handleConnect, handleConnectAccess } = await import('../api/_lib/creatorApp.js');
+const { handleApply, handleGender, handleCallback, handleLookup, handleCron, handleConnect, handleConnectAccess } = await import('../api/_lib/creatorApp.js');
 const { cleanAccessEmails } = await import('../api/_lib/instagram.js');
 const { makeSignedToken } = await import('../api/_lib/linkSign.js');
 
@@ -122,7 +122,7 @@ describe('connecting Instagram verifies a waiting creator', () => {
 describe('applying with a connected account', () => {
     it('approves a new creator straight away', async () => {
         db = seed({ [`private/instagram_tokens/users/${UID}`]: storedToken() });
-        const res = await run(handleApply, { handle: 'riya.creates', city: 'Mumbai', niches: ['Tech & Gaming'] });
+        const res = await run(handleApply, { handle: 'riya.creates', city: 'Mumbai', niches: ['Tech & Gaming'], gender: 'Female' });
         expect(res.statusCode).toBe(200);
         expect(res.body.status).toBe('approved');
         expect(db.dump('creators')[UID]).toMatchObject({ profileStatus: 'approved', isVerified: true, verifiedBy: 'meta_auto_verify', instagramVerified: true });
@@ -170,7 +170,7 @@ describe('ig-lookup for connect-first', () => {
 
 describe('the automatic check without Instagram Login (Meta switch off)', () => {
     const metaOff = (extra = {}) => seed({ 'site_settings/general': { instagramMetaVerification: false, minInstagramFollowersToJoin: 1000 }, ...extra });
-    const apply = { handle: 'riya.creates', city: 'Mumbai', niches: ['Tech & Gaming'] };
+    const apply = { handle: 'riya.creates', city: 'Mumbai', niches: ['Tech & Gaming'], gender: 'Female' };
 
     it('approves a creator whose followers were read from their public profile', async () => {
         db = metaOff();
@@ -277,7 +277,7 @@ describe('early access to Connect Instagram while the Meta switch is off', () =>
 describe('typing the username is always an option', () => {
     it('approves a typed username with the Meta switch on, without asking to connect', async () => {
         db = seed();
-        const res = await run(handleApply, { handle: 'riya.creates', city: 'Mumbai', niches: ['Tech & Gaming'] });
+        const res = await run(handleApply, { handle: 'riya.creates', city: 'Mumbai', niches: ['Tech & Gaming'], gender: 'Female' });
         expect(res.statusCode).toBe(200);
         expect(res.body.status).toBe('approved');
         expect(db.dump('creators')[UID]).toMatchObject({ instagramVerified: true, instagramVerifiedVia: 'public' });
@@ -285,7 +285,7 @@ describe('typing the username is always an option', () => {
 
     it('uses a connected account even while the switch is off (early access)', async () => {
         db = seed({ 'site_settings/general': { instagramMetaVerification: false }, [`private/instagram_tokens/users/${UID}`]: storedToken() });
-        const res = await run(handleApply, { handle: 'riya.creates', city: 'Mumbai', niches: ['Tech & Gaming'] });
+        const res = await run(handleApply, { handle: 'riya.creates', city: 'Mumbai', niches: ['Tech & Gaming'], gender: 'Female' });
         expect(res.body.status).toBe('approved');
         expect(db.dump('creators')[UID].instagramVerifiedVia).toBe('oauth');
     });
@@ -296,5 +296,57 @@ describe('cleanAccessEmails', () => {
         expect(cleanAccessEmails(['A@b.co', 'a@b.co', 'bad'])).toEqual(['a@b.co']);
         expect(cleanAccessEmails('x@y.io; z@w.in\n')).toEqual(['x@y.io', 'z@w.in']);
         expect(cleanAccessEmails(null)).toEqual([]);
+    });
+});
+
+describe('gender', () => {
+    const apply = { handle: 'riya.creates', city: 'Mumbai', niches: ['Tech & Gaming'] };
+
+    it('is required on a new application', async () => {
+        db = seed({ [`private/instagram_tokens/users/${UID}`]: storedToken() });
+        const res = await run(handleApply, apply);
+        expect(res.statusCode).toBe(400);
+        expect(res.body.field).toBe('gender');
+        expect(db.dump('creators')[UID]).toBeUndefined();
+    });
+
+    it('ignores values that are not one of the options', async () => {
+        db = seed({ [`private/instagram_tokens/users/${UID}`]: storedToken() });
+        const res = await run(handleApply, { ...apply, gender: 'Robot' });
+        expect(res.body.field).toBe('gender');
+    });
+
+    it('is saved on the creator profile and fills the account’s own gender', async () => {
+        db = seed({ [`private/instagram_tokens/users/${UID}`]: storedToken() });
+        const res = await run(handleApply, { ...apply, gender: 'Prefer not to say' });
+        expect(res.statusCode).toBe(200);
+        expect(db.dump('creators')[UID].gender).toBe('Prefer not to say');
+        expect(db.dump('users')[UID].gender).toBe('Prefer not to say');
+    });
+
+    it('is not needed when an older creator edits their profile', async () => {
+        db = seed({ [`creators/${UID}`]: { uid: UID, name: 'Riya', city: 'Mumbai', niches: ['Tech & Gaming'], instagram: 'riya.creates', profileStatus: 'approved' } });
+        const res = await run(handleApply, { city: 'Mumbai', bio: 'Hi' });
+        expect(res.statusCode).toBe(200);
+        expect(db.dump('creators')[UID].gender).toBeUndefined();
+    });
+
+    it('creator-gender saves just the gender and keeps an account gender already set', async () => {
+        db = seed({
+            [`users/${UID}`]: { name: 'Riya', email: 'riya@example.com', gender: 'Female' },
+            [`creators/${UID}`]: { uid: UID, name: 'Riya', instagram: 'riya.creates', profileStatus: 'pending_verification' },
+        });
+        const res = await run(handleGender, { gender: 'Male' });
+        expect(res.statusCode).toBe(200);
+        const c = db.dump('creators')[UID];
+        expect(c).toMatchObject({ gender: 'Male', profileStatus: 'pending_verification', instagram: 'riya.creates' });
+        expect(db.dump('users')[UID].gender).toBe('Female');
+    });
+
+    it('creator-gender refuses unknown values and people without a creator profile', async () => {
+        db = seed({ [`creators/${UID}`]: { uid: UID, name: 'Riya' } });
+        expect((await run(handleGender, { gender: 'x' })).statusCode).toBe(400);
+        db = seed({});
+        expect((await run(handleGender, { gender: 'Female' })).statusCode).toBe(404);
     });
 });

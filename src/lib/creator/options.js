@@ -28,3 +28,18 @@ export const RATE_OPTIONS = [
 export const rateFromCommercials = (commercials = '') => RATE_OPTIONS.find(r => r.commercials === commercials)?.id || null;
 
 export const BIO_MAX = 400;
+
+/*
+ * Gender, asked on the application and the profile so brands can brief campaigns
+ * that need a mix (or only women, or only men). The same values as the account's
+ * own `gender` (src/app/community/welcomeForm.js), so one answer fills both.
+ * "Prefer not to say" is a full answer: we don't ask again.
+ */
+export const CREATOR_GENDER_OPTIONS = [
+    { id: 'Female', label: 'Female' },
+    { id: 'Male', label: 'Male' },
+    { id: 'Non-binary', label: 'Non-binary' },
+    { id: 'Prefer not to say', label: 'Prefer not to say' },
+];
+export const GENDER_IDS = new Set(CREATOR_GENDER_OPTIONS.map(g => g.id));
+export const hasCreatorGender = (c) => GENDER_IDS.has(c?.gender);

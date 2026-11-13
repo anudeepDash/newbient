@@ -234,4 +234,8 @@ export default {
     'Pick a show, pay by UPI, and your ticket shows up in the app.': 'Show chuno, UPI se pay karo, aur tumhara ticket app mein aa jayega.',
     'No ticket sales right now': 'No ticket sales right now',
     'Shows with tickets on sale appear here first.': 'Jin shows ke tickets sale pe hain, wo sabse pehle yahin dikhte hain.',
+    "One quick thing: add your gender": "Ek chhoti si cheez: apna gender add karo",
+    "Some brands brief campaigns for women or men only. One tap, and we can match you to them. Only the Newbi team sees it.": "Kuch brands sirf women ya sirf men ke liye campaigns brief karte hain. Ek tap, aur hum tumhe unse match kar denge. Sirf Newbi team dekhti hai.",
+    "Saved. Thanks!": "Save ho gaya. Thanks!",
+    "Couldn’t save that. Try again.": "Save nahi hua. Phir se try karo.",
 };

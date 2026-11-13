@@ -49,7 +49,7 @@ const sections = [
                 ]} />
                 <H3>Creators</H3>
                 <UL items={[
-                    'Your creator profile: name, contact details, city, niches, rates, whether you do barter, bio, college, and your Instagram, YouTube, LinkedIn or X handles.',
+                    'Your creator profile: name, contact details, city, niches, gender (you can choose “Prefer not to say”; only the Newbi team sees it, to match you to campaigns), rates, whether you do barter, bio, college, and your Instagram, YouTube, LinkedIn or X handles.',
                     'Your public Instagram profile details: username, name, follower and post counts, account type and profile picture. See “Instagram” below.',
                     'Campaign applications: the details on the form, your consent to WhatsApp updates (with the time and wording you agreed to), the links and screenshots of the posts you deliver, and your status in each campaign.',
                     'Payouts: the UPI ID or bank account (name on the account, account number, IFSC and bank) you give us to pay you, and the amount, date and reference of each payout. We keep these in our accounts so we can pay you and keep tax records, and we only ask for them when a campaign payout is due.',

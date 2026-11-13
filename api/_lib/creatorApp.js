@@ -12,6 +12,7 @@
  *   ?action=campaign-apply   POST { campaignId }
  *   ?action=campaign-submit  POST { campaignId, taskId, contentLink, proofUrl, note }
  *   ?action=creator-self-delete POST {}       the signed-in creator deletes their own creator profile
+ *   ?action=creator-gender   POST { gender }  saves just the gender (the one-tap card for older creators)
  *   ?action=creator-sync-profile POST {}      copies name, city and phone from users/{uid} onto the creator profile
  *   ?action=profile-phone    POST { phone }   saves the account's phone; verified only if it's the number on the sign-in account
  *   ?action=account-matches  POST { email? }  other accounts with your phone or email (api/_lib/accountMerge.js)
@@ -38,7 +39,7 @@ import {
     fetchMe, refreshToken, tokenRef, ownerRef, otherOwnerOf, logIntegration, PROFESSIONAL_ACCOUNT_TYPES,
     canConnectInstagram, connectAccessRef, readConnectAccess, cleanAccessEmails,
 } from './instagram.js';
-import { NICHE_IDS, COLLAB_IDS, BIO_MAX, isCollegeNiche } from '../../src/lib/creator/options.js';
+import { NICHE_IDS, COLLAB_IDS, BIO_MAX, GENDER_IDS, isCollegeNiche } from '../../src/lib/creator/options.js';
 import { isCampaignCityMatch } from '../../src/lib/constants.js';
 import { findMatches, readProof, checkMergeable, describeAccount, mergeAccounts, MergeError } from './accountMerge.js';
 import { lookupPerson, checkAdminMerge, linkCreatorProfile, setProfileEmail } from './adminAccounts.js';
@@ -55,7 +56,7 @@ const APP_URL = (process.env.PUBLIC_APP_URL || 'https://app.newbi.live').replace
 
 export const CREATOR_APP_ACTIONS = new Set([
     'ig-lookup', 'ig-connect', 'ig-callback', 'instagram-cron', 'creator-apply', 'campaign-apply', 'campaign-submit',
-    'creator-self-delete', 'creator-sync-profile', 'account-matches', 'account-merge', 'profile-phone',
+    'creator-self-delete', 'creator-sync-profile', 'creator-gender', 'account-matches', 'account-merge', 'profile-phone',
     'my-submission', 'submissions-list', 'submissions-review', 'submissions-delete', 'submissions-guests', 'ig-connect-access',
     'admin-accounts', 'admin-account-merge', 'admin-creator-link', 'admin-account-email',
 ]);
@@ -408,7 +409,8 @@ const socialHandle = (v) => str(v, 120).replace(/^https?:\/\/(www\.)?[^/]+\//i, 
  * The application, and later edits from the creator's profile.
  *
  * The form sends: handle, city, niches (1-3), collegeName for campus niches,
- * whatsappOptIn. The profile's "add later" fields (collaboration, commercials,
+ * gender, whatsappOptIn. Gender is required on a new application only; older
+ * profiles without one are asked on their dashboard (creator-gender). The profile's "add later" fields (collaboration, commercials,
  * bio, cityPageFocus, linkedin, youtube, twitter) are saved only when sent.
  * Name, email and verified phone come from users/{uid}; a missing name or
  * photo is filled from Instagram.
@@ -435,6 +437,8 @@ export const handleApply = async (req, res, { db, token }) => {
     if ((isNew || sentNiches) && !niches?.length) return send(res, 400, { success: false, field: 'niches', error: 'Pick at least one niche.' });
     const customNiche = niches?.includes('Others') ? str(body.customNiche, 60) : '';
     if (niches?.includes('Others') && !customNiche) return send(res, 400, { success: false, field: 'customNiche', error: 'Tell us your niche.' });
+    const gender = has(body, 'gender') && GENDER_IDS.has(body.gender) ? body.gender : null;
+    if (isNew && !gender) return send(res, 400, { success: false, field: 'gender', error: 'Pick your gender.' });
     const allNiches = niches || (Array.isArray(existing?.specializations) ? existing.specializations : [existing?.categories].filter(Boolean));
     const campusNiche = allNiches.some(isCollegeNiche);
 
@@ -587,6 +591,7 @@ export const handleApply = async (req, res, { db, token }) => {
     if (has(body, 'bio')) optional.bio = str(body.bio, BIO_MAX);
     if (has(body, 'cityPageFocus')) optional.cityPageFocus = str(body.cityPageFocus, 80);
     ['linkedin', 'youtube', 'twitter'].forEach((k) => { if (has(body, k)) optional[k] = socialHandle(body[k]); });
+    if (gender) { optional.gender = gender; optional.genderAt = nowIso(); }
 
     const creator = {
         uid,
@@ -633,6 +638,7 @@ export const handleApply = async (req, res, { db, token }) => {
     };
     if (typeof body.whatsappOptIn === 'boolean') userPatch.channelPrefs = { whatsapp: body.whatsappOptIn };
     if (campusNiche && collegeName && !id.user.college) userPatch.college = collegeName;
+    if (gender && !GENDER_IDS.has(id.user.gender)) userPatch.gender = gender;
     if (formCity && formCity !== id.user.city) userPatch.city = formCity;
     if (nameFromInstagram) { userPatch.name = nameFromInstagram; userPatch.displayName = nameFromInstagram; }
     if (photoFromInstagram) userPatch.photoURL = photoFromInstagram;
@@ -694,6 +700,28 @@ const notifyReferrer = async (db, referredBy, creator) => {
         isRead: false,
         createdAt: nowIso(),
     });
+};
+
+/* ── creator-gender ───────────────────────────────────────────────────── */
+
+/*
+ * Just the gender, for creators who applied before it was asked (the card on
+ * their dashboard, opened from the "add your gender" email). Touches nothing
+ * else, so a profile waiting on Instagram isn't checked again. The account's
+ * own gender is filled in too when it has none.
+ */
+export const handleGender = async (req, res, { db, token }) => {
+    if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });
+    const gender = (req.body || {}).gender;
+    if (!GENDER_IDS.has(gender)) return send(res, 400, { success: false, field: 'gender', error: 'Pick one of the options.' });
+    const snap = await findOwnCreator(db, token.uid);
+    if (!snap?.exists) return send(res, 404, { success: false, error: 'No creator profile on this account.' });
+    const now = nowIso();
+    await snap.ref.set({ gender, genderAt: now, updatedAt: now }, { merge: true });
+    const userRef = db.collection('users').doc(token.uid);
+    const user = await userRef.get().catch(() => null);
+    if (!GENDER_IDS.has(user?.data()?.gender)) await userRef.set({ gender, updatedAt: now }, { merge: true });
+    return send(res, 200, { success: true, gender });
 };
 
 /* ── campaign-apply ───────────────────────────────────────────────────── */
@@ -1305,6 +1333,7 @@ export const handleCreatorAppAction = async (action, req, res, { decodedToken })
         if (action === 'campaign-submit') return await handleCampaignSubmit(req, res, ctx);
         if (action === 'creator-self-delete') return await handleSelfDelete(req, res, ctx);
         if (action === 'creator-sync-profile') return await handleSyncProfile(req, res, ctx);
+        if (action === 'creator-gender') return await handleGender(req, res, ctx);
         if (action === 'account-matches') return await handleAccountMatches(req, res, ctx);
         if (action === 'account-merge') return await handleAccountMerge(req, res, ctx);
         if (action === 'profile-phone') return await handleProfilePhone(req, res, ctx);

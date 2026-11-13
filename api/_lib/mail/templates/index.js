@@ -25,6 +25,7 @@ import staffAuthorized from './staff-authorized.js';
 import paymentApproved from './payment-approved.js';
 import paymentDeclined from './payment-declined.js';
 import creatorMessage from './creator-message.js';
+import creatorGenderAsk from './creator-gender-ask.js';
 import subscribeConfirm from './subscribe-confirm.js';
 import invoice from './invoice.js';
 import proposal from './proposal.js';
@@ -54,6 +55,7 @@ export const TEMPLATES = {
     'payment-approved': paymentApproved,
     'payment-declined': paymentDeclined,
     'creator-message': creatorMessage,
+    'creator-gender-ask': creatorGenderAsk,
     'subscribe-confirm': subscribeConfirm,
     invoice,
     proposal,
@@ -63,7 +65,7 @@ export const TEMPLATES = {
 };
 
 /** Templates staff may send from the admin with their own data. */
-export const STAFF_TEMPLATES = new Set(['invoice', 'proposal', 'agreement', 'receipt', 'creator-message', 'payment-approved', 'payment-declined', 'staff-authorized']);
+export const STAFF_TEMPLATES = new Set(['invoice', 'proposal', 'agreement', 'receipt', 'creator-message', 'creator-gender-ask', 'payment-approved', 'payment-declined', 'staff-authorized']);
 
 export const hasTemplate = (name) => Object.prototype.hasOwnProperty.call(TEMPLATES, name);
 

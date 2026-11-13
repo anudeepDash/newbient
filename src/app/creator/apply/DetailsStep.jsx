@@ -1,6 +1,6 @@
 import React from 'react';
 import { TextInput } from '../../../components/app';
-import { CREATOR_NICHE_OPTIONS, COLLAB_OPTIONS, RATE_OPTIONS, BIO_MAX, isCollegeNiche } from '../../../lib/creator/options';
+import { CREATOR_NICHE_OPTIONS, CREATOR_GENDER_OPTIONS, COLLAB_OPTIONS, RATE_OPTIONS, BIO_MAX, isCollegeNiche } from '../../../lib/creator/options';
 import { ChoiceChip, FormBlock, TextArea } from '../ui';
 import { useT, t as translateNow } from '../../../i18n';
 
@@ -9,7 +9,7 @@ import { useT, t as translateNow } from '../../../i18n';
  * niches (up to 3), college for campus niches, how you work, rates, a bio
  * and other socials. Saved through the server, which keeps the status.
  *
- *   details: { niches, customNiche, cityPageFocus, collegeName, collaboration, commercials, bio, linkedin, youtube, twitter }
+ *   details: { niches, customNiche, cityPageFocus, collegeName, gender, collaboration, commercials, bio, linkedin, youtube, twitter }
  */
 
 const MAX_NICHES = 3;
@@ -82,6 +82,14 @@ const DetailsStep = ({ details, setDetails, profileCollege, fieldError }) => {
                     error={fieldError?.field === 'collegeName' ? fieldError.error : null}
                 />
             )}
+
+            <FormBlock label={t('Gender')} hint={t('Only the Newbi team sees it')}>
+                <div className="flex flex-wrap gap-2">
+                    {CREATOR_GENDER_OPTIONS.map(g => (
+                        <ChoiceChip key={g.id} selected={details.gender === g.id} onClick={() => set({ gender: g.id })} className="py-2">{t(g.label)}</ChoiceChip>
+                    ))}
+                </div>
+            </FormBlock>
 
             <FormBlock label={t('How you like to work')}>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">

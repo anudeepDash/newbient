@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import RichEditor from './RichEditor';
 import GraduationCap from 'lucide-react/dist/esm/icons/graduation-cap';
+import UserRound from 'lucide-react/dist/esm/icons/user-round';
 import { useStore } from '../../lib/store';
 import { cn } from '../../lib/utils';
 import { extractSocialUsername, buildSocialUrl } from '../../lib/socialUtils';
@@ -472,6 +473,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                     {creatorData.email && <InfoRow icon={Mail} label="Email" value={creatorData.email} href={`mailto:${creatorData.email}`} onCopy={() => copy(creatorData.email, 'Email')} />}
                                     {creatorData.phone && <InfoRow icon={Phone} label={creatorData.isPhoneVerified ? 'Phone · verified' : 'Phone'} value={creatorData.phone} href={`tel:${creatorData.phone}`} onCopy={() => copy(creatorData.phone, 'Phone')} />}
                                     {creatorData.city && <InfoRow icon={MapPin} label="City" value={creatorData.city} />}
+                                    <InfoRow icon={UserRound} label="Gender" value={creatorData.gender || 'Not added yet'} />
                                     {isCollegeCreator && (
                                         <InfoRow icon={GraduationCap} label="College">
                                             {creatorData.collegeName

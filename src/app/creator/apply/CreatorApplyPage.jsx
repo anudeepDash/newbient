@@ -7,7 +7,7 @@ import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import { Button, Sheet, TextInput } from '../../../components/app';
 import { useAppStore } from '../../../lib/store/appStore';
 import { cn } from '../../../lib/utils';
-import { CREATOR_NICHE_OPTIONS } from '../../../lib/creator/options';
+import { CREATOR_NICHE_OPTIONS, CREATOR_GENDER_OPTIONS } from '../../../lib/creator/options';
 import { INTENTS, useAuthGate, useResumeIntent } from '../../auth/AuthGate';
 import { appPath } from '../../host';
 import useDynamicMeta from '../../../hooks/useDynamicMeta';
@@ -29,7 +29,8 @@ import { useT } from '../../../i18n';
  *   Instagram Login: sign in, Instagram login, back here with the account
  *   filled in and verified, and applied right away if the rest was filled in),
  *   or type the username → the live creator pass fills in from Instagram
- *   City (one tap) → Niches (up to 3) → College only for campus niches
+ *   City (one tap) → Niches (up to 3) → College only for campus niches →
+ *   Gender (one tap; brands brief some campaigns by it)
  *   Sticky "Apply"
  *
  * Opened from a card or button (link state { backgroundLocation }) it's a
@@ -274,7 +275,7 @@ const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
     const loadCreatorSettings = useAppStore(s => s.loadCreatorSettings);
     const referredBy = useMemo(() => readRef(params), [params]);
     const next = safeNext(params.get('next'));
-    const app = useCreatorApplication({ referredBy, initialCity: profile?.city || '', uid: authUid });
+    const app = useCreatorApplication({ referredBy, initialCity: profile?.city || '', initialGender: profile?.gender || '', uid: authUid });
     // Opened from a campaign ("Get my creator ID"): apply to it as soon as the creator profile exists.
     const [campaignApply, setCampaignApply] = useState(null);
     useEffect(() => {
@@ -361,7 +362,7 @@ const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
                 loading={app.submitting || app.connecting}
                 onClick={apply}
             >
-                {app.ready ? t('Apply') : t('Apply · {done} of 3', { done: doneCount })}
+                {app.ready ? t('Apply') : t('Apply · {done} of {total}', { done: doneCount, total: app.steps.length })}
             </Button>
         </div>
     );
@@ -436,6 +437,15 @@ const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
                             maxLength={160}
                         />
                     )}
+                </Block>
+
+                <Block label={t('Gender')} done={app.steps[3].done} hint={t('Only the Newbi team sees it')}>
+                    <div className="flex flex-wrap gap-2">
+                        {CREATOR_GENDER_OPTIONS.map(g => (
+                            <ChoiceChip key={g.id} selected={app.gender === g.id} onClick={() => app.setGender(g.id)} className="py-2">{t(g.label)}</ChoiceChip>
+                        ))}
+                    </div>
+                    <p className="text-[13px] text-gray-500 dark:text-zinc-400">{t('Some brands brief campaigns for women or men only. This helps us match you.')}</p>
                 </Block>
 
                 <label className={cn('flex min-h-[56px] cursor-pointer items-center gap-3 rounded-[1.25rem] px-5 text-[14px] font-semibold text-gray-800 dark:text-zinc-200', GLASS)}>

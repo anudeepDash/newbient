@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { callCreatorApi } from '../api';
 import { appPath } from '../../host';
-import { isCollegeNiche } from '../../../lib/creator/options';
+import { isCollegeNiche, GENDER_IDS } from '../../../lib/creator/options';
 import { t } from '../../../i18n';
 
 /*
@@ -18,6 +18,7 @@ import { t } from '../../../i18n';
  *   city                 one pick, prefilled from the profile
  *   niches               up to three
  *   college              only for campus niches
+ *   gender               one pick, prefilled from the account's own gender
  *
  * Name, email, phone and photo are never asked here: they come from the
  * account (or Instagram). The draft survives the Instagram login round trip
@@ -54,13 +55,14 @@ export const clearDraft = () => {
     try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* private mode */ }
 };
 
-export function useCreatorApplication({ referredBy = '', initialCity = '', uid = null } = {}) {
+export function useCreatorApplication({ referredBy = '', initialCity = '', initialGender = '', uid = null } = {}) {
     const draft = useRef(readDraft()).current;
     const [handle, setHandleState] = useState(draft?.handle || '');
     const [city, setCity] = useState(draft?.city || initialCity || '');
     const [niches, setNiches] = useState(Array.isArray(draft?.niches) ? draft.niches.slice(0, MAX_NICHES) : []);
     const [customNiche, setCustomNiche] = useState(draft?.customNiche || '');
     const [collegeName, setCollegeName] = useState(draft?.collegeName || '');
+    const [gender, setGender] = useState(GENDER_IDS.has(draft?.gender) ? draft.gender : (GENDER_IDS.has(initialGender) ? initialGender : ''));
     const [whatsappOptIn, setWhatsappOptIn] = useState(draft?.whatsappOptIn !== false);
     const [manualFollowers, setManualFollowers] = useState(draft?.manualFollowers || '');
     // lookup.state: idle | checking | found | not_found | not_professional | invalid | unavailable | disabled
@@ -76,10 +78,11 @@ export function useCreatorApplication({ referredBy = '', initialCity = '', uid =
 
     // The profile's city arrives after the first render.
     useEffect(() => { if (!city && initialCity) setCity(initialCity); }, [initialCity]); // eslint-disable-line
+    useEffect(() => { if (!gender && GENDER_IDS.has(initialGender)) setGender(initialGender); }, [initialGender]); // eslint-disable-line
 
     useEffect(() => {
-        writeDraft({ handle, city, niches, customNiche, collegeName, whatsappOptIn, manualFollowers, autoSubmit: autoSubmit.current });
-    }, [handle, city, niches, customNiche, collegeName, whatsappOptIn, manualFollowers]);
+        writeDraft({ handle, city, niches, customNiche, collegeName, gender, whatsappOptIn, manualFollowers, autoSubmit: autoSubmit.current });
+    }, [handle, city, niches, customNiche, collegeName, gender, whatsappOptIn, manualFollowers]);
 
     const setHandle = (raw) => {
         setHandleState(cleanHandleInput(raw));
@@ -153,9 +156,10 @@ export function useCreatorApplication({ referredBy = '', initialCity = '', uid =
         },
         { key: 'city', done: Boolean(String(city).trim()) },
         { key: 'niche', done: niches.length > 0 && (!niches.includes('Others') || Boolean(customNiche.trim())) && (!campus || Boolean(collegeName.trim())) },
+        { key: 'gender', done: GENDER_IDS.has(gender) },
     ];
     const ready = steps.every(s => s.done);
-    // City and niches done: after connecting Instagram, the application goes straight in.
+    // City, niches and gender done: after connecting Instagram, the application goes straight in.
     const readyButInstagram = steps.slice(1).every(s => s.done);
 
     /*
@@ -166,7 +170,7 @@ export function useCreatorApplication({ referredBy = '', initialCity = '', uid =
         setConnecting(true);
         setError(null);
         autoSubmit.current = auto;
-        writeDraft({ handle, city, niches, customNiche, collegeName, whatsappOptIn, autoSubmit: auto });
+        writeDraft({ handle, city, niches, customNiche, collegeName, gender, whatsappOptIn, autoSubmit: auto });
         const res = await callCreatorApi('ig-connect', {
             // Connect-first has no typed handle to match; switching accounts drops it on purpose.
             handle: oauthReady || switchAccount ? '' : handle,
@@ -180,7 +184,7 @@ export function useCreatorApplication({ referredBy = '', initialCity = '', uid =
             return;
         }
         window.location.assign(res.data.url);
-    }, [handle, city, niches, customNiche, collegeName, whatsappOptIn, oauthReady]);
+    }, [handle, city, niches, customNiche, collegeName, gender, whatsappOptIn, oauthReady]);
 
     /* `override.handle`: the account just connected, before the handle state has caught up. */
     const submit = useCallback(async (override = {}) => {
@@ -193,6 +197,7 @@ export function useCreatorApplication({ referredBy = '', initialCity = '', uid =
             niches,
             customNiche: niches.includes('Others') ? customNiche.trim() : '',
             collegeName: campus ? collegeName.trim() : '',
+            gender,
             whatsappOptIn,
             referredBy,
             ...(manualCount ? { manualFollowers: manualCount } : {}),
@@ -205,7 +210,7 @@ export function useCreatorApplication({ referredBy = '', initialCity = '', uid =
             setError(res);
         }
         return res;
-    }, [handle, city, niches, customNiche, collegeName, campus, whatsappOptIn, referredBy, manualCount]);
+    }, [handle, city, niches, customNiche, collegeName, campus, gender, whatsappOptIn, referredBy, manualCount]);
 
     return {
         handle, setHandle,
@@ -213,6 +218,7 @@ export function useCreatorApplication({ referredBy = '', initialCity = '', uid =
         niches, toggleNiche,
         customNiche, setCustomNiche,
         collegeName, setCollegeName,
+        gender, setGender,
         whatsappOptIn, setWhatsappOptIn,
         manualFollowers, setManualFollowers, manualAllowed, manualCount, manualBelowMin,
         campus, steps, ready,
