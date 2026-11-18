@@ -101,8 +101,8 @@ const AppLayout = () => {
 
     const tabs = useMemo(() => visibleTabs(c => ({ creator: isCreator, campus: isCampus })[c] || false), [isCreator, isCampus]);
     const activeModule = moduleForPath(path);
-    // A campaign, guestlist, giveaway, form, show (ticket), feedback or payout details page has its own bottom bar; the tab pill steps aside there on phones.
-    const ownBottomBar = /^\/(c|community\/g|community\/giveaways|forms|tickets|f|pay|pay\/c)\/[^/]+\/?$/.test(path);
+    // A campaign, guestlist, giveaway, form, show (ticket), feedback, payout details or event payment page has its own bottom bar; the tab pill steps aside there on phones.
+    const ownBottomBar = /^\/(c|community\/g|community\/giveaways|forms|tickets|f|pay|pay\/c|pay\/t)\/[^/]+\/?$/.test(path);
 
     return (
         <div className="relative isolate min-h-dvh bg-[#f4f4f1] text-gray-900 dark:bg-[#050608] dark:text-white">
