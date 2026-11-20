@@ -15,6 +15,12 @@
  * until then as the short "Your post date is set" (campaign_posts_open), so
  * opening a task always tells someone while either template is on.
  *
+ * Creators shortlisted in the app (creators.shortlistedCampaigns, the
+ * Deliverables tab) get the same message too, unless they're also on the
+ * outreach list with the same number. They have no outreach application, so it
+ * goes as a ready-made template job (kind 'template', data.creatorId) and its
+ * button opens /d/c-<campaignId>, which takes them to the campaign in the app.
+ *
  * Creators group = outreach applications that got the shortlist message (message
  * sent, replied or joined), as for the deadline reminders. One message per person
  * per opening day (the job id), through the outreach queue (rate limit, STOP
@@ -23,7 +29,8 @@
 import { APP_URL, getDb, istDate } from './db.js';
 import { enqueueJob, kickWorker, runQueue, kindLive } from './outreachQueue.js';
 import { formatDeadline } from '../../src/lib/outreach/template.js';
-import { approvedSummary } from '../../src/lib/outreach/whatsappTemplate.js';
+import { approvedSummary, renderTemplatePreview, templateParamsFor, WA_TEMPLATES } from '../../src/lib/outreach/whatsappTemplate.js';
+import { campaignImageOf, imageHeaderFor, toE164 } from './whatsapp.js';
 import { taskWindow, taskWindowFields } from '../../src/lib/creator/tasks.js';
 import { WAITING_ON_POSTS, IN, dayOf } from './postReminders.js';
 import { isOnShortlist } from '../../src/lib/outreach/status.js';
@@ -95,6 +102,84 @@ export const queueTaskLive = async ({ db = getDb(), campaignId, campaign, tasks,
             const id = await enqueueJob(db, { id: jobKey, campaignId, appId: app.id, kind, createdBy, again, data });
             if (id) out.queued += 1;
             else if (appIds) out.skipped.push({ id: app.id, reason: 'already_sent' });
+        }
+    }
+    return out;
+};
+
+/* ── Creators shortlisted in the app ─────────────────────────────────── */
+
+const last10 = (phone) => String(phone || '').replace(/\D/g, '').slice(-10);
+const creatorPhoneOf = (c) => c.whatsapp || c.phone || c.phoneNumber || '';
+/** The /d/ button value for app creators: the page sends them on to the campaign in the app (DeliverablesPage). */
+export const appTaskParam = (campaignId) => `c-${campaignId}`;
+
+/* Whether a creator in the app already sent this task in (on the campaign doc, or in the submissions subcollection). */
+const appSentIn = (task, keys, subs) => keys.some(k => IN.has(task?.submissions?.[k]?.status)
+    || (task?.completedBy || []).includes(k) || (task?.verifiedBy || []).includes(k)
+    || IN.has(subs.get(k)?.tasks?.[String(task.id)]?.status));
+
+/**
+ * Creators shortlisted in the app who should hear about these tasks: not paid, with a number,
+ * and not also on the outreach shortlist with that number (they hear from there).
+ * → [{ id, name, phone, owes: Set<taskId> }]
+ */
+export const appCreatorsFor = async ({ db, campaignId, campaign, tasks, creatorIds = null }) => {
+    const campRef = db.collection('campaigns').doc(campaignId);
+    const [creators, subsSnap, apps] = await Promise.all([
+        creatorIds
+            ? Promise.all(creatorIds.map(id => db.collection('creators').doc(id).get())).then(ds => ds.filter(d => d.exists))
+            : db.collection('creators').where('shortlistedCampaigns', 'array-contains', campaignId).get().then(q => q.docs),
+        campRef.collection('submissions').get(),
+        campRef.collection('applications').get(),
+    ]);
+    const subs = new Map(subsSnap.docs.map(d => [d.id, d.data()]));
+    const outreachPhones = new Set(apps.docs.map(d => d.data()).filter(a => isOnShortlist(a.status)).map(a => last10(a.phone)).filter(Boolean));
+    return creators.map(d => {
+        const c = d.data();
+        const phone = creatorPhoneOf(c);
+        const keys = [...new Set([c.uid, d.id].filter(Boolean))];
+        const skip = !(c.shortlistedCampaigns || []).includes(campaignId) ? 'not_approved'
+            : c.campaignPayouts?.[campaignId]?.status === 'paid' ? 'paid'
+                : !toE164(phone) ? 'no_phone'
+                    : outreachPhones.has(last10(phone)) ? 'on_outreach' : null;
+        const owes = new Set(tasks.filter(t => !appSentIn(t, keys, subs)).map(t => String(t.id)));
+        return { id: d.id, name: c.name || c.displayName || c.fullName || '', phone, skip, owes };
+    });
+};
+
+/* One app creator's message for one task, ready for the queue's 'template' kind (the same text and variables as the outreach one). */
+const appTaskJobData = (kind, creator, task, campaign, campaignId) => {
+    const ctx = { application: { fullName: creator.name }, campaign, data: kind === 'task_live' ? taskLiveData(task, campaign) : postsOpenData(task, campaign) };
+    const name = WA_TEMPLATES[kind].name;
+    return {
+        phone: toE164(creator.phone), name: creator.name, template: name,
+        header: imageHeaderFor(name, campaignImageOf(campaign)),
+        bodyParams: templateParamsFor(kind, ctx),
+        buttons: [{ index: 0, param: appTaskParam(campaignId) }],
+        text: renderTemplatePreview(kind, ctx),
+        taskIds: [String(task.id)], creatorId: creator.id,
+    };
+};
+
+/*
+ * Queues the task's message for creators shortlisted in the app (all of them, or creatorIds).
+ * One job per person per task, as for outreach. → { queued, skipped: [{ id, reason }] }
+ */
+export const queueTaskLiveApp = async ({ db = getDb(), campaignId, campaign, tasks, creatorIds = null, again = false, createdBy = 'Newbi app' }) => {
+    const kind = taskLiveKind();
+    const out = { queued: 0, skipped: [] };
+    if (!tasks.length || !kind) return out;
+    for (const c of await appCreatorsFor({ db, campaignId, campaign, tasks, creatorIds })) {
+        if (c.skip) { if (creatorIds) out.skipped.push({ id: c.id, reason: c.skip }); continue; }
+        for (const t of tasks) {
+            if (!c.owes.has(String(t.id))) { if (creatorIds) out.skipped.push({ id: c.id, reason: 'posts_in' }); continue; }
+            const id = await enqueueJob(db, {
+                id: `task_live_${campaignId}_cr_${c.id}_${t.id}`.slice(0, 140),
+                campaignId, kind: 'template', createdBy, again, data: appTaskJobData(kind, c, t, campaign, campaignId),
+            });
+            if (id) out.queued += 1;
+            else if (creatorIds) out.skipped.push({ id: c.id, reason: 'already_sent' });
         }
     }
     return out;
@@ -172,7 +257,9 @@ export const tellPostsOpened = async ({ db = getDb(), campaignId, taskIds = [], 
     const campaign = snap.data();
     const wanted = new Set(taskIds.map(String));
     const tasks = (campaign.tasks || []).filter(t => wanted.has(String(t.id)) && taskWindow(t) === 'open');
-    const { queued, kind, off } = await queueTaskLive({ db, campaignId, campaign, tasks });
+    const { queued: fromOutreach, kind, off } = await queueTaskLive({ db, campaignId, campaign, tasks });
+    const { queued: fromApp } = await queueTaskLiveApp({ db, campaignId, campaign, tasks });
+    const queued = fromOutreach + fromApp;
     if (queued && start) {
         const req = { headers: { host: new URL(APP_URL).host } };
         if (!(await kickWorker(req, 0).catch(() => false))) await runQueue({ db, deadline: Date.now() + 15_000 }).catch(() => null);

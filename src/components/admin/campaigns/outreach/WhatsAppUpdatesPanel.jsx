@@ -26,6 +26,7 @@ import { StatusBadge, Handle, SKIP_REASON, Bubble } from './parts';
 import CampaignOpenPanel from './CampaignOpenPanel';
 import MessagesPanel from './MessagesPanel';
 import UserCheck from 'lucide-react/dist/esm/icons/user-check';
+import { creatorHandle, isPaid, isSelected, progressFor, stageMeta, stageOf } from '../campaignModel';
 
 /*
  * Outreach → Message: every WhatsApp the team sends for a campaign, in one
@@ -82,7 +83,32 @@ const AUTOMATIC = [
     { kind: 'feedback', label: 'Feedback request', when: 'The day after the event' },
 ];
 
-const SKIPPED = { ...SKIP_REASON, not_approved: 'not on the shortlist', not_applicant: 'already shortlisted', no_phone: 'no WhatsApp number', posts_in: 'already sent this post', already_sent: 'already got it', not_found: 'not found' };
+const SKIPPED = { ...SKIP_REASON, paid: 'already paid', on_outreach: 'on the outreach list (sent from there)', not_approved: 'not on the shortlist', not_applicant: 'already shortlisted', no_phone: 'no WhatsApp number', posts_in: 'already sent this post', already_sent: 'already got it', not_found: 'not found' };
+
+const last10 = (phone) => String(phone || '').replace(/\D/g, '').slice(-10);
+
+/*
+ * Creators shortlisted in the app (Applicants / Deliverables tabs), as rows like the outreach
+ * list's, for "Task is live" only. Left out: paid, no number, or already on the outreach
+ * shortlist with that number (they get it from there). Matches appCreatorsFor in api/_lib/postsOpen.js.
+ */
+const appRowsFor = (campaign, creators, applications) => {
+    const outreachPhones = new Set(applications.filter(a => isOnShortlist(a.status)).map(a => last10(a.phone)).filter(Boolean));
+    return (creators || [])
+        .filter(c => isSelected(campaign, c) && !isPaid(campaign, c))
+        .map(c => {
+            const progress = progressFor(campaign, c);
+            return {
+                id: `creator:${c.id}`, creatorId: c.id, inApp: true, status: 'shortlisted',
+                stage: stageOf(campaign, c, progress),
+                fullName: c.name || c.displayName || c.fullName || 'Creator',
+                instagramHandle: creatorHandle(c), phone: c.whatsapp || c.phone || c.phoneNumber || '',
+                whatsappOptOut: false,
+                deliverables: Object.fromEntries(progress.items.map(i => [String(i.task?.id), { status: i.status }])),
+            };
+        })
+        .filter(r => last10(r.phone).length === 10 && !outreachPhones.has(last10(r.phone)));
+};
 
 const dueOf = (task, campaign) => {
     const day = String(task?.deadline || campaign?.postingDeadline || '').slice(0, 10);
@@ -133,6 +159,7 @@ export const AutomaticMessages = ({ api }) => {
 
 const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, invite = null }) => {
     const addToast = useStore(s => s.addToast);
+    const creators = useStore(s => s.creators);
     const on = (k) => Boolean(api?.configured && api?.templates?.[k]);
     const taskTemplate = taskTemplateOf(on);
     // A task can go out while either of its templates is on (the brief, else the short "post date is set").
@@ -170,7 +197,9 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
     const [confirm, setConfirm] = useState(false);
     const [sending, setSending] = useState(false);
 
-    const reachable = useMemo(() => applications.filter(a => a.phone && !a.whatsappOptOut && a.status !== 'removed'), [applications]);
+    // A task also goes to creators shortlisted in the app, who aren't on the outreach list.
+    const appRows = useMemo(() => (kind === 'task_live' ? appRowsFor(campaign, creators, applications) : []), [kind, campaign, creators, applications]);
+    const reachable = useMemo(() => [...applications.filter(a => a.phone && !a.whatsappOptOut && a.status !== 'removed'), ...appRows], [applications, appRows]);
     // Who already had this task's message (sent or on its way), from the queue.
     // Keyed by its contents, so the queue refreshing every 30 s doesn't undo the team's ticks.
     const toldKey = [...(api?.queue?.taskTold?.[String(task?.id)] || [])].sort().join(',');
@@ -220,7 +249,7 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
     const sendNow = async () => {
         setSending(true);
         const r = await callOutreach('outreach-wa-send', {
-            campaignId: campaign.id, kind, appIds: recipients.map(a => a.id),
+            campaignId: campaign.id, kind, appIds: recipients.filter(a => !a.inApp).map(a => a.id), creatorIds: recipients.filter(a => a.inApp).map(a => a.creatorId),
             ...(kind === 'task_live' ? { taskId } : data),
         });
         setSending(false);
@@ -361,7 +390,7 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
                                                 </span>
                                                 {a.interestedAt && <Badge tone="teal">Interested</Badge>}
                                                 {a.source === 'import' && !a.interestedAt && <Badge tone="gray">Imported</Badge>}
-                                                <StatusBadge status={a.status} />
+                                                {a.inApp ? <Badge tone={stageMeta(a.stage).tone}>{stageMeta(a.stage).label} · app</Badge> : <StatusBadge status={a.status} />}
                                             </label>
                                         </li>
                                     ))}

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Navigate, useParams } from 'react-router-dom';
 import Send from 'lucide-react/dist/esm/icons/send';
 import ImagePlus from 'lucide-react/dist/esm/icons/image-plus';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
@@ -201,9 +201,20 @@ const PayoutCard = ({ token, details, paid }) => {
     );
 };
 
+/*
+ * The outreach page for someone on the outreach list (a signed token). Creators
+ * shortlisted in the app get /d/c-<campaignId> in their WhatsApp (the task
+ * template's button is always /d/…), which goes on to the campaign in the app.
+ */
 const DeliverablesPage = () => {
-    const t = useT();
     const { token } = useParams();
+    const inApp = /^c-([\w-]{1,120})$/.exec(String(token || ''));
+    if (inApp) return <Navigate to={appPath(`/c/${inApp[1]}`)} replace />;
+    return <OutreachDeliverables token={token} />;
+};
+
+const OutreachDeliverables = ({ token }) => {
+    const t = useT();
     const [state, setState] = useState({ loading: true, data: null, error: '' });
     const load = useCallback(async () => {
         const r = await callCreatorApi('outreach-deliverables', { token });

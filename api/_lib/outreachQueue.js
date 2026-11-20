@@ -301,6 +301,11 @@ const loadContext = async (db, job) => {
     if (spec.custom) {
         const contact = await db.collection('creator_contacts').doc(contactIdFor(job.data?.phone)).get();
         if (contact.exists && contact.data().whatsappOptOut?.at) return { skip: 'opted_out' };
+        // A task's message to a creator shortlisted in the app (api/_lib/postsOpen.js): pointless once the task closes.
+        if (job.data?.creatorId && job.campaignId && (job.data.taskIds || []).length) {
+            const camp = await db.collection('campaigns').doc(String(job.campaignId)).get();
+            if (!camp.exists || !(camp.data().tasks || []).some(t => job.data.taskIds.includes(String(t.id)) && taskWindow(t) === 'open')) return { skip: 'task_closed' };
+        }
         return { custom: true };
     }
     if (spec.feedback) {
@@ -654,12 +659,13 @@ export const queueStatus = async (db, campaignId) => {
     const snap = await db.collection('outreach_queue').where('campaignId', '==', campaignId).get();
     const counts = { queued: 0, sending: 0, sent: 0, failed: 0, cancelled: 0, reminders: 0 };
     let nextAt = null;
-    // Who has had (or is about to get) each task's message, either template: { [taskId]: [appId] }.
+    // Who has had (or is about to get) each task's message, either template: { [taskId]: [appId, or creator:<id> for app creators] }.
     const told = {};
     snap.docs.forEach(d => {
         const j = d.data();
-        if (['task_live', 'posts_open'].includes(j.kind) && ['sent', 'queued', 'sending'].includes(j.status) && j.appId) {
-            for (const t of j.data?.taskIds || []) (told[t] ||= new Set()).add(j.appId);
+        const who = j.appId || (j.kind === 'template' && j.data?.creatorId ? `creator:${j.data.creatorId}` : null);
+        if ((['task_live', 'posts_open'].includes(j.kind) || who?.startsWith('creator:')) && ['sent', 'queued', 'sending'].includes(j.status) && who) {
+            for (const t of j.data?.taskIds || []) (told[t] ||= new Set()).add(who);
         }
         if (j.kind === 'reminder') {
             if (j.status === 'queued') counts.reminders += 1;

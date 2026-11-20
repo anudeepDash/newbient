@@ -21,11 +21,12 @@
  * Nothing here is automatic: each send is an admin's choice. Passes stay in the
  * Send tickets sheet (they're never sent from here).
  *
- * Action: outreach-wa-send { campaignId, kind, appIds, taskId?, link?, note?, joinBy?, when?, where?, reward?, again? }
+ * Action: outreach-wa-send { campaignId, kind, appIds, creatorIds?, taskId?, link?, note?, joinBy?, when?, where?, reward?, again? }
+ *   creatorIds (task_live only): creators shortlisted in the app (not on the outreach list).
  *   → { queued, skipped: [{ id, reason }], worker }
  */
 import { enqueueJob, kindLive, switchFor } from './outreachQueue.js';
-import { queueTaskLive, taskLiveKind } from './postsOpen.js';
+import { queueTaskLive, queueTaskLiveApp, taskLiveKind } from './postsOpen.js';
 import { isWhatsAppConfigured } from './whatsapp.js';
 import { isOnShortlist } from '../../src/lib/outreach/status.js';
 import { taskWindow } from '../../src/lib/creator/tasks.js';
@@ -68,9 +69,11 @@ export const handleWaSend = async (req, res, { db, actor, startWorker }) => {
         return send(res, 409, { success: false, error: `This WhatsApp template isn’t switched on yet. Submit it to Meta from WhatsApp → Templates, then set ${switchFor(kind)} in Vercel once it’s approved.` });
     }
     const campaignId = str(b.campaignId, 120);
-    const ids = [...new Set((Array.isArray(b.appIds) ? b.appIds : []).map(id => str(id, 120)).filter(Boolean))];
-    if (!campaignId || !ids.length) return send(res, 400, { success: false, error: 'Choose at least one person.' });
-    if (ids.length > MAX_IDS) return send(res, 400, { success: false, error: `Up to ${MAX_IDS} at a time.` });
+    const idsOf = (v) => [...new Set((Array.isArray(v) ? v : []).map(id => str(id, 120)).filter(Boolean))];
+    const ids = idsOf(b.appIds);
+    const creatorIds = kind === 'task_live' ? idsOf(b.creatorIds) : [];
+    if (!campaignId || !(ids.length + creatorIds.length)) return send(res, 400, { success: false, error: 'Choose at least one person.' });
+    if (ids.length + creatorIds.length > MAX_IDS) return send(res, 400, { success: false, error: `Up to ${MAX_IDS} at a time.` });
     const campRef = db.collection('campaigns').doc(campaignId);
     const campSnap = await campRef.get();
     if (!campSnap.exists) return send(res, 404, { success: false, error: 'Campaign not found.' });
@@ -82,7 +85,11 @@ export const handleWaSend = async (req, res, { db, actor, startWorker }) => {
         const task = (campaign.tasks || []).find(t => String(t.id) === str(b.taskId, 60));
         if (!task) return send(res, 400, { success: false, error: 'Choose a task.' });
         if (taskWindow(task) !== 'open') return send(res, 409, { success: false, error: 'Open this task first (Deliverables), then send it.' });
-        result = await queueTaskLive({ db, campaignId, campaign, tasks: [task], appIds: ids, again: true, createdBy });
+        result = ids.length ? await queueTaskLive({ db, campaignId, campaign, tasks: [task], appIds: ids, again: true, createdBy }) : { queued: 0, skipped: [] };
+        if (creatorIds.length) {
+            const app = await queueTaskLiveApp({ db, campaignId, campaign, tasks: [task], creatorIds, again: true, createdBy });
+            result = { ...result, queued: result.queued + app.queued, skipped: [...result.skipped, ...app.skipped] };
+        }
     } else {
         let data;
         if (kind === 'group_link' || kind === 'group_join' || kind === 'group_invite') {

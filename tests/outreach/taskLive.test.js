@@ -125,6 +125,54 @@ describe('a task made live', () => {
     });
 });
 
+describe('a task made live, for creators shortlisted in the app', () => {
+    beforeEach(() => {
+        // Shortlisted in the app; also on the outreach list (same number as a2); sent the story in; paid; no number; only applied.
+        db.store.set('creators/cr1', { uid: 'u1', name: 'Tara Singh', whatsapp: '9876511111', shortlistedCampaigns: ['c1'] });
+        db.store.set('creators/cr2', { uid: 'u2', name: 'Arjun K', phone: '+91 98765 00002', shortlistedCampaigns: ['c1'] });
+        db.store.set('creators/cr3', { uid: 'u3', name: 'Ira', phone: '9876533333', shortlistedCampaigns: ['c1'] });
+        db.store.set('campaigns/c1/submissions/u3', { tasks: { s1: { status: 'approved' } } });
+        db.store.set('creators/cr4', { uid: 'u4', name: 'Om', phone: '9876544444', shortlistedCampaigns: ['c1'], campaignPayouts: { c1: { status: 'paid' } } });
+        db.store.set('creators/cr5', { uid: 'u5', name: 'Noor', shortlistedCampaigns: ['c1'] });
+        db.store.set('creators/cr6', { uid: 'u6', name: 'Sam', phone: '9876566666', joinedCampaigns: ['c1'] });
+    });
+
+    it('sends them the brief too, with a button that opens the campaign in the app', async () => {
+        // a1 and a2 from outreach, Tara from the app; Arjun isn't told twice.
+        expect((await tellPostsOpened({ db, campaignId: 'c1', taskIds: ['s1'], start: false })).queued).toBe(3);
+        const appJobs = jobs().filter(([id]) => id.includes('_cr_'));
+        expect(appJobs.map(([id]) => id)).toEqual(['task_live_c1_cr_cr1_s1']);
+        expect(appJobs[0][1]).toMatchObject({ kind: 'template', data: { phone: '+919876511111', template: 'campaign_task_live', creatorId: 'cr1', taskIds: ['s1'], buttons: [{ index: 0, param: 'c-c1' }] } });
+        expect(appJobs[0][1].data.bodyParams.slice(0, 3)).toEqual(['Tara', 'Pinnaca 2026', 'Instagram story 1']);
+
+        await runQueue({ db, deadline: Date.now() + 5000, sleep: async () => {} });
+        const tara = sent.find(m => m.to === '919876511111');
+        expect(tara.template.name).toBe('campaign_task_live');
+        expect((await queueStatus(db, 'c1')).taskTold.s1).toContain('creator:cr1');
+
+        // Opening it again doesn't send it twice.
+        expect((await tellPostsOpened({ db, campaignId: 'c1', taskIds: ['s1'], start: false })).queued).toBe(0);
+    });
+
+    it('can be sent by hand, saying why someone was skipped', async () => {
+        const res = await call('outreach-wa-send', { campaignId: 'c1', kind: 'task_live', taskId: 's1', appIds: [], creatorIds: ['cr1', 'cr2', 'cr3', 'cr4', 'cr5', 'cr6'] });
+        expect(res.statusCode).toBe(200);
+        expect(res.body.queued).toBe(1);
+        expect(res.body.skipped).toEqual([
+            { id: 'cr2', reason: 'on_outreach' }, { id: 'cr3', reason: 'posts_in' }, { id: 'cr4', reason: 'paid' },
+            { id: 'cr5', reason: 'no_phone' }, { id: 'cr6', reason: 'not_approved' },
+        ]);
+    });
+
+    it('isn’t sent once the task closes', async () => {
+        await tellPostsOpened({ db, campaignId: 'c1', taskIds: ['s1'], start: false });
+        const c = db.store.get('campaigns/c1');
+        db.store.set('campaigns/c1', { ...c, tasks: c.tasks.map(t => ({ ...t, submissionsOpen: false })) });
+        await runQueue({ db, deadline: Date.now() + 5000, sleep: async () => {} });
+        expect(sent.find(m => m.to === '919876511111')).toBeUndefined();
+    });
+});
+
 describe('Send on WhatsApp (outreach-wa-send)', () => {
     it('sends a task again to the people picked, skipping who isn’t approved', async () => {
         const res = await call('outreach-wa-send', { campaignId: 'c1', kind: 'task_live', taskId: 's1', appIds: ['a1', 'a4', 'a3'] });
