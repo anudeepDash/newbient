@@ -26,6 +26,19 @@ const pushDeviceId = async (token) => {
     return Array.from(bytes.slice(0, 10), b => b.toString(16).padStart(2, '0')).join('');
 };
 
+/*
+ * The team opened deliverables: the server tells approved creators on WhatsApp
+ * (api/_lib/postsOpen.js). Says what happened, so a task never opens silently
+ * with nobody told; anyone missed can be sent it from Outreach → Message.
+ */
+const tellTaskOpened = async (campaignId, taskIds) => {
+    const r = await notifyEvent('posts-opened', { campaignId, taskIds });
+    const toast = (...args) => useStore.getState().addToast(...args);
+    if (r?.success === false) toast('The task is open, but its WhatsApp didn’t go out. Send it from Outreach → Message.', 'warning', { title: 'WhatsApp not sent' });
+    else if (r?.off) toast('The task is open, but no WhatsApp went out: its template isn’t switched on yet.', 'warning', { title: 'WhatsApp not sent' });
+    else if (r?.queued) toast(`Sending it to ${r.queued} approved creator${r.queued === 1 ? '' : 's'} on WhatsApp${r.kind === 'posts_open' ? ' (the short version, until Meta approves the brief)' : ''}.`, 'success', { title: 'Task is live' });
+};
+
 const MAX_TOASTS = 4;
 let toastSeq = 0;
 
@@ -3972,7 +3985,7 @@ export const useStore = create((set, get) => ({
             notifyMatchingCreatorsOfCampaign({ ...result.stored, ...result.written, id }, get().creators);
         }
         const opened = Array.isArray(result.written.tasks) ? openedTaskIds(result.stored.tasks, result.written.tasks) : [];
-        if (opened.length) notifyEvent('posts-opened', { campaignId: id, taskIds: opened });
+        if (opened.length) tellTaskOpened(id, opened);
     },
     // Tell matching creators about a live campaign again (email + in-app).
     announceCampaign: async (id) => {
@@ -4167,7 +4180,7 @@ export const useStore = create((set, get) => ({
             return { tasks: next, opened: openedTaskIds(stored, next) };
         });
         // Creators hear on WhatsApp that posting has opened (api/_lib/postsOpen.js).
-        if (opened.length) notifyEvent('posts-opened', { campaignId, taskIds: opened });
+        if (opened.length) tellTaskOpened(campaignId, opened);
         if (rawCampaigns) rawCampaigns = rawCampaigns.map(c => (c.id === campaignId ? { ...c, tasks } : c));
         set(state => ({
             campaigns: mergeAppSubmissions((state.campaigns || []).map(c => (c.id === campaignId ? { ...c, tasks } : c)), appSubmissionIndex),

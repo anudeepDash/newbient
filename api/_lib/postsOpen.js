@@ -9,9 +9,11 @@
  * When the team opens a deliverable by hand (Deliverables tab or the editor), the
  * posts-opened event tells them straight away ("…can go up from today").
  *
- * Once campaign_task_live is approved, a task opening today sends its brief
- * instead (task, what to do, links, due date, "Open my task"), to every approved
- * creator (shortlisted onwards) who hasn't sent it in, once per task.
+ * A task opened by hand goes to every approved creator (shortlisted onwards) who
+ * hasn't sent it in, once per person per task: as its brief (campaign_task_live:
+ * task, what to do, links, due date, "Open my task") once Meta approved that, and
+ * until then as the short "Your post date is set" (campaign_posts_open), so
+ * opening a task always tells someone while either template is on.
  *
  * Creators group = outreach applications that got the shortlist message (message
  * sent, replied or joined), as for the deadline reminders. One message per person
@@ -40,6 +42,13 @@ const dueLine = (tasks, campaign) => {
 /* Approved creators (shortlisted onwards) still owing a post: who hears that a task is live. Paid means they're done. */
 export const getsTaskLive = (a) => isOnShortlist(a.status) && a.status !== 'paid' && Boolean(a.phone);
 
+/*
+ * Which template a live task goes out on: the brief once campaign_task_live is
+ * switched on, else the short campaign_posts_open (already approved). null when
+ * neither is on, so nothing can go.
+ */
+export const taskLiveKind = () => (kindLive('task_live') ? 'task_live' : kindLive('posts_open') ? 'posts_open' : null);
+
 /** The campaign_task_live variables for one task (its brief and links on one line each). */
 export const taskLiveData = (task, campaign) => ({
     taskIds: [String(task.id)],
@@ -49,16 +58,26 @@ export const taskLiveData = (task, campaign) => ({
     dueAt: dueLine([task], campaign),
 });
 
+/* The campaign_posts_open variables for one task opened today (the fallback while campaign_task_live waits for Meta). */
+const postsOpenData = (task, campaign) => ({
+    opensAt: 'today',
+    whatToPost: String(task.title || 'Deliverable').trim().slice(0, 80),
+    dueAt: dueLine([task], campaign),
+    taskIds: [String(task.id)],
+});
+
 /*
- * Queues "this task is live" (the brief itself) for each task, to every approved
- * creator who hasn't sent that post in. One job per person per task (its id), so
- * opening, closing and reopening doesn't send it twice; `again` sends it anyway
- * (the team asked from Outreach → Send on WhatsApp). appIds narrows it to some people.
- * → { queued, skipped: [{ id, reason }] }
+ * Queues "this task is live" for each task, to every approved creator who hasn't
+ * sent that post in, on whichever template is on (taskLiveKind). One job per person
+ * per task (its id, whichever template), so opening, closing and reopening doesn't
+ * send it twice; `again` sends it anyway (the team asked from Outreach → Send on
+ * WhatsApp). appIds narrows it to some people.
+ * → { queued, skipped: [{ id, reason }], kind, off }
  */
 export const queueTaskLive = async ({ db = getDb(), campaignId, campaign, tasks, appIds = null, again = false, createdBy = 'Newbi app' }) => {
-    const out = { queued: 0, skipped: [] };
-    if (!tasks.length) return out;
+    const kind = taskLiveKind();
+    const out = { queued: 0, skipped: [], kind, off: !kind };
+    if (!tasks.length || !kind) return out;
     const coll = db.collection('campaigns').doc(campaignId).collection('applications');
     const docs = appIds
         ? (await Promise.all(appIds.map(id => coll.doc(id).get()))).filter(d => d.exists)
@@ -72,7 +91,8 @@ export const queueTaskLive = async ({ db = getDb(), campaignId, campaign, tasks,
         for (const t of tasks) {
             if (IN.has(a.deliverables?.[String(t.id)]?.status)) { if (appIds) out.skipped.push({ id: app.id, reason: 'posts_in' }); continue; }
             const jobKey = `task_live_${campaignId}_${app.id}_${t.id}`.slice(0, 140);
-            const id = await enqueueJob(db, { id: jobKey, campaignId, appId: app.id, kind: 'task_live', createdBy, again, data: taskLiveData(t, campaign) });
+            const data = kind === 'task_live' ? taskLiveData(t, campaign) : postsOpenData(t, campaign);
+            const id = await enqueueJob(db, { id: jobKey, campaignId, appId: app.id, kind, createdBy, again, data });
             if (id) out.queued += 1;
             else if (appIds) out.skipped.push({ id: app.id, reason: 'already_sent' });
         }
@@ -141,17 +161,21 @@ export const runPostsOpen = async ({ db = getDb(), now = Date.now() } = {}) => {
     return report;
 };
 
-/** The team just opened these deliverables by hand: tell the creators group now. */
-export const tellPostsOpened = async ({ db = getDb(), campaignId, taskIds = [], now = Date.now(), start = true }) => {
+/*
+ * The team just opened these deliverables by hand: tell every approved creator now
+ * (queueTaskLive picks the template). → { queued, kind, off } so the admin can say
+ * whether anyone was told.
+ */
+export const tellPostsOpened = async ({ db = getDb(), campaignId, taskIds = [], start = true }) => {
     const snap = await db.collection('campaigns').doc(campaignId).get();
     if (!snap.exists) return { queued: 0 };
     const campaign = snap.data();
     const wanted = new Set(taskIds.map(String));
     const tasks = (campaign.tasks || []).filter(t => wanted.has(String(t.id)) && taskWindow(t) === 'open');
-    const queued = await queuePostsOpen({ db, campaignId, campaign, tasks, day: istDate(new Date(now)), opensAt: 'today' });
+    const { queued, kind, off } = await queueTaskLive({ db, campaignId, campaign, tasks });
     if (queued && start) {
         const req = { headers: { host: new URL(APP_URL).host } };
         if (!(await kickWorker(req, 0).catch(() => false))) await runQueue({ db, deadline: Date.now() + 15_000 }).catch(() => null);
     }
-    return { queued };
+    return { queued, kind, off };
 };

@@ -345,7 +345,8 @@ const loadContext = async (db, job) => {
     if (['group_link', 'group_join'].includes(job.kind) && !groupLinkOf(job, settings, campaign)) return { skip: 'no_group_link' };
     if (job.kind === 'group_invite' && !groupCodeOf(groupLinkOf(job, settings, campaign))) return { skip: 'no_group_link' };
     if (job.kind === 'not_selected' && app.status !== 'applied') return { skip: 'status_changed' };
-    if (job.kind === 'task_live' && !(campaign.tasks || []).some(t => (job.data?.taskIds || []).includes(String(t.id)) && taskWindow(t) === 'open')) return { skip: 'task_closed' };
+    // A task's own message (task_live, or posts_open sent for a task opened today) is pointless once the task closes.
+    if ((job.kind === 'task_live' || (job.kind === 'posts_open' && job.data?.opensAt === 'today')) && !(campaign.tasks || []).some(t => (job.data?.taskIds || []).includes(String(t.id)) && taskWindow(t) === 'open')) return { skip: 'task_closed' };
     if (spec.button === 'link' && !submitToken(job.campaignId, job.appId)) return { skip: 'no_link_secret' };
     // A deadline reminder (or posting-opens notice) is pointless once the posts it was about are in.
     if (['post_due', 'post_overdue', 'posts_open', 'task_live'].includes(job.kind)
@@ -653,8 +654,13 @@ export const queueStatus = async (db, campaignId) => {
     const snap = await db.collection('outreach_queue').where('campaignId', '==', campaignId).get();
     const counts = { queued: 0, sending: 0, sent: 0, failed: 0, cancelled: 0, reminders: 0 };
     let nextAt = null;
+    // Who has had (or is about to get) each task's message, either template: { [taskId]: [appId] }.
+    const told = {};
     snap.docs.forEach(d => {
         const j = d.data();
+        if (['task_live', 'posts_open'].includes(j.kind) && ['sent', 'queued', 'sending'].includes(j.status) && j.appId) {
+            for (const t of j.data?.taskIds || []) (told[t] ||= new Set()).add(j.appId);
+        }
         if (j.kind === 'reminder') {
             if (j.status === 'queued') counts.reminders += 1;
             return;
@@ -664,7 +670,7 @@ export const queueStatus = async (db, campaignId) => {
         counts[j.status] = (counts[j.status] || 0) + 1;
         if (j.status === 'queued' && (!nextAt || j.nextAttemptAt < nextAt)) nextAt = j.nextAttemptAt;
     });
-    return { ...counts, nextAt };
+    return { ...counts, nextAt, taskTold: Object.fromEntries(Object.entries(told).map(([t, ids]) => [t, [...ids]])) };
 };
 
 /* ── Starting the worker from a request ───────────────────────────────── */

@@ -4,8 +4,10 @@
  * retries, STOP opt-outs, a copy in each inbox thread):
  *
  *   task_live    a live deliverable's brief and links (campaign_task_live), with
- *                their "Open my task" link. The same message goes by itself when a
- *                task is opened (api/_lib/postsOpen.js); this sends it again.
+ *                their "Open my task" link; until Meta approves that, the short
+ *                "Your post date is set" (campaign_posts_open). The same message goes
+ *                by itself when a task is opened (api/_lib/postsOpen.js); this sends
+ *                it to anyone it missed, or again.
  *   group_link   the campaign's WhatsApp group, or another group link pasted here
  *                (campaign_group_link), with the signed "Joined" quick reply.
  *   update       a short note and a link (campaign_update).
@@ -23,7 +25,7 @@
  *   → { queued, skipped: [{ id, reason }], worker }
  */
 import { enqueueJob, kindLive, switchFor } from './outreachQueue.js';
-import { queueTaskLive } from './postsOpen.js';
+import { queueTaskLive, taskLiveKind } from './postsOpen.js';
 import { isWhatsAppConfigured } from './whatsapp.js';
 import { isOnShortlist } from '../../src/lib/outreach/status.js';
 import { taskWindow } from '../../src/lib/creator/tasks.js';
@@ -62,7 +64,7 @@ export const handleWaSend = async (req, res, { db, actor, startWorker }) => {
     const kind = str(b.kind, 20);
     if (!KINDS.has(kind)) return send(res, 400, { success: false, error: 'Choose what to send.' });
     if (!isWhatsAppConfigured()) return send(res, 409, { success: false, error: 'The WhatsApp API isn’t set up yet.' });
-    if (!kindLive(kind)) {
+    if (kind === 'task_live' ? !taskLiveKind() : !kindLive(kind)) {
         return send(res, 409, { success: false, error: `This WhatsApp template isn’t switched on yet. Submit it to Meta from WhatsApp → Templates, then set ${switchFor(kind)} in Vercel once it’s approved.` });
     }
     const campaignId = str(b.campaignId, 120);

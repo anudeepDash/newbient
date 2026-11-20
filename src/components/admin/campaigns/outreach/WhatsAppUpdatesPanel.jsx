@@ -47,7 +47,7 @@ import UserCheck from 'lucide-react/dist/esm/icons/user-check';
 const MESSAGES = [
     { kind: 'campaign_open', label: 'Campaign is live', icon: DoorOpen, tone: 'blue', hint: 'People you added, or registered creators who fit the campaign', segments: [] },
     { kind: 'invite', label: 'Shortlist invite', icon: UserCheck, tone: 'violet', hint: 'Shortlisted people: the brief and the group', segments: [] },
-    { kind: 'task_live', label: 'Task is live', icon: ClipboardList, tone: 'green', hint: 'The brief, links and due date', segments: ['owes', 'approved'] },
+    { kind: 'task_live', label: 'Task is live', icon: ClipboardList, tone: 'green', hint: 'The brief, links and due date', segments: ['not_told', 'owes', 'approved'] },
     { kind: 'brief_changed', label: 'Brief changed', icon: FilePen, tone: 'amber', hint: 'What changed, with their task link', segments: ['approved', 'owes'] },
     { kind: 'group', label: 'Group invite', icon: Users, tone: 'violet', hint: 'A Join the group button, then Joined', segments: ['not_joined', 'approved'] },
     { kind: 'update', label: 'Update', icon: Megaphone, tone: 'blue', hint: 'A short note and a link', segments: ['approved', 'not_joined'] },
@@ -59,6 +59,7 @@ const MESSAGES = [
 const SEGMENTS = {
     approved: { label: 'Every approved creator', test: (a) => isOnShortlist(a.status) },
     not_joined: { label: 'Approved, not in the group yet', test: (a) => isOnShortlist(a.status) && !a.joinedAt && a.status !== 'joined' && !['posted', 'paid'].includes(a.status) },
+    not_told: { label: 'Approved, haven’t had this task’s message', test: (a, ctx) => SEGMENTS.owes.test(a, ctx) && !ctx.told?.has(a.id) },
     owes: { label: 'Approved, haven’t sent this post', test: (a, ctx) => isOnShortlist(a.status) && a.status !== 'paid' && !['submitted', 'approved'].includes(a.deliverables?.[String(ctx.task?.id)]?.status) },
     applied: { label: 'Applicants not shortlisted', test: (a) => (a.status || 'applied') === 'applied' },
     imported_new: { label: 'Imported, not messaged yet', test: (a) => a.source === 'import' && !a.reachedOutAt && a.status !== 'removed' },
@@ -71,7 +72,7 @@ const AUTOMATIC = [
     { kind: 'city_group', label: 'City community', when: 'When someone applies' },
     { kind: 'invite', label: 'Shortlist invite', when: 'When you shortlist someone' },
     { kind: 'reminder', label: 'Join reminder', when: '48 h later, if they haven’t joined' },
-    { kind: 'task_live', label: 'Task is live', when: 'When you open a task, to every approved creator' },
+    { kind: 'task_live', label: 'Task is live', when: 'When you open a task, to every approved creator', short: 'Short “post date is set” version until Meta approves the brief' },
     { kind: 'posts_open', label: 'Post date set', when: 'The day before a task’s “Opens on” date' },
     { kind: 'post_due', label: 'Post due tomorrow', when: 'The day before a deadline' },
     { kind: 'post_overdue', label: 'Post overdue', when: 'The day after a missed deadline' },
@@ -96,9 +97,16 @@ const buttonsOf = (kind) => {
     return WA_TEMPLATES[kind]?.button ? [`↗ ${WA_TEMPLATES[kind].button}`] : [];
 };
 
+/*
+ * The template a task goes out on: the brief (campaign_task_live) once it's on, else the short
+ * "post date is set" (campaign_posts_open), as the server does (taskLiveKind in api/_lib/postsOpen.js).
+ */
+const taskTemplateOf = (live) => (live('task_live') ? 'task_live' : live('posts_open') ? 'posts_open' : null);
+
 /* The messages that go out without anyone pressing send, and whether each is switched on (shown in Settings). */
 export const AutomaticMessages = ({ api }) => {
-    const live = (k) => Boolean(api?.configured && api?.templates?.[k]);
+    const on = (k) => Boolean(api?.configured && api?.templates?.[k]);
+    const live = (k) => (k === 'task_live' ? Boolean(taskTemplateOf(on)) : on(k));
     return (
         <Card className="p-4">
             <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -113,6 +121,7 @@ export const AutomaticMessages = ({ api }) => {
                         <span className="min-w-0">
                             <span className="block text-[13px] font-semibold">{a.label}</span>
                             <span className="block text-[11.5px] leading-snug text-gray-500">{a.when}</span>
+                            {a.short && taskTemplateOf(on) === 'posts_open' && <span className="block text-[11.5px] leading-snug text-amber-600 dark:text-amber-300">{a.short}</span>}
                         </span>
                     </li>
                 ))}
@@ -124,7 +133,10 @@ export const AutomaticMessages = ({ api }) => {
 
 const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, invite = null }) => {
     const addToast = useStore(s => s.addToast);
-    const live = (k) => Boolean(api?.configured && api?.templates?.[k]);
+    const on = (k) => Boolean(api?.configured && api?.templates?.[k]);
+    const taskTemplate = taskTemplateOf(on);
+    // A task can go out while either of its templates is on (the brief, else the short "post date is set").
+    const live = (k) => (k === 'task_live' ? Boolean(taskTemplate) : on(k));
     // The invite with a "Join the group" button once Meta approves it; until then whichever older one is on (link in the text).
     const groupKind = live('group_invite') ? 'group_invite' : live('group_join') ? 'group_join' : live('group_link') ? 'group_link' : 'group_invite';
     const kindOf = (m) => (m.kind === 'group' ? groupKind : m.kind);
@@ -159,19 +171,25 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
     const [sending, setSending] = useState(false);
 
     const reachable = useMemo(() => applications.filter(a => a.phone && !a.whatsappOptOut && a.status !== 'removed'), [applications]);
-    const ctx = { task };
-    const inSegment = useMemo(() => reachable.filter(a => SEGMENTS[segment]?.test(a, ctx)), [reachable, segment, task]); // eslint-disable-line react-hooks/exhaustive-deps
+    // Who already had this task's message (sent or on its way), from the queue.
+    // Keyed by its contents, so the queue refreshing every 30 s doesn't undo the team's ticks.
+    const toldKey = [...(api?.queue?.taskTold?.[String(task?.id)] || [])].sort().join(',');
+    const told = useMemo(() => new Set(toldKey ? toldKey.split(',') : []), [toldKey]);
+    const ctx = { task, told };
+    const inSegment = useMemo(() => reachable.filter(a => SEGMENTS[segment]?.test(a, ctx)), [reachable, segment, task, told]); // eslint-disable-line react-hooks/exhaustive-deps
     const query = q.trim().toLowerCase().replace(/^@/, '');
     const shown = query ? inSegment.filter(a => `${a.fullName} ${a.instagramHandle} ${a.phone}`.toLowerCase().includes(query)) : inSegment;
     // Everyone in the chosen group is ticked until the team unticks someone.
-    useEffect(() => { setPicked(new Set(inSegment.map(a => a.id))); }, [pick, segment, taskId, applications]); // eslint-disable-line react-hooks/exhaustive-deps
+    useEffect(() => { setPicked(new Set(inSegment.map(a => a.id))); }, [pick, segment, taskId, applications, told]); // eslint-disable-line react-hooks/exhaustive-deps
     const recipients = inSegment.filter(a => picked.has(a.id));
     const allShownPicked = shown.length > 0 && shown.every(a => picked.has(a.id));
 
     const httpsOk = (v) => /^https:\/\/\S+$/.test(String(v || '').trim());
     const one = (v) => String(v || '').replace(/\s+/g, ' ').trim();
     const data = {
-        task_live: task ? { taskTitle: task.title || 'Deliverable', details: briefLine(task), links: linksLine(taskLinksOf(task)), dueAt: dueOf(task, campaign) } : null,
+        task_live: task ? (taskTemplate === 'posts_open'
+            ? { opensAt: 'today', whatToPost: task.title || 'Deliverable', dueAt: dueOf(task, campaign) }
+            : { taskTitle: task.title || 'Deliverable', details: briefLine(task), links: linksLine(taskLinksOf(task)), dueAt: dueOf(task, campaign) }) : null,
         group_link: { link: fields.groupLink.trim() },
         group_join: { link: fields.groupLink.trim(), joinBy: one(fields.joinBy) },
         group_invite: { link: fields.groupLink.trim(), joinBy: one(fields.joinBy) },
@@ -193,7 +211,9 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
         not_selected: false,
     }[kind];
     const sample = recipients[0] || inSegment[0];
-    const preview = data ? renderTemplatePreview(kind, { application: sample || { fullName: 'Riya' }, campaign, groupLink: defaultGroup, data }) : '';
+    // What actually goes out for a task: the brief, or the short version while the brief waits for Meta.
+    const shownKind = kind === 'task_live' && taskTemplate === 'posts_open' ? 'posts_open' : kind;
+    const preview = data ? renderTemplatePreview(shownKind, { application: sample || { fullName: 'Riya' }, campaign, groupLink: defaultGroup, data }) : '';
     const isLive = live(kind);
     const canSend = isLive && !missing && recipients.length > 0 && !sending;
 
@@ -255,15 +275,31 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
                     {api?.configured && !isLive && (
                         <p className="flex items-start gap-2 rounded-xl bg-amber-500/10 p-3 text-[13px] font-medium text-amber-700 dark:text-amber-300">
                             <TriangleAlert size={15} className="mt-0.5 shrink-0" />
-                            <span><strong>{WA_TEMPLATES[kind]?.name}</strong> isn’t switched on yet. Submit it to Meta from <Link to="/admin/whatsapp" className="underline">WhatsApp → Templates</Link>; once Meta approves it, turn on its setting in Vercel and it can be sent from here.</span>
+                            <span><strong>{kind === 'task_live' ? `${WA_TEMPLATES.task_live.name} (or ${WA_TEMPLATES.posts_open.name})` : WA_TEMPLATES[kind]?.name}</strong> isn’t switched on yet. Submit it to Meta from <Link to="/admin/whatsapp" className="underline">WhatsApp → Templates</Link>; once Meta approves it, turn on its setting in Vercel and it can be sent from here.</span>
                         </p>
                     )}
 
                     {kind === 'task_live' && (openTasks.length ? (
-                        <Field label="Task" hint="Only open tasks. Opening a task sends this by itself to every approved creator who hasn’t had it; use this to send it again or to people added later.">
-                            <Select label="Task" value={taskId} onChange={setTaskId} className="w-full" options={openTasks.map(t => ({ value: String(t.id), label: t.title || 'Deliverable' }))} />
-                        </Field>
-                    ) : <p className="text-[13px] text-gray-500">No task is open. Open one in the Deliverables tab, and its brief goes out on WhatsApp by itself.</p>)}
+                        <>
+                            <Field label="Task" hint="Only open tasks. Opening a task sends this by itself to every approved creator who hasn’t had it; use this for anyone it missed (people approved later, or a task opened before the message was switched on), or to send it again.">
+                                <Select label="Task" value={taskId} onChange={setTaskId} className="w-full" options={openTasks.map(t => ({ value: String(t.id), label: t.title || 'Deliverable' }))} />
+                            </Field>
+                            {task && (() => {
+                                const owing = reachable.filter(a => SEGMENTS.owes.test(a, ctx));
+                                const missed = owing.filter(a => !told.has(a.id)).length;
+                                return (
+                                    <p className={cn('rounded-xl p-3 text-[13px] font-medium', missed ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300' : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300')}>
+                                        {!owing.length ? 'Nobody approved still owes this post.'
+                                            : missed ? `${missed} of ${owing.length} approved creators haven’t had this task on WhatsApp yet. They’re picked below.`
+                                                : `All ${owing.length} approved creators who owe this post have had it on WhatsApp.`}
+                                    </p>
+                                );
+                            })()}
+                            {taskTemplate === 'posts_open' && (
+                                <p className="text-[12px] text-gray-500"><strong>{WA_TEMPLATES.task_live.name}</strong> (the full brief) is waiting for Meta, so this goes as the short “Your post date is set” with their <em>Send my posts</em> link, where the brief is. Once the brief template is approved and switched on, it goes instead.</p>
+                            )}
+                        </>
+                    ) : <p className="text-[13px] text-gray-500">No task is open. Open one in the Deliverables tab, and it goes out on WhatsApp by itself.</p>)}
                     {['group_link', 'group_join', 'group_invite'].includes(kind) && (
                         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
                             <Field label="Group link" hint={kind === 'group_invite' ? 'This campaign’s group from Settings, or paste another. It opens from the “Join the group” button, not as a link in the text. Tapping “Joined” marks them joined here.' : 'This campaign’s group from Settings, or paste another. Tapping “Joined” marks them joined here.'}>
@@ -303,7 +339,7 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
                     <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
                             <h4 className="mr-auto text-[13px] font-bold">Send to</h4>
-                            <Select label="Who" value={segment} onChange={setSegment} options={meta.segments.filter(s => s !== 'owes' || task).map(s => ({ value: s, label: `${SEGMENTS[s].label} (${counts[s]})` }))} />
+                            <Select label="Who" value={segment} onChange={setSegment} options={meta.segments.filter(s => !['owes', 'not_told'].includes(s) || task).map(s => ({ value: s, label: `${SEGMENTS[s].label} (${counts[s]})` }))} />
                         </div>
                         <div className="overflow-hidden rounded-2xl border border-black/[0.06] dark:border-white/[0.08]">
                             <div className="flex flex-wrap items-center gap-2 border-b border-black/[0.06] px-3 py-2 dark:border-white/[0.06]">
@@ -341,7 +377,7 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
                 <div className="min-w-0 space-y-3 lg:sticky lg:top-4 lg:self-start">
                     <Card className="space-y-3 p-4">
                         <p className="text-[12px] font-bold text-gray-500">What {sample ? (sample.fullName || '').split(' ')[0] || 'they' : 'they'} will get</p>
-                        {preview ? <Bubble text={preview} image={campaign.image || campaign.coverImage || campaign.bannerImage || campaign.thumbnail} buttons={buttonsOf(kind)} /> : <p className="text-[13px] text-gray-500">Pick a task to see the message.</p>}
+                        {preview ? <Bubble text={preview} image={campaign.image || campaign.coverImage || campaign.bannerImage || campaign.thumbnail} buttons={buttonsOf(shownKind)} /> : <p className="text-[13px] text-gray-500">Pick a task to see the message.</p>}
                         {missing && <p className="text-[12.5px] font-semibold text-amber-600 dark:text-amber-300">{missing}</p>}
                         <Button variant="success" className="h-11 w-full" disabled={!canSend} onClick={() => setConfirm(true)}>
                             {sending ? <Spinner /> : <Send size={14} />} {!isLive ? 'Waiting for Meta approval' : recipients.length ? `Send to ${recipients.length}` : 'Nobody picked'}

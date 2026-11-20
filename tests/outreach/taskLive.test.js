@@ -3,7 +3,7 @@ import { FakeFirestore, fakeReq, fakeRes } from '../helpers/fakeFirestore.js';
 import { setDbForTests } from '../../api/_lib/db.js';
 import { setWhatsAppFetchForTests } from '../../api/_lib/whatsapp.js';
 import { tellPostsOpened } from '../../api/_lib/postsOpen.js';
-import { runQueue } from '../../api/_lib/outreachQueue.js';
+import { runQueue, queueStatus } from '../../api/_lib/outreachQueue.js';
 import { handleOutreachAction } from '../../api/_lib/outreach.js';
 import { plainBrief, taskLinksOf, briefLine, linksLine } from '../../src/lib/outreach/taskBrief.js';
 import { deliverablesFor } from '../../src/lib/outreach/deliverables.js';
@@ -82,7 +82,7 @@ describe('task brief', () => {
 
 describe('a task made live', () => {
     it('sends its brief to every approved creator who still owes it, once', async () => {
-        expect(await tellPostsOpened({ db, campaignId: 'c1', taskIds: ['s1', 'r1'], now: NOW, start: false })).toEqual({ queued: 2 });
+        expect(await tellPostsOpened({ db, campaignId: 'c1', taskIds: ['s1', 'r1'], now: NOW, start: false })).toEqual({ queued: 2, kind: 'task_live', off: false });
         const queued = jobs();
         expect(queued.map(([id]) => id).sort()).toEqual(['task_live_c1_a1_s1', 'task_live_c1_a2_s1']);
         expect(queued[0][1]).toMatchObject({ kind: 'task_live', data: { taskIds: ['s1'], taskTitle: 'Instagram story 1', dueAt: 'No fixed date' } });
@@ -104,8 +104,24 @@ describe('a task made live', () => {
 
     it('falls back to the short notice while the brief template is off', async () => {
         vi.stubEnv('WHATSAPP_TEMPLATE_CAMPAIGN_TASK_LIVE', '');
-        expect(await tellPostsOpened({ db, campaignId: 'c1', taskIds: ['s1'], now: NOW, start: false })).toEqual({ queued: 1 });
-        expect(jobs()[0][1].kind).toBe('posts_open');
+        // Every approved creator who owes it, the just-shortlisted included (the old notice only reached the group).
+        expect(await tellPostsOpened({ db, campaignId: 'c1', taskIds: ['s1'], now: NOW, start: false })).toEqual({ queued: 2, kind: 'posts_open', off: false });
+        const queued = jobs();
+        expect(queued.map(([id]) => id).sort()).toEqual(['task_live_c1_a1_s1', 'task_live_c1_a2_s1']);
+        expect(queued[0][1]).toMatchObject({ kind: 'posts_open', data: { opensAt: 'today', whatToPost: 'Instagram story 1', taskIds: ['s1'] } });
+
+        await runQueue({ db, deadline: Date.now() + 5000, sleep: async () => {} });
+        expect(sent.map(m => m.template.name)).toEqual(['campaign_posts_open', 'campaign_posts_open']);
+        // Once a person had it on either template, opening it again doesn't send it twice.
+        vi.stubEnv('WHATSAPP_TEMPLATE_CAMPAIGN_TASK_LIVE', 'campaign_task_live');
+        expect((await tellPostsOpened({ db, campaignId: 'c1', taskIds: ['s1'], now: NOW, start: false })).queued).toBe(0);
+    });
+
+    it('says nobody was told when neither template is on', async () => {
+        vi.stubEnv('WHATSAPP_TEMPLATE_CAMPAIGN_TASK_LIVE', '');
+        vi.stubEnv('WHATSAPP_TEMPLATE_CAMPAIGN_POSTS_OPEN', '');
+        expect(await tellPostsOpened({ db, campaignId: 'c1', taskIds: ['s1'], now: NOW, start: false })).toEqual({ queued: 0, kind: null, off: true });
+        expect(jobs()).toHaveLength(0);
     });
 });
 
@@ -116,6 +132,23 @@ describe('Send on WhatsApp (outreach-wa-send)', () => {
         expect(res.body.queued).toBe(1);
         expect(res.body.skipped).toEqual([{ id: 'a4', reason: 'not_approved' }, { id: 'a3', reason: 'posts_in' }]);
         expect(sent[0].template.name).toBe('campaign_task_live');
+    });
+
+    it('sends a task anyone missed on the short notice while the brief waits for Meta', async () => {
+        vi.stubEnv('WHATSAPP_TEMPLATE_CAMPAIGN_TASK_LIVE', '');
+        const res = await call('outreach-wa-send', { campaignId: 'c1', kind: 'task_live', taskId: 's1', appIds: ['a1', 'a2'] });
+        expect(res.statusCode).toBe(200);
+        expect(res.body.queued).toBe(2);
+        expect(sent.map(m => m.template.name)).toEqual(['campaign_posts_open', 'campaign_posts_open']);
+        // The admin sees who has had this task's message.
+        expect((await queueStatus(db, 'c1')).taskTold.s1.sort()).toEqual(['a1', 'a2']);
+    });
+
+    it('won’t send a task while neither of its templates is on', async () => {
+        vi.stubEnv('WHATSAPP_TEMPLATE_CAMPAIGN_TASK_LIVE', '');
+        vi.stubEnv('WHATSAPP_TEMPLATE_CAMPAIGN_POSTS_OPEN', '');
+        const res = await call('outreach-wa-send', { campaignId: 'c1', kind: 'task_live', taskId: 's1', appIds: ['a1'] });
+        expect(res.statusCode).toBe(409);
     });
 
     it('won’t send a task that isn’t open', async () => {

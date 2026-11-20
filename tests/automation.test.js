@@ -120,7 +120,7 @@ describe('posting opens', () => {
     it('tells them straight away when the team opens one by hand', async () => {
         const c = db.store.get('campaigns/c1');
         db.store.set('campaigns/c1', { ...c, tasks: c.tasks.map(t => (t.id === 'manual' ? { ...t, submissionsOpen: true } : t)) });
-        expect(await tellPostsOpened({ db, campaignId: 'c1', taskIds: ['manual', 'later'], now: NOW, start: false })).toEqual({ queued: 1 });
+        expect(await tellPostsOpened({ db, campaignId: 'c1', taskIds: ['manual', 'later'], now: NOW, start: false })).toMatchObject({ queued: 1 });
         const [[, job]] = jobs();
         expect(job.data).toMatchObject({ opensAt: 'today', whatToPost: 'Carousel', dueAt: 'Sunday, 15 November', taskIds: ['manual'] });
     });
