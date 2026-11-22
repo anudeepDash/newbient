@@ -178,17 +178,9 @@ const GiveawayParticipants = () => {
 
     const savePoints = async (entry) => {
         const total = Math.round(Number(pointsDraft.total));
-        const reason = pointsDraft.reason.trim();
-        if (pointsDraft.total === '' || !Number.isFinite(total) || total < 0) { addToast('Enter the new points total (0 or more).', 'warning'); return; }
-        if (!reason) { addToast('Add a reason. It is logged with the change.', 'warning'); return; }
-        if (total === entryPoints(entry)) { addToast('That is already their total.', 'info'); return; }
-        if (!(await confirm({
-            title: `Change ${entry.name || 'this entry'}'s points to ${total}?`,
-            body: `From ${entryPoints(entry)} to ${total}. Logged on the entry with your name and the reason. Points they earn later still add on top.`,
-            confirmLabel: 'Change points',
-            tone: 'accent',
-        }))) return;
-        guard(() => useStore.getState().setGiveawayEntryPoints(giveaway, entry.id, total, reason), 'Points updated.').then(ok => ok && setPointsDraft({ total: '', reason: '' }));
+        if (pointsDraft.total === '' || !Number.isFinite(total) || total < 0) { addToast('Enter the new points (0 or more).', 'warning'); return; }
+        if (total === entryPoints(entry)) { addToast('That is already their points.', 'info'); return; }
+        guard(() => useStore.getState().setGiveawayEntryPoints(giveaway, entry.id, total, pointsDraft.reason.trim()), `Points set to ${total}.`).then(ok => ok && setPointsDraft({ total: '', reason: '' }));
     };
 
     const removeEntries = async (ids) => {
@@ -528,11 +520,11 @@ const GiveawayParticipants = () => {
 
                         <SheetSection title="Points">
                             <div className="grid gap-3 sm:grid-cols-[140px_1fr_auto] sm:items-end">
-                                <Field label="New total">
-                                    <input className={fieldCls} type="number" min="0" inputMode="numeric" value={pointsDraft.total} placeholder={String(entryPoints(detail))} onChange={(e) => setPointsDraft(d => ({ ...d, total: e.target.value }))} />
+                                <Field label="New points">
+                                    <input className={fieldCls} type="number" min="0" inputMode="numeric" value={pointsDraft.total} placeholder={String(entryPoints(detail))} onChange={(e) => setPointsDraft(d => ({ ...d, total: e.target.value }))} onKeyDown={(e) => { if (e.key === 'Enter') savePoints(detail); }} />
                                 </Field>
-                                <Field label="Reason">
-                                    <input className={fieldCls} value={pointsDraft.reason} maxLength={200} placeholder="e.g. Shared the post, but it didn't register" onChange={(e) => setPointsDraft(d => ({ ...d, reason: e.target.value }))} />
+                                <Field label="Note" optional>
+                                    <input className={fieldCls} value={pointsDraft.reason} maxLength={200} placeholder="e.g. Share didn't register" onChange={(e) => setPointsDraft(d => ({ ...d, reason: e.target.value }))} />
                                 </Field>
                                 <Button variant="secondary" className="h-11" disabled={busy || pointsDraft.total === ''} onClick={() => savePoints(detail)}>Save</Button>
                             </div>

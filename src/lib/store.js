@@ -4658,7 +4658,7 @@ export const useStore = create((set, get) => ({
     },
     // Change an entry's points by hand. Stored as adminPoints, which scoreFor
     // adds to what they earned, so later tasks, spins and referrals keep
-    // counting on top. Every change is logged on the entry with who, when and why.
+    // counting on top. Every change is logged on the entry with who and when.
     setGiveawayEntryPoints: async (giveaway, entryId, total, reason) => {
         const { user } = get();
         const at = new Date().toISOString();
@@ -4675,7 +4675,7 @@ export const useStore = create((set, get) => ({
             tx.update(ref, {
                 adminPoints,
                 entryScore,
-                pointAdjustments: arrayUnion({ from: before, to: entryScore, reason, by: user?.email || user?.uid || null, at }),
+                pointAdjustments: arrayUnion({ from: before, to: entryScore, reason: reason || null, by: user?.email || user?.uid || null, at }),
             });
             return entryScore;
         });
