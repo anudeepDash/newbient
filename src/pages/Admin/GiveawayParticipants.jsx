@@ -72,6 +72,7 @@ const GiveawayParticipants = () => {
     const [historyOpen, setHistoryOpen] = useState(false);
     const [busy, setBusy] = useState(false);
     const [manualPrize, setManualPrize] = useState('');
+    const [pointsDraft, setPointsDraft] = useState({ total: '', reason: '' });
     const [confirm, confirmEl] = useConfirm();
 
     const giveaway = giveaways.find(g => g.id === giveawayId);
@@ -93,6 +94,7 @@ const GiveawayParticipants = () => {
     }, [giveawayId]);
 
     useEffect(() => { setManualPrize(giveaway?.prize || ''); }, [giveaway?.prize, openId]);
+    useEffect(() => { setPointsDraft({ total: '', reason: '' }); }, [openId]);
 
     const dupes = useMemo(() => findDuplicates(entries), [entries]);
     const byCode = useMemo(() => Object.fromEntries(entries.filter(e => e.referralCode).map(e => [e.referralCode, e])), [entries]);
@@ -187,6 +189,21 @@ const GiveawayParticipants = () => {
             confirmLabel: 'Mark as team',
         }))) return;
         guard(() => useStore.getState().setGiveawayEntriesStaff(list.map(e => e.id), on), on ? 'Marked as team. Hidden from the leaderboard.' : 'Back on the leaderboard.').then(ok => ok && setSelected(new Set()));
+    };
+
+    const savePoints = async (entry) => {
+        const total = Math.round(Number(pointsDraft.total));
+        const reason = pointsDraft.reason.trim();
+        if (pointsDraft.total === '' || !Number.isFinite(total) || total < 0) { addToast('Enter the new points total (0 or more).', 'warning'); return; }
+        if (!reason) { addToast('Add a reason. It is logged with the change.', 'warning'); return; }
+        if (total === entryPoints(entry)) { addToast('That is already their total.', 'info'); return; }
+        if (!(await confirm({
+            title: `Change ${entry.name || 'this entry'}'s points to ${total}?`,
+            body: `From ${entryPoints(entry)} to ${total}. Logged on the entry with your name and the reason. Points they earn later still add on top.`,
+            confirmLabel: 'Change points',
+            tone: 'accent',
+        }))) return;
+        guard(() => useStore.getState().setGiveawayEntryPoints(giveaway, entry.id, total, reason), 'Points updated.').then(ok => ok && setPointsDraft({ total: '', reason: '' }));
     };
 
     const removeEntries = async (ids) => {
@@ -289,6 +306,7 @@ const GiveawayParticipants = () => {
             { header: 'Winner', value: e => (e.isWinner ? 'Yes' : '') },
             { header: 'Prize', value: e => e.prize || '' },
             { header: 'Picked at', type: 'datetime', value: e => toDate(e.winnerSelectedAt) },
+            { header: 'Changed by hand', type: 'number', value: e => Number(e.adminPoints) || '' },
             { header: 'Flags', value: e => [e.staff && 'Team', e.disqualified && 'Disqualified', dupes.has(e.id) && 'Possible duplicate'].filter(Boolean).join(', ') },
         ],
     });
@@ -528,6 +546,29 @@ const GiveawayParticipants = () => {
                             {detail.phone && <Button as="a" href={`https://wa.me/${waNumber(detail.phone)}`} target="_blank" rel="noopener noreferrer" variant="ghost" className="h-11">Open chat</Button>}
                             {igHandle(detail) && <Button as="a" href={`https://instagram.com/${igHandle(detail)}`} target="_blank" rel="noopener noreferrer" variant="secondary" className="h-11"><Instagram size={14} /> @{igHandle(detail)}</Button>}
                         </div>
+
+                        <SheetSection title="Points">
+                            <div className="grid gap-3 sm:grid-cols-[140px_1fr_auto] sm:items-end">
+                                <Field label="New total">
+                                    <input className={fieldCls} type="number" min="0" inputMode="numeric" value={pointsDraft.total} placeholder={String(entryPoints(detail))} onChange={(e) => setPointsDraft(d => ({ ...d, total: e.target.value }))} />
+                                </Field>
+                                <Field label="Reason">
+                                    <input className={fieldCls} value={pointsDraft.reason} maxLength={200} placeholder="e.g. Shared the post, but it didn't register" onChange={(e) => setPointsDraft(d => ({ ...d, reason: e.target.value }))} />
+                                </Field>
+                                <Button variant="secondary" className="h-11" disabled={busy || pointsDraft.total === ''} onClick={() => savePoints(detail)}>Save</Button>
+                            </div>
+                            {Number(detail.adminPoints) ? <p className="mt-2 text-[12px] text-gray-500">Includes {detail.adminPoints > 0 ? '+' : ''}{detail.adminPoints} changed by hand.</p> : null}
+                            {Array.isArray(detail.pointAdjustments) && detail.pointAdjustments.length > 0 && (
+                                <ul className="mt-3 space-y-1.5 border-t border-black/[0.06] pt-3 dark:border-white/[0.08]">
+                                    {[...detail.pointAdjustments].reverse().map((a, i) => (
+                                        <li key={`${a.at}-${i}`} className="text-[12px] text-gray-500">
+                                            <span className="font-semibold text-gray-700 dark:text-gray-300">{a.from} → {a.to}</span>
+                                            {[a.reason, a.by && `by ${a.by}`, a.at && formatDateTime(a.at)].filter(Boolean).map(x => ` · ${x}`).join('')}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </SheetSection>
 
                         <SheetSection title="Details">
                             <div className="grid grid-cols-2 gap-4">

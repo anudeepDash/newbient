@@ -117,7 +117,9 @@ export const scoreFor = (entry = {}, g = {}) => {
     const fromSpins = Math.max(0, Number(entry.spinPoints) || 0);
     const daily = dailyOf(g);
     const fromDaily = daily.enabled ? checkinDays(entry).length * daily.points : 0;
-    return 1 + fromTasks + fromReferrals + fromMilestones + fromSpins + fromDaily;
+    // Points an admin added or took away on the participants page (logged in pointAdjustments).
+    const fromAdmin = Math.round(Number(entry.adminPoints) || 0);
+    return Math.max(0, 1 + fromTasks + fromReferrals + fromMilestones + fromSpins + fromDaily + fromAdmin);
 };
 
 /** A task as the public sees it: never the quiz answer or the secret code. */

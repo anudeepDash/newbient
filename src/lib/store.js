@@ -6,6 +6,7 @@ import { uploadFile } from './media';
 import { notifyEvent, subscribeToNewsletter } from './mailApi';
 import { normalizePhoneNumber } from './utils';
 import { isGuestAdmissible, orderItems, orderTicketCount } from './ticketing';
+import { scoreFor } from './giveawayRules';
 import { invoiceBalance, INVOICE_STATUS, nextInvoiceNumber, todayKey } from './invoicing';
 import { CONTRACT_STATUS, CONTRACT_NON_COPYABLE_FIELDS } from './contracts';
 import { isProposalClosed, isProposalExpired, nextProposalNumber, proposalValue, PROPOSAL_NON_COPYABLE_FIELDS, PROPOSAL_STATUS } from './proposals';
@@ -4659,6 +4660,30 @@ export const useStore = create((set, get) => ({
     // Team entries: Newbi staff who entered (to test or for fun). Kept off the
     // public leaderboard, its totals and others' ranks (api/_lib/community.js),
     // and never drawn.
+    // Change an entry's points by hand. Stored as adminPoints, which scoreFor
+    // adds to what they earned, so later tasks, spins and referrals keep
+    // counting on top. Every change is logged on the entry with who, when and why.
+    setGiveawayEntryPoints: async (giveaway, entryId, total, reason) => {
+        const { user } = get();
+        const at = new Date().toISOString();
+        const ref = doc(db, 'giveaway_entries', entryId);
+        return runTransaction(db, async (tx) => {
+            const snap = await tx.get(ref);
+            if (!snap.exists()) throw new Error('This entry no longer exists.');
+            const data = snap.data();
+            const before = Number(data.entryScore) || 0;
+            const earned = scoreFor({ ...data, adminPoints: 0 }, giveaway);
+            const adminPoints = Math.round(total) - earned;
+            const entryScore = scoreFor({ ...data, adminPoints }, giveaway);
+            if (entryScore === before) return before;
+            tx.update(ref, {
+                adminPoints,
+                entryScore,
+                pointAdjustments: arrayUnion({ from: before, to: entryScore, reason, by: user?.email || user?.uid || null, at }),
+            });
+            return entryScore;
+        });
+    },
     setGiveawayEntriesStaff: async (ids, staff) => {
         const at = new Date().toISOString();
         for (let i = 0; i < ids.length; i += 400) {

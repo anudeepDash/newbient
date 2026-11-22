@@ -89,6 +89,24 @@ describe('scoring', () => {
     });
 });
 
+describe('points changed by hand', () => {
+    it('adds adminPoints on top of what was earned, never below zero', () => {
+        const e = { completedTasks: { t1: 'x' }, spinPoints: 1 };
+        expect(scoreFor(e, LEGACY)).toBe(7);
+        expect(scoreFor({ ...e, adminPoints: 10 }, LEGACY)).toBe(17);
+        expect(scoreFor({ ...e, adminPoints: -3 }, LEGACY)).toBe(4);
+        expect(scoreFor({ ...e, adminPoints: -50 }, LEGACY)).toBe(0);
+    });
+
+    it('keeps the change when they earn more later', async () => {
+        await act('giveaway-enter', { giveawayId: 'legacy' }, asha);
+        const ref = db.collection('giveaway_entries').doc('legacy_uAsha0001');
+        await ref.update({ adminPoints: 5, entryScore: 6 });
+        await act('giveaway-task', { giveawayId: 'legacy', taskId: 't1', instagram: 'asha.rao' }, asha);
+        expect((await ref.get()).data().entryScore).toBe(11);
+    });
+});
+
 describe('public view', () => {
     it('never sends the quiz answer or the secret code', async () => {
         const { giveaway } = await act('giveaway', { slug: 'boosted' }, { uid: null });
