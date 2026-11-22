@@ -198,17 +198,6 @@ describe('board', () => {
         expect(JSON.stringify(board)).not.toContain('asha@example.com');
     });
 
-    it('keeps team entries off the board, the totals and others\' rank', async () => {
-        await act('giveaway-enter', { giveawayId: 'legacy' }, asha);
-        await db.collection('giveaway_entries').doc('legacy_staff').set({ campaignId: 'legacy', userId: 'staff', name: 'Team Member', entryScore: 500, staff: true });
-        const board = await giveawayBoard(db, 'legacy');
-        expect(board.leaderboard.map(r => r.name)).toEqual(['Old T.', 'Asha R.']);
-        expect(board.totalEntries).toBe(2);
-        expect(board.totalPoints).toBe(8);
-        const view = await act('giveaway', { id: 'legacy' }, asha);
-        expect(view.giveaway.me.rank).toBe(2);
-    });
-
     it('names', () => {
         expect(boardName('  ')).toBe('Participant');
         expect(boardName('Ravi')).toBe('Ravi');

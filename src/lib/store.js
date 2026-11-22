@@ -4601,7 +4601,6 @@ export const useStore = create((set, get) => ({
                 if (!data || data.campaignId !== giveawayId) throw new Error(`${winners[i].name || 'An entry'} is no longer in this giveaway.`);
                 if (data.isWinner) throw new Error(`${data.name || 'Someone'} has already been picked as a winner.`);
                 if (data.disqualified) throw new Error(`${data.name || 'Someone'} has been disqualified.`);
-                if (data.staff) throw new Error(`${data.name || 'Someone'} is a team entry and can't win.`);
             });
             refs.forEach((r, i) => tx.update(r, {
                 isWinner: true,
@@ -4657,9 +4656,6 @@ export const useStore = create((set, get) => ({
             await batch.commit();
         }
     },
-    // Team entries: Newbi staff who entered (to test or for fun). Kept off the
-    // public leaderboard, its totals and others' ranks (api/_lib/community.js),
-    // and never drawn.
     // Change an entry's points by hand. Stored as adminPoints, which scoreFor
     // adds to what they earned, so later tasks, spins and referrals keep
     // counting on top. Every change is logged on the entry with who, when and why.
@@ -4683,16 +4679,6 @@ export const useStore = create((set, get) => ({
             });
             return entryScore;
         });
-    },
-    setGiveawayEntriesStaff: async (ids, staff) => {
-        const at = new Date().toISOString();
-        for (let i = 0; i < ids.length; i += 400) {
-            const batch = writeBatch(db);
-            ids.slice(i, i + 400).forEach(id => batch.update(doc(db, 'giveaway_entries', id), staff
-                ? { staff: true, staffMarkedAt: at }
-                : { staff: false, staffMarkedAt: null }));
-            await batch.commit();
-        }
     },
     deleteGiveawayEntries: async (ids) => {
         for (let i = 0; i < ids.length; i += 400) {

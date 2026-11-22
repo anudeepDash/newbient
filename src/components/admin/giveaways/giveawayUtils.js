@@ -75,10 +75,9 @@ const randomUnit = () => {
 export const buildPool = (entries, { minPoints = 0, onePerPerson = true } = {}) => {
     const dupes = onePerPerson ? findDuplicates(entries) : new Map();
     const pool = [];
-    const left = { winners: 0, team: 0, disqualified: 0, duplicates: 0, lowPoints: 0 };
+    const left = { winners: 0, disqualified: 0, duplicates: 0, lowPoints: 0 };
     entries.forEach(e => {
         if (e.isWinner) left.winners += 1;
-        else if (e.staff) left.team += 1;
         else if (e.disqualified) left.disqualified += 1;
         else if (dupes.has(e.id)) left.duplicates += 1;
         else if (entryPoints(e) < minPoints) left.lowPoints += 1;
