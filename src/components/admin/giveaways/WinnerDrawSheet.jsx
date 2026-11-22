@@ -136,6 +136,7 @@ const WinnerDrawSheet = ({ open, onClose, giveaway, entries }) => {
                             <p className="text-[12px] text-gray-500">
                                 {[
                                     left.winners && `${left.winners} already won`,
+                                    left.team && `${left.team} team ${left.team === 1 ? 'entry' : 'entries'}`,
                                     left.disqualified && `${left.disqualified} disqualified`,
                                     left.duplicates && `${left.duplicates} duplicate${left.duplicates === 1 ? '' : 's'} skipped`,
                                     left.lowPoints && `${left.lowPoints} below the points minimum`,
@@ -167,7 +168,7 @@ const WinnerDrawSheet = ({ open, onClose, giveaway, entries }) => {
                         <div className="py-3"><Toggle label="Close the giveaway after confirming" hint="Stops new entries and shows the winner on the page" checked={closeAfter} onChange={setCloseAfter} /></div>
                         <div className="py-3"><Toggle label="Notify the winners" hint="In-app notification for signed-in entrants" checked={notify} onChange={setNotify} /></div>
                     </div>
-                    <p className="flex gap-2 text-[12px] text-gray-500"><Info size={14} className="mt-0.5 shrink-0" /> Winners and disqualified entries are never drawn. Each draw is logged on the giveaway with who ran it and when.</p>
+                    <p className="flex gap-2 text-[12px] text-gray-500"><Info size={14} className="mt-0.5 shrink-0" /> Winners, team entries and disqualified entries are never drawn. Each draw is logged on the giveaway with who ran it and when.</p>
                 </>
             )}
 

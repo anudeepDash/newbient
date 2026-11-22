@@ -24,6 +24,7 @@ import Lock from 'lucide-react/dist/esm/icons/lock';
 import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
 import History from 'lucide-react/dist/esm/icons/history';
 import SearchX from 'lucide-react/dist/esm/icons/search-x';
+import BadgeCheck from 'lucide-react/dist/esm/icons/badge-check';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { notifySpecificUser } from '../../lib/notificationTriggers';
@@ -41,8 +42,8 @@ import { GIVEAWAY_STATE, entryPoints, findDuplicates, giveawayEndsAt, giveawaySt
 import { BulkBar, InfoRow, SelectBox, SheetSection, formatDateTime, timeAgo, toDate, useConfirm } from '../../components/admin/forms/kit';
 import WhatsAppSendSheet from '../../components/admin/whatsapp/WhatsAppSendSheet';
 
-const FILTERS = ['all', 'winners', 'referrers', 'duplicates', 'disqualified'];
-const FILTER_LABEL = { all: 'All', winners: 'Winners', referrers: 'Referrers', duplicates: 'Possible duplicates', disqualified: 'Disqualified' };
+const FILTERS = ['all', 'winners', 'referrers', 'duplicates', 'disqualified', 'team'];
+const FILTER_LABEL = { all: 'All', winners: 'Winners', referrers: 'Referrers', duplicates: 'Possible duplicates', disqualified: 'Disqualified', team: 'Team' };
 const PAGE = 60;
 
 const digits = (p) => String(p || '').replace(/\D/g, '');
@@ -102,6 +103,7 @@ const GiveawayParticipants = () => {
         referrers: entries.filter(e => (e.referralCount || 0) > 0).length,
         duplicates: entries.filter(e => dupes.has(e.id)).length,
         disqualified: entries.filter(e => e.disqualified).length,
+        team: entries.filter(e => e.staff).length,
     }), [entries, dupes]);
     const points = useMemo(() => entries.reduce((s, e) => s + entryPoints(e), 0), [entries]);
     const referrals = useMemo(() => entries.reduce((s, e) => s + (Number(e.referralCount) || 0), 0), [entries]);
@@ -113,6 +115,7 @@ const GiveawayParticipants = () => {
             if (filter === 'referrers' && !((e.referralCount || 0) > 0)) return false;
             if (filter === 'duplicates' && !dupes.has(e.id)) return false;
             if (filter === 'disqualified' && !e.disqualified) return false;
+            if (filter === 'team' && !e.staff) return false;
             if (!q) return true;
             return [e.name, e.email, e.phone, e.college, e.city, igHandle(e)].some(v => String(v || '').toLowerCase().includes(q));
         });
@@ -174,6 +177,18 @@ const GiveawayParticipants = () => {
         guard(() => useStore.getState().setGiveawayEntriesDisqualified(list.map(e => e.id), on), on ? 'Disqualified.' : 'Restored.').then(ok => ok && setSelected(new Set()));
     };
 
+    const setTeam = async (ids, on) => {
+        const list = entries.filter(e => ids.includes(e.id) && Boolean(e.staff) !== on);
+        if (!list.length) return;
+        if (on && list.some(e => e.isWinner)) { addToast('Revoke their win first, then mark them as team.', 'warning'); return; }
+        if (on && !(await confirm({
+            title: list.length === 1 ? `Mark ${list[0].name || 'this entry'} as team?` : `Mark ${list.length} entries as team?`,
+            body: "For Newbi staff who entered. They're hidden from the public leaderboard and its totals, and can't be drawn as winners. Their points stay as they are. You can undo this.",
+            confirmLabel: 'Mark as team',
+        }))) return;
+        guard(() => useStore.getState().setGiveawayEntriesStaff(list.map(e => e.id), on), on ? 'Marked as team. Hidden from the leaderboard.' : 'Back on the leaderboard.').then(ok => ok && setSelected(new Set()));
+    };
+
     const removeEntries = async (ids) => {
         const list = entries.filter(e => ids.includes(e.id));
         if (!list.length) return;
@@ -189,6 +204,7 @@ const GiveawayParticipants = () => {
 
     const makeWinner = async (entry) => {
         if (entry.disqualified) { addToast('Restore this entry first. It’s disqualified.', 'warning'); return; }
+        if (entry.staff) { addToast('Team entries can’t win. Unmark it first.', 'warning'); return; }
         if (!(await confirm({
             title: `Make ${entry.name || 'this person'} a winner?`,
             body: 'Picked by hand, not drawn. It is logged on the giveaway. To keep it fair, prefer Draw winners.',
@@ -273,7 +289,7 @@ const GiveawayParticipants = () => {
             { header: 'Winner', value: e => (e.isWinner ? 'Yes' : '') },
             { header: 'Prize', value: e => e.prize || '' },
             { header: 'Picked at', type: 'datetime', value: e => toDate(e.winnerSelectedAt) },
-            { header: 'Flags', value: e => [e.disqualified && 'Disqualified', dupes.has(e.id) && 'Possible duplicate'].filter(Boolean).join(', ') },
+            { header: 'Flags', value: e => [e.staff && 'Team', e.disqualified && 'Disqualified', dupes.has(e.id) && 'Possible duplicate'].filter(Boolean).join(', ') },
         ],
     });
 
@@ -283,6 +299,7 @@ const GiveawayParticipants = () => {
     const flags = (e) => (
         <>
             {e.isWinner && <Badge tone="amber"><Trophy size={10} /> Winner</Badge>}
+            {e.staff && <Badge tone="blue"><BadgeCheck size={10} /> Team</Badge>}
             {e.disqualified && <Badge tone="red">Disqualified</Badge>}
             {dupes.has(e.id) && <Badge tone="orange">Possible duplicate</Badge>}
         </>
@@ -440,6 +457,7 @@ const GiveawayParticipants = () => {
                         <Button size="sm" variant="secondary" disabled={busy} onClick={() => setWaPeople(entries.filter(e => selected.has(e.id)).map(e => ({ name: e.name, phone: e.phone })))}><MessageCircle size={13} /> WhatsApp</Button>
                         <Button size="sm" variant="secondary" disabled={busy} onClick={() => setDisqualified([...selected], true)}><Ban size={13} /> Disqualify</Button>
                         <Button size="sm" variant="secondary" disabled={busy} onClick={() => setDisqualified([...selected], false)}><Undo2 size={13} /> Restore</Button>
+                        <Button size="sm" variant="secondary" disabled={busy} onClick={() => setTeam([...selected], !entries.filter(e => selected.has(e.id)).every(e => e.staff))}><BadgeCheck size={13} /> {entries.filter(e => selected.has(e.id)).every(e => e.staff) ? 'Not team' : 'Team'}</Button>
                         <Button size="sm" variant="danger" disabled={busy} onClick={() => removeEntries([...selected])}><Trash2 size={13} /> Remove</Button>
                     </BulkBar>
                 )}
@@ -466,9 +484,12 @@ const GiveawayParticipants = () => {
                         <Button variant="secondary" className="h-12" onClick={() => setDisqualified([detail.id], !detail.disqualified)} disabled={busy || (detail.isWinner && !detail.disqualified)}>
                             {detail.disqualified ? <><Undo2 size={15} /> Restore</> : <><Ban size={15} /> Disqualify</>}
                         </Button>
+                        <Button variant="secondary" className="h-12" onClick={() => setTeam([detail.id], !detail.staff)} disabled={busy || (detail.isWinner && !detail.staff)} aria-label={detail.staff ? 'Not a team entry' : 'Mark as team'} title={detail.staff ? 'Put back on the leaderboard' : 'Team entry: hide from the leaderboard'}>
+                            <BadgeCheck size={15} /> {detail.staff ? 'Not team' : 'Team'}
+                        </Button>
                         {detail.isWinner
                             ? <Button variant="danger" className="h-12 flex-1" onClick={() => revoke(detail)} disabled={busy}>Revoke win</Button>
-                            : <Button variant="accent" className="h-12 flex-1" onClick={() => makeWinner(detail)} disabled={busy || detail.disqualified}><Trophy size={15} /> Make winner</Button>}
+                            : <Button variant="accent" className="h-12 flex-1" onClick={() => makeWinner(detail)} disabled={busy || detail.disqualified || detail.staff}><Trophy size={15} /> Make winner</Button>}
                     </div>
                 )}
                 bodyClassName="space-y-4"

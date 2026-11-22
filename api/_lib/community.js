@@ -158,16 +158,38 @@ const findOwnEntry = async (db, giveawayId, uid, tx = null) => {
     return { ref, data: null };
 };
 
-/* Your place: 1 + how many have more points (the leaderboard's index). Null if it can't be counted. */
-const rankOf = async (db, giveawayId, score) => {
+/*
+ * Team entries (staff: true, set by an admin on the participants page) stay in
+ * the admin list but are kept off the public board, out of its totals and out
+ * of everyone else's rank, and can't be drawn. There are only ever a few.
+ */
+const teamEntries = async (db, giveawayId) => {
     try {
         const snap = await db.collection('giveaway_entries')
             .where('campaignId', '==', giveawayId)
-            .where('entryScore', '>', score)
-            .orderBy('entryScore', 'desc')
-            .count()
+            .where('staff', '==', true)
             .get();
-        return 1 + (snap.data().count || 0);
+        return snap.docs.map(d => ({ id: d.id, entryScore: Number(d.data().entryScore) || 0 }));
+    } catch (err) {
+        console.warn('[COMMUNITY] team entries not read:', err.message);
+        return [];
+    }
+};
+
+/* Your place: 1 + how many have more points (the leaderboard's index). Null if it can't be counted. */
+const rankOf = async (db, giveawayId, score) => {
+    try {
+        const [snap, team] = await Promise.all([
+            db.collection('giveaway_entries')
+                .where('campaignId', '==', giveawayId)
+                .where('entryScore', '>', score)
+                .orderBy('entryScore', 'desc')
+                .count()
+                .get(),
+            teamEntries(db, giveawayId),
+        ]);
+        const teamAhead = team.filter(t => t.entryScore > score).length;
+        return 1 + Math.max(0, (snap.data().count || 0) - teamAhead);
     } catch (err) {
         console.warn('[COMMUNITY] rank not counted:', err.message);
         return null;
@@ -379,26 +401,29 @@ export const boardName = (name) => {
 export const giveawayBoard = async (db, giveawayId) => {
     const col = db.collection('giveaway_entries').where('campaignId', '==', giveawayId);
     const toRow = (e) => ({ id: e.id, name: boardName(e.name), entryScore: Number(e.entryScore) || 0 });
+    const team = await teamEntries(db, giveawayId);
+    const teamIds = new Set(team.map(t => t.id));
+    const teamPoints = team.reduce((n, t) => n + t.entryScore, 0);
     let leaderboard;
     let totalEntries;
     let totalPoints = null;
     let winners;
     try {
         const [top, count, won] = await Promise.all([
-            col.orderBy('entryScore', 'desc').limit(10).get(),
+            col.orderBy('entryScore', 'desc').limit(10 + teamIds.size).get(),
             col.count().get(),
             col.where('isWinner', '==', true).limit(20).get(),
         ]);
-        leaderboard = top.docs.map(d => toRow({ id: d.id, ...d.data() }));
-        totalEntries = count.data().count;
+        leaderboard = top.docs.filter(d => !teamIds.has(d.id)).slice(0, 10).map(d => toRow({ id: d.id, ...d.data() }));
+        totalEntries = Math.max(0, count.data().count - teamIds.size);
         winners = won.docs.map(d => ({ id: d.id, name: boardName(d.data().name) }));
     } catch (indexErr) {
         if (indexErr?.code !== 9 && !/index/i.test(String(indexErr?.message || ''))) throw indexErr;
         const snap = await col.get();
-        const entries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const entries = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(e => !e.staff);
         leaderboard = [...entries].sort((a, b) => (b.entryScore || 0) - (a.entryScore || 0)).slice(0, 10).map(toRow);
         totalEntries = entries.length;
-        totalPoints = entries.reduce((n, e) => n + (Number(e.entryScore) || 0), 0);
+        totalPoints = entries.reduce((n, e) => n + (Number(e.entryScore) || 0), 0) + teamPoints;
         winners = entries.filter(e => e.isWinner).map(e => ({ id: e.id, name: boardName(e.name) }));
     }
     if (totalPoints === null) {
@@ -417,6 +442,7 @@ export const giveawayBoard = async (db, giveawayId) => {
             }
         }
     }
+    if (totalPoints !== null) totalPoints = Math.max(0, totalPoints - teamPoints);
     let joinedLastHour = null;
     try {
         const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
