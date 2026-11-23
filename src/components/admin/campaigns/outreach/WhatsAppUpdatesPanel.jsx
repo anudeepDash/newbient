@@ -12,6 +12,7 @@ import Zap from 'lucide-react/dist/esm/icons/zap';
 import DoorOpen from 'lucide-react/dist/esm/icons/door-open';
 import TriangleAlert from 'lucide-react/dist/esm/icons/triangle-alert';
 import BellRing from 'lucide-react/dist/esm/icons/bell-ring';
+import Mail from 'lucide-react/dist/esm/icons/mail';
 import { cn } from '../../../../lib/utils';
 import { useStore } from '../../../../lib/store';
 import { Button, Card, Badge, Select, SearchInput } from '../../ui';
@@ -27,6 +28,7 @@ import { StatusBadge, Handle, SKIP_REASON, Bubble } from './parts';
 import CampaignOpenPanel from './CampaignOpenPanel';
 import MessagesPanel from './MessagesPanel';
 import TaskReminderSchedule from './TaskReminderSchedule';
+import EmailDetailsPanel from './EmailDetailsPanel';
 import UserCheck from 'lucide-react/dist/esm/icons/user-check';
 import { creatorHandle, isPaid, isSelected, progressFor, stageMeta, stageOf } from '../campaignModel';
 
@@ -55,6 +57,7 @@ const MESSAGES = [
     { kind: 'brief_changed', label: 'Brief changed', icon: FilePen, tone: 'amber', hint: 'What changed, with their task link', segments: ['approved', 'owes'] },
     { kind: 'group', label: 'Group invite', icon: Users, tone: 'violet', hint: 'A Join the group button, then Joined', segments: ['not_joined', 'approved'] },
     { kind: 'update', label: 'Update', icon: Megaphone, tone: 'blue', hint: 'A short note and a link', segments: ['approved', 'not_joined'] },
+    { kind: 'email_details', label: 'Email details', icon: Mail, tone: 'blue', hint: 'Email one creator this campaign’s details to keep, at any address you paste', segments: [], email: true },
     { kind: 'event_day', label: 'Event day', icon: CalendarClock, tone: 'pink', hint: 'When, where, what to bring', segments: ['approved'] },
     { kind: 'reach_out', label: 'First reach-out', icon: Hand, tone: 'teal', hint: 'For imported numbers', segments: ['imported_new', 'imported', 'applied'] },
     { kind: 'not_selected', label: 'Not picked', icon: HeartHandshake, tone: 'gray', hint: 'Close the loop with applicants', segments: ['applied'] },
@@ -180,8 +183,9 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
     const groupKind = live('group_invite') ? 'group_invite' : live('group_join') ? 'group_join' : live('group_link') ? 'group_link' : 'group_invite';
     const kindOf = (m) => (m.kind === 'group' ? groupKind : m.kind);
     // Only what can actually go out: approved and switched on. The shortlist invite is always here (it has a by-hand fallback).
-    const available = MESSAGES.filter(m => (m.kind === 'invite' && invite) || (m.kind !== 'invite' && live(kindOf(m))));
-    const waiting = MESSAGES.filter(m => m.kind !== 'invite' && !live(kindOf(m)));
+    // Email details isn't a WhatsApp template, so it's always here.
+    const available = MESSAGES.filter(m => m.email || (m.kind === 'invite' && invite) || (m.kind !== 'invite' && live(kindOf(m))));
+    const waiting = MESSAGES.filter(m => !m.email && m.kind !== 'invite' && !live(kindOf(m)));
     const hasImported = applications.some(a => a.source === 'import');
     const firstPick = () => {
         const has = (k) => available.some(m => m.kind === k);
@@ -311,7 +315,8 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
 
             {pick === 'invite' ? (
                 <MessagesPanel campaign={campaign} applications={applications} settings={settings} api={api} wame={invite?.wame} onStatus={invite?.onStatus} onOpen={invite?.onOpen} onSetup={invite?.onSetup} onSendApi={invite?.onSendApi} onStopApi={invite?.onStopApi} onSentNow={onSent} />
-            ) : pick === 'campaign_open' ? <CampaignOpenPanel campaign={campaign} live={live('campaign_open')} applications={applications} /> : (
+            ) : pick === 'email_details' ? <EmailDetailsPanel campaign={campaign} applications={applications} settings={settings} />
+            : pick === 'campaign_open' ? <CampaignOpenPanel campaign={campaign} live={live('campaign_open')} applications={applications} /> : (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,21rem)]">
                 <Card className="min-w-0 space-y-5 p-4">
                     {!api?.configured && <p className="flex items-start gap-2 rounded-xl bg-amber-500/10 p-3 text-[13px] font-medium text-amber-700 dark:text-amber-300"><TriangleAlert size={15} className="mt-0.5 shrink-0" /> The WhatsApp API isn’t set up yet.</p>}

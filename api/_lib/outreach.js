@@ -67,6 +67,7 @@ import { ticketRuleOf, TICKET_RULES } from '../../src/lib/outreach/deliverables.
 import { WA_CENTER_ACTIONS, handleWhatsAppCenterAction } from './whatsappCenter.js';
 import { handleWaSend } from './outreachBroadcast.js';
 import { handleTaskReminders, remindersOf } from './taskReminders.js';
+import { handleEmailDetails } from './outreachEmailDetails.js';
 import { handleImport } from './outreachImport.js';
 
 export const OUTREACH_ACTIONS = new Set([
@@ -76,7 +77,7 @@ export const OUTREACH_ACTIONS = new Set([
     'outreach-review', 'outreach-ticket', 'outreach-payout', 'outreach-resend-link', 'outreach-ask-payout', 'outreach-payout-links',
     'outreach-payout-form', 'outreach-payout-form-submit', 'outreach-payout-form-admin',
     'inbox-list', 'inbox-thread', 'inbox-reply', 'inbox-react', 'inbox-template', 'inbox-state', 'inbox-media',
-    'outreach-city-notify', 'outreach-wame', 'outreach-wa-send', 'outreach-task-reminders', 'outreach-import', 'outreach-open-audience', 'outreach-open-send',
+    'outreach-city-notify', 'outreach-wame', 'outreach-wa-send', 'outreach-task-reminders', 'outreach-email-details', 'outreach-import', 'outreach-open-audience', 'outreach-open-send',
     // The admin WhatsApp center (api/_lib/whatsappCenter.js).
     ...WA_CENTER_ACTIONS,
 ]);
@@ -689,6 +690,7 @@ export const handleOutreachAction = async (action, req, res, { decodedToken, db 
         if (action === 'outreach-wame') return await handleWame(req, res, withActor);
         if (action === 'outreach-wa-send') return await handleWaSend(req, res, { ...withActor, startWorker });
         if (action === 'outreach-task-reminders') return await handleTaskReminders(req, res, withActor);
+        if (action === 'outreach-email-details') return await handleEmailDetails(req, res, withActor);
         if (action === 'outreach-import') return await handleImport(req, res, withActor);
         if (action === 'outreach-open-audience') return await handleOpenAudience(req, res, withActor);
         if (action === 'outreach-open-send') return await handleOpenSend(req, res, withActor);

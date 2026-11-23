@@ -18,6 +18,7 @@ import creatorRejected from './creator-rejected.js';
 import campaignInvite from './campaign-invite.js';
 import submissionReviewed from './submission-reviewed.js';
 import campaignShortlisted from './campaign-shortlisted.js';
+import campaignDetails from './campaign-details.js';
 import giveawayEntry from './giveaway-entry.js';
 import enquiryAutoreply from './enquiry-autoreply.js';
 import payeeRegistered from './payee-registered.js';
@@ -48,6 +49,7 @@ export const TEMPLATES = {
     'campaign-invite': campaignInvite,
     'submission-reviewed': submissionReviewed,
     'campaign-shortlisted': campaignShortlisted,
+    'campaign-details': campaignDetails,
     'giveaway-entry': giveawayEntry,
     'enquiry-autoreply': enquiryAutoreply,
     'payee-registered': payeeRegistered,
