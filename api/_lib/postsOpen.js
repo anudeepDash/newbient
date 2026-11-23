@@ -34,14 +34,14 @@ import { campaignImageOf, imageHeaderFor, toE164 } from './whatsapp.js';
 import { taskWindow, taskWindowFields } from '../../src/lib/creator/tasks.js';
 import { WAITING_ON_POSTS, IN, dayOf } from './postReminders.js';
 import { isOnShortlist } from '../../src/lib/outreach/status.js';
-import { briefLine, linksLine, taskLinksOf } from '../../src/lib/outreach/taskBrief.js';
+import { briefSummary, linksLine, taskLinksOf } from '../../src/lib/outreach/taskBrief.js';
 
 const DAY = 86_400_000;
 const MAX_CAMPAIGNS = 300;
 export const NO_DUE_DATE = 'No fixed date';
 
 /* The earliest due date among these posts (their own deadline, else the campaign's). */
-const dueLine = (tasks, campaign) => {
+export const dueLine = (tasks, campaign) => {
     const days = tasks.map(t => dayOf(t.deadline) || dayOf(campaign.postingDeadline)).filter(Boolean).sort();
     return days.length ? formatDeadline(days[0]) || days[0] : NO_DUE_DATE;
 };
@@ -50,20 +50,26 @@ const dueLine = (tasks, campaign) => {
 export const getsTaskLive = (a) => isOnShortlist(a.status) && a.status !== 'paid' && Boolean(a.phone);
 
 /*
- * Which template a live task goes out on: the brief once campaign_task_live is
- * switched on, else the short campaign_posts_open (already approved). null when
- * neither is on, so nothing can go.
+ * Which template a live task goes out on: the shorter brief (campaign_task_brief) once
+ * it's switched on, else the long one (campaign_task_live), else the short
+ * campaign_posts_open. null when none is on, so nothing can go.
  */
-export const taskLiveKind = () => (kindLive('task_live') ? 'task_live' : kindLive('posts_open') ? 'posts_open' : null);
+export const taskLiveKind = () => (kindLive('task_brief') ? 'task_brief' : kindLive('task_live') ? 'task_live' : kindLive('posts_open') ? 'posts_open' : null);
+const BRIEF_KINDS = new Set(['task_brief', 'task_live']);
 
-/** The campaign_task_live variables for one task (its brief and links on one line each). */
+/*
+ * The task message's variables for one task. Kept short: the brief's first lines (whole lines, up to
+ * 160 characters) and at most two links; the full brief and every link are on their task page.
+ */
 export const taskLiveData = (task, campaign) => ({
     taskIds: [String(task.id)],
     taskTitle: String(task.title || 'Deliverable').trim().slice(0, 80),
-    details: briefLine(task),
-    links: linksLine(taskLinksOf(task)),
+    details: briefSummary(task, 160),
+    links: linksLine(taskLinksOf(task).slice(0, 2), 200),
     dueAt: dueLine([task], campaign),
 });
+/** What a task message carries for this template (the brief, or the short "post date is set"). */
+const taskDataFor = (kind, task, campaign) => (BRIEF_KINDS.has(kind) ? taskLiveData(task, campaign) : postsOpenData(task, campaign));
 
 /* The campaign_posts_open variables for one task opened today (the fallback while campaign_task_live waits for Meta). */
 const postsOpenData = (task, campaign) => ({
@@ -98,7 +104,7 @@ export const queueTaskLive = async ({ db = getDb(), campaignId, campaign, tasks,
         for (const t of tasks) {
             if (IN.has(a.deliverables?.[String(t.id)]?.status)) { if (appIds) out.skipped.push({ id: app.id, reason: 'posts_in' }); continue; }
             const jobKey = `task_live_${campaignId}_${app.id}_${t.id}`.slice(0, 140);
-            const data = kind === 'task_live' ? taskLiveData(t, campaign) : postsOpenData(t, campaign);
+            const data = taskDataFor(kind, t, campaign);
             const id = await enqueueJob(db, { id: jobKey, campaignId, appId: app.id, kind, createdBy, again, data });
             if (id) out.queued += 1;
             else if (appIds) out.skipped.push({ id: app.id, reason: 'already_sent' });
@@ -149,8 +155,8 @@ export const appCreatorsFor = async ({ db, campaignId, campaign, tasks, creatorI
 };
 
 /* One app creator's message for one task, ready for the queue's 'template' kind (the same text and variables as the outreach one). */
-const appTaskJobData = (kind, creator, task, campaign, campaignId) => {
-    const ctx = { application: { fullName: creator.name }, campaign, data: kind === 'task_live' ? taskLiveData(task, campaign) : postsOpenData(task, campaign) };
+export const appTaskJobData = (kind, creator, task, campaign, campaignId, data = taskDataFor(kind, task, campaign)) => {
+    const ctx = { application: { fullName: creator.name }, campaign, data };
     const name = WA_TEMPLATES[kind].name;
     return {
         phone: toE164(creator.phone), name: creator.name, template: name,
@@ -158,7 +164,7 @@ const appTaskJobData = (kind, creator, task, campaign, campaignId) => {
         bodyParams: templateParamsFor(kind, ctx),
         buttons: [{ index: 0, param: appTaskParam(campaignId) }],
         text: renderTemplatePreview(kind, ctx),
-        taskIds: [String(task.id)], creatorId: creator.id,
+        taskIds: [String(task.id)], creatorId: creator.id, ...(kind === 'task_reminder' ? { reminder: true } : {}),
     };
 };
 
@@ -191,7 +197,7 @@ export const queueTaskLiveApp = async ({ db = getDb(), campaignId, campaign, tas
  */
 export const queuePostsOpen = async ({ db = getDb(), campaignId, campaign, tasks, day, opensAt }) => {
     if (!tasks.length) return 0;
-    if (opensAt === 'today' && kindLive('task_live')) return (await queueTaskLive({ db, campaignId, campaign, tasks })).queued;
+    if (opensAt === 'today' && BRIEF_KINDS.has(taskLiveKind())) return (await queueTaskLive({ db, campaignId, campaign, tasks })).queued;
     const apps = await db.collection('campaigns').doc(campaignId).collection('applications').get();
     let queued = 0;
     for (const app of apps.docs) {

@@ -41,6 +41,8 @@ const IMAGE_HEADERS = {
     campaign_post_overdue: 'wa-deliverables',
     campaign_posts_open: 'wa-deliverables',
     campaign_task_live: 'wa-deliverables',
+    campaign_task_brief: 'wa-deliverables',
+    campaign_task_reminder: 'wa-reminder',
     campaign_group_link: 'wa-shortlist',
     campaign_update: 'wa-invite',
     campaign_creator_invite: 'wa-invite',

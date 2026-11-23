@@ -231,6 +231,11 @@ const KINDS = {
     posts_open: { button: 'link' },
     // A deliverable made live, with its brief and links (data { taskIds: [id], taskTitle, details, links, dueAt }).
     task_live: { button: 'link' },
+    // The same, shorter (campaign_task_brief, which replaces it once approved). Same data.
+    task_brief: { button: 'link' },
+    // A reminder for a live task they haven't sent (data { taskIds: [id], taskTitle, dueAt, slot }): at the times the
+    // team set for the task (api/_lib/taskReminders.js), or sent by hand.
+    task_reminder: { button: 'link' },
     // Sent by the team from Outreach → Send on WhatsApp. group_link: data { link } (else the campaign's group);
     // update: data { note, link }.
     group_link: { button: 'join' },
@@ -351,10 +356,10 @@ const loadContext = async (db, job) => {
     if (job.kind === 'group_invite' && !groupCodeOf(groupLinkOf(job, settings, campaign))) return { skip: 'no_group_link' };
     if (job.kind === 'not_selected' && app.status !== 'applied') return { skip: 'status_changed' };
     // A task's own message (task_live, or posts_open sent for a task opened today) is pointless once the task closes.
-    if ((job.kind === 'task_live' || (job.kind === 'posts_open' && job.data?.opensAt === 'today')) && !(campaign.tasks || []).some(t => (job.data?.taskIds || []).includes(String(t.id)) && taskWindow(t) === 'open')) return { skip: 'task_closed' };
+    if ((['task_live', 'task_brief', 'task_reminder'].includes(job.kind) || (job.kind === 'posts_open' && job.data?.opensAt === 'today')) && !(campaign.tasks || []).some(t => (job.data?.taskIds || []).includes(String(t.id)) && taskWindow(t) === 'open')) return { skip: 'task_closed' };
     if (spec.button === 'link' && !submitToken(job.campaignId, job.appId)) return { skip: 'no_link_secret' };
     // A deadline reminder (or posting-opens notice) is pointless once the posts it was about are in.
-    if (['post_due', 'post_overdue', 'posts_open', 'task_live'].includes(job.kind)
+    if (['post_due', 'post_overdue', 'posts_open', 'task_live', 'task_brief', 'task_reminder'].includes(job.kind)
         && (job.data?.taskIds || []).every(id => ['submitted', 'approved'].includes(app.deliverables?.[id]?.status))) return { skip: 'posts_in' };
     return { campaign, settings, app };
 };
@@ -556,6 +561,8 @@ const afterSent = async (db, job, ctx, { at, messageId }) => {
 /* The audit line for each team-sent message. */
 const BROADCAST_NOTES = {
     task_live: (d) => `Task sent: ${d.taskTitle || 'a deliverable'}`,
+    task_brief: (d) => `Task sent: ${d.taskTitle || 'a deliverable'}`,
+    task_reminder: (d) => `Task reminder sent: ${d.taskTitle || 'a deliverable'}`,
     group_link: () => 'Group link sent',
     group_join: () => 'Group invite sent',
     group_invite: () => 'Group invite sent (Join button)',
@@ -664,7 +671,7 @@ export const queueStatus = async (db, campaignId) => {
     snap.docs.forEach(d => {
         const j = d.data();
         const who = j.appId || (j.kind === 'template' && j.data?.creatorId ? `creator:${j.data.creatorId}` : null);
-        if ((['task_live', 'posts_open'].includes(j.kind) || who?.startsWith('creator:')) && ['sent', 'queued', 'sending'].includes(j.status) && who) {
+        if ((['task_live', 'task_brief', 'posts_open'].includes(j.kind) || (who?.startsWith('creator:') && !j.data?.reminder)) && ['sent', 'queued', 'sending'].includes(j.status) && who) {
             for (const t of j.data?.taskIds || []) (told[t] ||= new Set()).add(who);
         }
         if (j.kind === 'reminder') {

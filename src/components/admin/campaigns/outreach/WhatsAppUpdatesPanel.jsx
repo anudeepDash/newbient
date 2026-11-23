@@ -11,6 +11,7 @@ import HeartHandshake from 'lucide-react/dist/esm/icons/heart-handshake';
 import Zap from 'lucide-react/dist/esm/icons/zap';
 import DoorOpen from 'lucide-react/dist/esm/icons/door-open';
 import TriangleAlert from 'lucide-react/dist/esm/icons/triangle-alert';
+import BellRing from 'lucide-react/dist/esm/icons/bell-ring';
 import { cn } from '../../../../lib/utils';
 import { useStore } from '../../../../lib/store';
 import { Button, Card, Badge, Select, SearchInput } from '../../ui';
@@ -18,13 +19,14 @@ import { Field, fieldCls } from '../../uploads/UploadKit';
 import { Spinner, ConfirmSheet } from '../parts';
 import { isOnShortlist } from '../../../../lib/outreach/status';
 import { renderTemplatePreview, WA_TEMPLATES, JOIN_BUTTON, STOP_BUTTON, INTERESTED_BUTTON, JOIN_GROUP_BUTTON, groupCodeOf } from '../../../../lib/outreach/whatsappTemplate';
-import { briefLine, linksLine, taskLinksOf } from '../../../../lib/outreach/taskBrief';
+import { briefSummary, linksLine, taskLinksOf } from '../../../../lib/outreach/taskBrief';
 import { formatDeadline } from '../../../../lib/outreach/template';
 import { taskWindow } from '../../../../lib/creator/tasks';
 import { callOutreach } from './outreachApi';
 import { StatusBadge, Handle, SKIP_REASON, Bubble } from './parts';
 import CampaignOpenPanel from './CampaignOpenPanel';
 import MessagesPanel from './MessagesPanel';
+import TaskReminderSchedule from './TaskReminderSchedule';
 import UserCheck from 'lucide-react/dist/esm/icons/user-check';
 import { creatorHandle, isPaid, isSelected, progressFor, stageMeta, stageOf } from '../campaignModel';
 
@@ -49,6 +51,7 @@ const MESSAGES = [
     { kind: 'campaign_open', label: 'Campaign is live', icon: DoorOpen, tone: 'blue', hint: 'People you added, or registered creators who fit the campaign', segments: [] },
     { kind: 'invite', label: 'Shortlist invite', icon: UserCheck, tone: 'violet', hint: 'Shortlisted people: the brief and the group', segments: [] },
     { kind: 'task_live', label: 'Task is live', icon: ClipboardList, tone: 'green', hint: 'The brief, links and due date', segments: ['not_told', 'owes', 'approved'] },
+    { kind: 'task_reminder', label: 'Task reminder', icon: BellRing, tone: 'amber', hint: 'Remind approved creators who haven’t sent a task: now, or by itself at times you set', segments: ['owes'] },
     { kind: 'brief_changed', label: 'Brief changed', icon: FilePen, tone: 'amber', hint: 'What changed, with their task link', segments: ['approved', 'owes'] },
     { kind: 'group', label: 'Group invite', icon: Users, tone: 'violet', hint: 'A Join the group button, then Joined', segments: ['not_joined', 'approved'] },
     { kind: 'update', label: 'Update', icon: Megaphone, tone: 'blue', hint: 'A short note and a link', segments: ['approved', 'not_joined'] },
@@ -75,6 +78,7 @@ const AUTOMATIC = [
     { kind: 'reminder', label: 'Join reminder', when: '48 h later, if they haven’t joined' },
     { kind: 'task_live', label: 'Task is live', when: 'When you open a task, to every approved creator', short: 'Short “post date is set” version until Meta approves the brief' },
     { kind: 'posts_open', label: 'Post date set', when: 'The day before a task’s “Opens on” date' },
+    { kind: 'task_reminder', label: 'Task reminder', when: 'At the times you set for each task, to anyone who hasn’t sent it' },
     { kind: 'post_due', label: 'Post due tomorrow', when: 'The day before a deadline' },
     { kind: 'post_overdue', label: 'Post overdue', when: 'The day after a missed deadline' },
     { kind: 'changes', label: 'Changes needed', when: 'When you ask for changes on a post' },
@@ -83,7 +87,7 @@ const AUTOMATIC = [
     { kind: 'feedback', label: 'Feedback request', when: 'The day after the event' },
 ];
 
-const SKIPPED = { ...SKIP_REASON, paid: 'already paid', on_outreach: 'on the outreach list (sent from there)', not_approved: 'not on the shortlist', not_applicant: 'already shortlisted', no_phone: 'no WhatsApp number', posts_in: 'already sent this post', already_sent: 'already got it', not_found: 'not found' };
+const SKIPPED = { ...SKIP_REASON, paid: 'already paid', on_outreach: 'on the outreach list (sent from there)', not_approved: 'not on the shortlist', not_applicant: 'already shortlisted', no_phone: 'no WhatsApp number', posts_in: 'already sent this post', already_sent: 'already got it', reminded: 'already reminded today', not_found: 'not found' };
 
 const last10 = (phone) => String(phone || '').replace(/\D/g, '').slice(-10);
 
@@ -124,15 +128,20 @@ const buttonsOf = (kind) => {
 };
 
 /*
- * The template a task goes out on: the brief (campaign_task_live) once it's on, else the short
- * "post date is set" (campaign_posts_open), as the server does (taskLiveKind in api/_lib/postsOpen.js).
+ * The template a task goes out on: the shorter brief (campaign_task_brief), else the long one (campaign_task_live),
+ * else the short "post date is set" (campaign_posts_open), as the server does (taskLiveKind in api/_lib/postsOpen.js).
  */
-const taskTemplateOf = (live) => (live('task_live') ? 'task_live' : live('posts_open') ? 'posts_open' : null);
+const taskTemplateOf = (live) => (live('task_brief') ? 'task_brief' : live('task_live') ? 'task_live' : live('posts_open') ? 'posts_open' : null);
+const BRIEF = new Set(['task_brief', 'task_live']);
+/* A reminder: campaign_task_reminder once it's on, else the task message again (reminderKind in api/_lib/taskReminders.js). */
+const reminderTemplateOf = (live) => (live('task_reminder') ? 'task_reminder' : BRIEF.has(taskTemplateOf(live)) ? taskTemplateOf(live) : null);
+/* The task message's variables, kept short (as taskLiveData in api/_lib/postsOpen.js). */
+const briefData = (task, campaign) => ({ taskTitle: task.title || 'Deliverable', details: briefSummary(task, 160), links: linksLine(taskLinksOf(task).slice(0, 2), 200), dueAt: dueOf(task, campaign) });
 
 /* The messages that go out without anyone pressing send, and whether each is switched on (shown in Settings). */
 export const AutomaticMessages = ({ api }) => {
     const on = (k) => Boolean(api?.configured && api?.templates?.[k]);
-    const live = (k) => (k === 'task_live' ? Boolean(taskTemplateOf(on)) : on(k));
+    const live = (k) => (k === 'task_live' ? Boolean(taskTemplateOf(on)) : k === 'task_reminder' ? Boolean(reminderTemplateOf(on)) : on(k));
     return (
         <Card className="p-4">
             <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -162,8 +171,11 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
     const creators = useStore(s => s.creators);
     const on = (k) => Boolean(api?.configured && api?.templates?.[k]);
     const taskTemplate = taskTemplateOf(on);
-    // A task can go out while either of its templates is on (the brief, else the short "post date is set").
-    const live = (k) => (k === 'task_live' ? Boolean(taskTemplate) : on(k));
+    const reminderTemplate = reminderTemplateOf(on);
+    // A task can go out while any of its templates is on (the brief, else the short "post date is set"); a reminder
+    // while its own template or the brief is.
+    const live = (k) => (k === 'task_live' ? Boolean(taskTemplate) : k === 'task_reminder' ? Boolean(reminderTemplate) : on(k));
+    const isTaskKind = (k) => k === 'task_live' || k === 'task_reminder';
     // The invite with a "Join the group" button once Meta approves it; until then whichever older one is on (link in the text).
     const groupKind = live('group_invite') ? 'group_invite' : live('group_join') ? 'group_join' : live('group_link') ? 'group_link' : 'group_invite';
     const kindOf = (m) => (m.kind === 'group' ? groupKind : m.kind);
@@ -198,7 +210,7 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
     const [sending, setSending] = useState(false);
 
     // A task also goes to creators shortlisted in the app, who aren't on the outreach list.
-    const appRows = useMemo(() => (kind === 'task_live' ? appRowsFor(campaign, creators, applications) : []), [kind, campaign, creators, applications]);
+    const appRows = useMemo(() => (isTaskKind(kind) ? appRowsFor(campaign, creators, applications) : []), [kind, campaign, creators, applications]);
     const reachable = useMemo(() => [...applications.filter(a => a.phone && !a.whatsappOptOut && a.status !== 'removed'), ...appRows], [applications, appRows]);
     // Who already had this task's message (sent or on its way), from the queue.
     // Keyed by its contents, so the queue refreshing every 30 s doesn't undo the team's ticks.
@@ -218,7 +230,8 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
     const data = {
         task_live: task ? (taskTemplate === 'posts_open'
             ? { opensAt: 'today', whatToPost: task.title || 'Deliverable', dueAt: dueOf(task, campaign) }
-            : { taskTitle: task.title || 'Deliverable', details: briefLine(task), links: linksLine(taskLinksOf(task)), dueAt: dueOf(task, campaign) }) : null,
+            : briefData(task, campaign)) : null,
+        task_reminder: task ? briefData(task, campaign) : null,
         group_link: { link: fields.groupLink.trim() },
         group_join: { link: fields.groupLink.trim(), joinBy: one(fields.joinBy) },
         group_invite: { link: fields.groupLink.trim(), joinBy: one(fields.joinBy) },
@@ -230,6 +243,7 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
     }[kind];
     const missing = {
         task_live: !task && 'Open a task in Deliverables first.',
+        task_reminder: !task && 'Open a task in Deliverables first.',
         group_link: !httpsOk(fields.groupLink) && 'Paste the group link (https://chat.whatsapp.com/…).',
         group_join: !httpsOk(fields.groupLink) && 'Paste the group link (https://chat.whatsapp.com/…).',
         group_invite: !groupCodeOf(fields.groupLink) && 'Paste the group’s invite link (https://chat.whatsapp.com/…).',
@@ -241,7 +255,7 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
     }[kind];
     const sample = recipients[0] || inSegment[0];
     // What actually goes out for a task: the brief, or the short version while the brief waits for Meta.
-    const shownKind = kind === 'task_live' && taskTemplate === 'posts_open' ? 'posts_open' : kind;
+    const shownKind = kind === 'task_live' ? taskTemplate || 'task_live' : kind === 'task_reminder' ? reminderTemplate || 'task_reminder' : kind;
     const preview = data ? renderTemplatePreview(shownKind, { application: sample || { fullName: 'Riya' }, campaign, groupLink: defaultGroup, data }) : '';
     const isLive = live(kind);
     const canSend = isLive && !missing && recipients.length > 0 && !sending;
@@ -250,7 +264,7 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
         setSending(true);
         const r = await callOutreach('outreach-wa-send', {
             campaignId: campaign.id, kind, appIds: recipients.filter(a => !a.inApp).map(a => a.id), creatorIds: recipients.filter(a => a.inApp).map(a => a.creatorId),
-            ...(kind === 'task_live' ? { taskId } : data),
+            ...(isTaskKind(kind) ? { taskId } : data),
         });
         setSending(false);
         setConfirm(false);
@@ -304,7 +318,7 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
                     {api?.configured && !isLive && (
                         <p className="flex items-start gap-2 rounded-xl bg-amber-500/10 p-3 text-[13px] font-medium text-amber-700 dark:text-amber-300">
                             <TriangleAlert size={15} className="mt-0.5 shrink-0" />
-                            <span><strong>{kind === 'task_live' ? `${WA_TEMPLATES.task_live.name} (or ${WA_TEMPLATES.posts_open.name})` : WA_TEMPLATES[kind]?.name}</strong> isn’t switched on yet. Submit it to Meta from <Link to="/admin/whatsapp" className="underline">WhatsApp → Templates</Link>; once Meta approves it, turn on its setting in Vercel and it can be sent from here.</span>
+                            <span><strong>{kind === 'task_live' ? `${WA_TEMPLATES.task_brief.name} (or ${WA_TEMPLATES.task_live.name})` : kind === 'task_reminder' ? WA_TEMPLATES.task_reminder.name : WA_TEMPLATES[kind]?.name}</strong> isn’t switched on yet. Submit it to Meta from <Link to="/admin/whatsapp" className="underline">WhatsApp → Templates</Link>; once Meta approves it, turn on its setting in Vercel and it can be sent from here.</span>
                         </p>
                     )}
 
@@ -329,6 +343,24 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
                             )}
                         </>
                     ) : <p className="text-[13px] text-gray-500">No task is open. Open one in the Deliverables tab, and it goes out on WhatsApp by itself.</p>)}
+                    {kind === 'task_reminder' && (openTasks.length ? (
+                        <>
+                            <Field label="Task" hint="Only open tasks. A reminder goes only to approved creators who haven’t sent this task yet.">
+                                <Select label="Task" value={taskId} onChange={setTaskId} className="w-full" options={openTasks.map(t => ({ value: String(t.id), label: t.title || 'Deliverable' }))} />
+                            </Field>
+                            {task && (
+                                <TaskReminderSchedule
+                                    campaign={campaign}
+                                    task={task}
+                                    saved={(settings?.taskReminders || []).filter(r => String(r.taskId) === String(task.id)).map(r => r.at)}
+                                    log={settings?.taskReminderLog?.[String(task.id)] || []}
+                                    viaTaskMessage={reminderTemplate !== 'task_reminder'}
+                                    onSaved={onSent}
+                                />
+                            )}
+                            <h4 className="pt-1 text-[13px] font-bold">Or remind them now</h4>
+                        </>
+                    ) : <p className="text-[13px] text-gray-500">No task is open. Open one in the Deliverables tab first.</p>)}
                     {['group_link', 'group_join', 'group_invite'].includes(kind) && (
                         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
                             <Field label="Group link" hint={kind === 'group_invite' ? 'This campaign’s group from Settings, or paste another. It opens from the “Join the group” button, not as a link in the text. Tapping “Joined” marks them joined here.' : 'This campaign’s group from Settings, or paste another. Tapping “Joined” marks them joined here.'}>
@@ -409,7 +441,7 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
                         {preview ? <Bubble text={preview} image={campaign.image || campaign.coverImage || campaign.bannerImage || campaign.thumbnail} buttons={buttonsOf(shownKind)} /> : <p className="text-[13px] text-gray-500">Pick a task to see the message.</p>}
                         {missing && <p className="text-[12.5px] font-semibold text-amber-600 dark:text-amber-300">{missing}</p>}
                         <Button variant="success" className="h-11 w-full" disabled={!canSend} onClick={() => setConfirm(true)}>
-                            {sending ? <Spinner /> : <Send size={14} />} {!isLive ? 'Waiting for Meta approval' : recipients.length ? `Send to ${recipients.length}` : 'Nobody picked'}
+                            {sending ? <Spinner /> : <Send size={14} />} {!isLive ? 'Waiting for Meta approval' : recipients.length ? `${kind === 'task_reminder' ? 'Remind' : 'Send to'} ${recipients.length}${kind === 'task_reminder' ? ' now' : ''}` : 'Nobody picked'}
                         </Button>
                     </Card>
                 </div>

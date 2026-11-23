@@ -100,6 +100,22 @@ export const WA_TEMPLATES = {
         placeholders: ['first_name', 'campaign_title', 'task_title', 'task_details', 'task_links', 'due_at'],
         button: 'Open my task',
     },
+    // The task message, shorter (replaces campaign_task_live once WHATSAPP_TEMPLATE_CAMPAIGN_TASK_BRIEF is set): the
+    // brief in a line ("In short"), no links in the text; the full brief and links are behind "Open my task".
+    task_brief: {
+        name: 'campaign_task_brief',
+        body: "📌 *New task for you, {{1}}*\n\n*Campaign:* {{2}}\n*Task:* {{3}}\n*Due:* {{4}}\n\n*In short:* {{5}}\n\nTap *Open my task* for the full brief and links. Once your post is up, send it from the same page.",
+        placeholders: ['first_name', 'campaign_title', 'task_title', 'due_at', 'task_details'],
+        button: 'Open my task',
+    },
+    // A reminder to approved creators who haven't sent a live task in: at the times the team set for that task, or
+    // sent by hand (Outreach → Send on WhatsApp → Task reminder). URL button: their task page.
+    task_reminder: {
+        name: 'campaign_task_reminder',
+        body: "⏰ *Quick reminder, {{1}}*\n\nWe haven't got your *{{2}}* for *{{3}}* yet.\n\n*Due:* {{4}}\n\nTap *Open my task* for the brief, and send your post from the same page once it's up. Need more time? Reply here.",
+        placeholders: ['first_name', 'task_title', 'campaign_title', 'due_at'],
+        button: 'Open my task',
+    },
     // Sent by the team from Outreach → Send on WhatsApp, to approved creators: the campaign's group (or another
     // group link they paste). Quick replies: Joined (signed, marks them joined) and Stop updates.
     group_link: {

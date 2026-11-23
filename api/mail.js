@@ -11,6 +11,7 @@ import { runQueue as runOutreachQueue, kickWorker as kickOutreachWorker } from '
 import { handleEvent, isEvent } from './_lib/mail/events.js';
 import { runEventReminders } from './_lib/eventReminders.js';
 import { runPostReminders } from './_lib/postReminders.js';
+import { runTaskReminders } from './_lib/taskReminders.js';
 import { runPostsOpen } from './_lib/postsOpen.js';
 import { runWaitlists } from './_lib/waitlistSweep.js';
 import { runCampaignFeedback, runPendingEmails as runFeedbackEmails } from './_lib/campaignFeedback.js';
@@ -122,6 +123,10 @@ const runWorker = async (req, { budgetMs = 48000, depth = 0, cron = false } = {}
     const feedback = sweeps
         ? await runCampaignFeedback({ deadline: Date.now() + 12000 }).catch(e => { console.error('[MAIL] campaign feedback failed:', e.message); return null; })
         : await runFeedbackEmails(undefined, { deadline: Date.now() + 15000 }).catch(e => { console.error('[MAIL] feedback emails failed:', e.message); return null; });
+    // Task reminders whose time has come (on every run, not just sweeps: it's one small query), queued for the pass below.
+    const taskReminders = depth === 0
+        ? await runTaskReminders().catch(e => { console.error('[MAIL] task reminders failed:', e.message); return null; })
+        : null;
     // Campaign outreach: leftover sends and due join reminders (the queue keeps to its own rate limit).
     const outreach = depth === 0
         ? await runOutreachQueue({ deadline: started + 20000 }).catch(e => { console.error('[MAIL] outreach queue failed:', e.message); return null; })
@@ -137,7 +142,7 @@ const runWorker = async (req, { budgetMs = 48000, depth = 0, cron = false } = {}
     const campaigns = await runCampaignWorker({ deadline: started + budgetMs }).catch(e => { console.error('[MAIL] campaign worker failed:', e); return { campaigns: 0, sent: 0, more: false }; });
     let chained = false;
     if (campaigns.more || feedback?.waiting) chained = await chainWorker(req, depth);
-    return { retried, waRetried, outreachSent: outreach?.sent || 0, feedback, remindersSent: reminders?.sent || 0, postReminders: posts, postsOpen: opening, ...campaigns, chained, ms: Date.now() - started };
+    return { retried, waRetried, outreachSent: outreach?.sent || 0, feedback, remindersSent: reminders?.sent || 0, postReminders: posts, taskReminders, postsOpen: opening, ...campaigns, chained, ms: Date.now() - started };
 };
 
 /* ---------- Free-form staff mail (the composer screens) ---------- */
@@ -257,7 +262,9 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
         if (!isCronRequest(req)) return res.status(401).json({ error: 'Unauthorized' });
         const depth = Math.max(0, parseInt(req.headers['x-mail-chain'] || '0', 10) || 0);
-        const result = await runWorker(req, { depth, cron: !req.headers['x-mail-chain'] });
+        // x-mail-tick: the frequent tick (.github/workflows/mail-tick.yml), so task reminders go near their time. It
+        // drains the queues like a staff screen's kick; the campaign sweeps keep to once an hour.
+        const result = await runWorker(req, { depth, cron: !req.headers['x-mail-chain'] && !req.headers['x-mail-tick'] });
         console.log('[MAIL] worker', JSON.stringify(result));
         return res.status(200).json({ success: true, ...result });
     }

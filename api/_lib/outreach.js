@@ -66,6 +66,7 @@ import {
 import { ticketRuleOf, TICKET_RULES } from '../../src/lib/outreach/deliverables.js';
 import { WA_CENTER_ACTIONS, handleWhatsAppCenterAction } from './whatsappCenter.js';
 import { handleWaSend } from './outreachBroadcast.js';
+import { handleTaskReminders, remindersOf } from './taskReminders.js';
 import { handleImport } from './outreachImport.js';
 
 export const OUTREACH_ACTIONS = new Set([
@@ -75,7 +76,7 @@ export const OUTREACH_ACTIONS = new Set([
     'outreach-review', 'outreach-ticket', 'outreach-payout', 'outreach-resend-link', 'outreach-ask-payout', 'outreach-payout-links',
     'outreach-payout-form', 'outreach-payout-form-submit', 'outreach-payout-form-admin',
     'inbox-list', 'inbox-thread', 'inbox-reply', 'inbox-react', 'inbox-template', 'inbox-state', 'inbox-media',
-    'outreach-city-notify', 'outreach-wame', 'outreach-wa-send', 'outreach-import', 'outreach-open-audience', 'outreach-open-send',
+    'outreach-city-notify', 'outreach-wame', 'outreach-wa-send', 'outreach-task-reminders', 'outreach-import', 'outreach-open-audience', 'outreach-open-send',
     // The admin WhatsApp center (api/_lib/whatsappCenter.js).
     ...WA_CENTER_ACTIONS,
 ]);
@@ -336,7 +337,7 @@ const handleList = async (req, res, { db }) => {
     })).sort((a, b) => String(b.lastSubmittedAt || '').localeCompare(String(a.lastSubmittedAt || '')));
     const priv = privSnap.exists ? privSnap.data() : {};
     const configured = isWhatsAppConfigured();
-    const [queue, rate] = configured ? await Promise.all([queueStatus(db, campaignId), rateStatus(db)]) : [null, null];
+    const [queue, rate, taskReminders] = configured ? await Promise.all([queueStatus(db, campaignId), rateStatus(db), remindersOf(db, campaignId)]) : [null, null, []];
     return send(res, 200, {
         success: true,
         applications,
@@ -346,6 +347,9 @@ const handleList = async (req, res, { db }) => {
             remindersEnabled: priv.remindersEnabled !== false,
             joinReminderHours: Number(priv.joinReminderHours) || defaultReminderHours(),
             ticketRule: ticketRuleOf(priv),
+            // Task reminders: the times still to go, and what the last ones did ({ [taskId]: [{ at, ranAt, queued, note }] }).
+            taskReminders,
+            taskReminderLog: priv.taskReminderLog || {},
             updatedAt: priv.updatedAt || null,
             updatedBy: priv.updatedBy || null,
         },
@@ -684,6 +688,7 @@ export const handleOutreachAction = async (action, req, res, { decodedToken, db 
         if (action === 'outreach-city-notify') return await handleCityNotify(req, res, withActor);
         if (action === 'outreach-wame') return await handleWame(req, res, withActor);
         if (action === 'outreach-wa-send') return await handleWaSend(req, res, { ...withActor, startWorker });
+        if (action === 'outreach-task-reminders') return await handleTaskReminders(req, res, withActor);
         if (action === 'outreach-import') return await handleImport(req, res, withActor);
         if (action === 'outreach-open-audience') return await handleOpenAudience(req, res, withActor);
         if (action === 'outreach-open-send') return await handleOpenSend(req, res, withActor);

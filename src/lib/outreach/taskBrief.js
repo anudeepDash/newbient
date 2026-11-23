@@ -39,10 +39,42 @@ export const taskLinksOf = (task = {}) => {
 const clip = (s, max) => (s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s);
 
 /*
+ * The brief's lines, tidied for one WhatsApp line: a heading like "Task 1 is live 🎉" is dropped (the message
+ * already says so), and a label line ending in ":" takes the short lines under it ("Visible tags: @a @b").
+ */
+const LIVE_HEADING = /^(task|post|story|reel)?\s*#?\d*\s*(is|now)?\s*live\b[\s!🎉🔥✨]*$/iu;
+const briefParts = (task) => {
+    const lines = plainBrief(task?.description).split('\n').map(l => l.replace(/^•\s*/, '').trim()).filter(Boolean);
+    const out = [];
+    for (const line of lines) {
+        if (!out.length && LIVE_HEADING.test(line)) continue;
+        const prev = out[out.length - 1];
+        if (prev && /:$/.test(prev.text) && line.length <= 40) { prev.items.push(line); continue; }
+        out.push({ text: line, items: [] });
+    }
+    return out.map(p => (p.items.length ? `${p.text} ${p.items.join(' ')}` : p.text));
+};
+
+/*
  * One line each, for WhatsApp template variables (Meta refuses line breaks
  * and long runs of spaces in them). Lines are joined with " · ".
  */
-export const briefLine = (task, max = 420) => clip(plainBrief(task?.description).split('\n').filter(Boolean).join(' · '), max);
+export const briefLine = (task, max = 420) => clip(briefParts(task).join(' · '), max);
+
+/*
+ * The brief in short, for the task message: whole lines while they fit in `max`, then "…" (the full brief and
+ * its links are one tap away, on their task page). A first line longer than that is cut.
+ */
+export const briefSummary = (task, max = 160) => {
+    const parts = briefParts(task);
+    let line = '';
+    for (const p of parts) {
+        const next = line ? `${line} · ${p}` : p;
+        if (next.length > max) return line ? `${line} …` : clip(p, max);
+        line = next;
+    }
+    return line;
+};
 export const linksLine = (links, max = 220) => {
     let line = '';
     for (const l of links) {

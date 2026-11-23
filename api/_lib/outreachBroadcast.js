@@ -17,16 +17,19 @@
  *   event_day    when, where and a note for the event (campaign_event_day), with their page link.
  *   brief_changed what changed in the brief (campaign_brief_updated), with their task link.
  *   not_selected applicants who weren't picked (campaign_not_selected).
+ *   task_reminder a reminder for a live task they haven't sent (campaign_task_reminder), once per person per day;
+ *                the times it goes by itself are set per task (api/_lib/taskReminders.js).
  *
  * Nothing here is automatic: each send is an admin's choice. Passes stay in the
  * Send tickets sheet (they're never sent from here).
  *
  * Action: outreach-wa-send { campaignId, kind, appIds, creatorIds?, taskId?, link?, note?, joinBy?, when?, where?, reward?, again? }
- *   creatorIds (task_live only): creators shortlisted in the app (not on the outreach list).
+ *   creatorIds (task_live and task_reminder): creators shortlisted in the app (not on the outreach list).
  *   → { queued, skipped: [{ id, reason }], worker }
  */
 import { enqueueJob, kindLive, switchFor } from './outreachQueue.js';
 import { queueTaskLive, queueTaskLiveApp, taskLiveKind } from './postsOpen.js';
+import { manualSlot, queueTaskReminder, reminderKind } from './taskReminders.js';
 import { isWhatsAppConfigured } from './whatsapp.js';
 import { isOnShortlist } from '../../src/lib/outreach/status.js';
 import { taskWindow } from '../../src/lib/creator/tasks.js';
@@ -39,6 +42,7 @@ import { groupCodeOf } from '../../src/lib/outreach/whatsappTemplate.js';
  */
 const AUDIENCE = {
     task_live: (a) => isOnShortlist(a.status),
+    task_reminder: (a) => isOnShortlist(a.status),
     group_link: (a) => isOnShortlist(a.status),
     group_join: (a) => isOnShortlist(a.status),
     group_invite: (a) => isOnShortlist(a.status),
@@ -65,13 +69,13 @@ export const handleWaSend = async (req, res, { db, actor, startWorker }) => {
     const kind = str(b.kind, 20);
     if (!KINDS.has(kind)) return send(res, 400, { success: false, error: 'Choose what to send.' });
     if (!isWhatsAppConfigured()) return send(res, 409, { success: false, error: 'The WhatsApp API isn’t set up yet.' });
-    if (kind === 'task_live' ? !taskLiveKind() : !kindLive(kind)) {
+    if (kind === 'task_live' ? !taskLiveKind() : kind === 'task_reminder' ? !reminderKind() : !kindLive(kind)) {
         return send(res, 409, { success: false, error: `This WhatsApp template isn’t switched on yet. Submit it to Meta from WhatsApp → Templates, then set ${switchFor(kind)} in Vercel once it’s approved.` });
     }
     const campaignId = str(b.campaignId, 120);
     const idsOf = (v) => [...new Set((Array.isArray(v) ? v : []).map(id => str(id, 120)).filter(Boolean))];
     const ids = idsOf(b.appIds);
-    const creatorIds = kind === 'task_live' ? idsOf(b.creatorIds) : [];
+    const creatorIds = ['task_live', 'task_reminder'].includes(kind) ? idsOf(b.creatorIds) : [];
     if (!campaignId || !(ids.length + creatorIds.length)) return send(res, 400, { success: false, error: 'Choose at least one person.' });
     if (ids.length + creatorIds.length > MAX_IDS) return send(res, 400, { success: false, error: `Up to ${MAX_IDS} at a time.` });
     const campRef = db.collection('campaigns').doc(campaignId);
@@ -81,7 +85,12 @@ export const handleWaSend = async (req, res, { db, actor, startWorker }) => {
     const createdBy = actor.actorEmail || 'Newbi team';
 
     let result;
-    if (kind === 'task_live') {
+    if (kind === 'task_reminder') {
+        const task = (campaign.tasks || []).find(t => String(t.id) === str(b.taskId, 60));
+        if (!task) return send(res, 400, { success: false, error: 'Choose a task.' });
+        if (taskWindow(task) !== 'open') return send(res, 409, { success: false, error: 'This task isn’t open, so there’s nothing to remind them about.' });
+        result = await queueTaskReminder({ db, campaignId, campaign, task, slot: manualSlot(), appIds: ids, creatorIds, createdBy });
+    } else if (kind === 'task_live') {
         const task = (campaign.tasks || []).find(t => String(t.id) === str(b.taskId, 60));
         if (!task) return send(res, 400, { success: false, error: 'Choose a task.' });
         if (taskWindow(task) !== 'open') return send(res, 409, { success: false, error: 'Open this task first (Deliverables), then send it.' });

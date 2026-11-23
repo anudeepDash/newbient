@@ -5,7 +5,8 @@ import { setWhatsAppFetchForTests } from '../../api/_lib/whatsapp.js';
 import { tellPostsOpened } from '../../api/_lib/postsOpen.js';
 import { runQueue, queueStatus } from '../../api/_lib/outreachQueue.js';
 import { handleOutreachAction } from '../../api/_lib/outreach.js';
-import { plainBrief, taskLinksOf, briefLine, linksLine } from '../../src/lib/outreach/taskBrief.js';
+import { plainBrief, taskLinksOf, briefLine, briefSummary, linksLine } from '../../src/lib/outreach/taskBrief.js';
+import { runTaskReminders } from '../../api/_lib/taskReminders.js';
 import { deliverablesFor } from '../../src/lib/outreach/deliverables.js';
 import { TEMPLATES, problemsWith } from '../../scripts/submit-wa-templates.mjs';
 import { WA_TEMPLATES } from '../../src/lib/outreach/whatsappTemplate.js';
@@ -69,8 +70,16 @@ describe('task brief', () => {
     it('turns the rich text into lines and collects the real links', () => {
         expect(plainBrief(STORY.description)).toBe('Task 1 is Live 🎉\n\nRepost this post on your stories\nVisible Tag:\n@pinnaca.in\n@newbi.live');
         expect(taskLinksOf(STORY).map(l => l.label)).toEqual(['Repost this poster', 'Add this ticket link (story sticker)', 'Guidelines']);
-        expect(briefLine(STORY)).toBe('Task 1 is Live 🎉 · Repost this post on your stories · Visible Tag: · @pinnaca.in · @newbi.live');
+        // The "Task 1 is Live" heading goes (the message says so), and the tags join their label.
+        expect(briefLine(STORY)).toBe('Repost this post on your stories · Visible Tag: @pinnaca.in @newbi.live');
         expect(linksLine(taskLinksOf(STORY), 120)).toBe('Repost this poster: https://www.instagram.com/p/De1pFFnMQCG/');
+    });
+
+    it('keeps the task message short: whole lines up to the limit, then …', () => {
+        const long = { description: '<p>Repost the poster on your story</p><p>Tag @pinnaca.in and @newbi.live</p><p>Add the ticket link as a link sticker and keep it up for 24 hours, do not delete it before the event</p>' };
+        expect(briefSummary(long, 80)).toBe('Repost the poster on your story · Tag @pinnaca.in and @newbi.live …');
+        expect(briefSummary(STORY)).toBe('Repost this post on your stories · Visible Tag: @pinnaca.in @newbi.live');
+        expect(briefSummary({ description: 'x'.repeat(300) }, 50)).toHaveLength(50);
     });
 
     it('shows the links on the creator page only once the task is open', () => {
@@ -228,10 +237,86 @@ describe('Send on WhatsApp (outreach-wa-send)', () => {
     });
 
     it('matches the templates submitted to Meta', () => {
-        for (const kind of ['task_live', 'group_link', 'update']) {
+        for (const kind of ['task_live', 'task_brief', 'task_reminder', 'group_link', 'update']) {
             const t = TEMPLATES.find(x => x.name === WA_TEMPLATES[kind].name);
             expect(t.body).toBe(WA_TEMPLATES[kind].body);
             expect(problemsWith(t)).toEqual([]);
         }
+    });
+});
+
+describe('the shorter task message (campaign_task_brief)', () => {
+    it('takes over from the long one once switched on', async () => {
+        vi.stubEnv('WHATSAPP_TEMPLATE_CAMPAIGN_TASK_BRIEF', 'campaign_task_brief');
+        expect((await tellPostsOpened({ db, campaignId: 'c1', taskIds: ['s1'], start: false })).kind).toBe('task_brief');
+        await runQueue({ db, deadline: Date.now() + 5000, sleep: async () => {} });
+        expect(sent.map(m => m.template.name)).toEqual(['campaign_task_brief', 'campaign_task_brief']);
+        expect(sent[0].template.components[1].parameters.map(p => p.text)).toEqual(['Riya', 'Pinnaca 2026', 'Instagram story 1', 'No fixed date', 'Repost this post on your stories · Visible Tag: @pinnaca.in @newbi.live']);
+    });
+});
+
+describe('task reminders', () => {
+    const HOUR = 3_600_000;
+    beforeEach(() => {
+        vi.stubEnv('WHATSAPP_TEMPLATE_CAMPAIGN_TASK_REMINDER', 'campaign_task_reminder');
+        db.store.set('creators/cr1', { uid: 'u1', name: 'Tara Singh', whatsapp: '9876511111', shortlistedCampaigns: ['c1'] });
+    });
+
+    it('saves the times the team picks, and refuses times in the past', async () => {
+        const soon = new Date(Date.now() + 2 * HOUR).toISOString();
+        const later = new Date(Date.now() + 26 * HOUR).toISOString();
+        expect((await call('outreach-task-reminders', { campaignId: 'c1', taskId: 's1', times: [new Date(Date.now() - HOUR).toISOString()] })).statusCode).toBe(400);
+        expect((await call('outreach-task-reminders', { campaignId: 'c1', taskId: 's1', times: Array.from({ length: 6 }, (_, i) => new Date(Date.now() + (i + 1) * HOUR).toISOString()) })).statusCode).toBe(400);
+        const res = await call('outreach-task-reminders', { campaignId: 'c1', taskId: 's1', times: [later, soon] });
+        expect(res.statusCode).toBe(200);
+        expect(res.body.reminders.map(r => r.taskId)).toEqual(['s1', 's1']);
+        expect(res.body.reminders[0].at <= res.body.reminders[1].at).toBe(true);
+        // Saving again replaces them; an empty list turns them off.
+        await call('outreach-task-reminders', { campaignId: 'c1', taskId: 's1', times: [] });
+        expect(Object.keys(db.dump('task_reminders'))).toHaveLength(0);
+    });
+
+    it('reminds everyone approved who still owes the task when its time comes, once', async () => {
+        const at = new Date(Date.now() + 2 * HOUR).toISOString();
+        await call('outreach-task-reminders', { campaignId: 'c1', taskId: 's1', times: [at] });
+        // Not yet.
+        expect(await runTaskReminders({ db })).toEqual({ slots: 0, queued: 0 });
+        // Its time: a1 and a2 from outreach and Tara from the app (Meera sent it, Kabir isn't approved, Zoya is paid).
+        const report = await runTaskReminders({ db, now: Date.parse(at) + 60_000 });
+        expect(report).toEqual({ slots: 1, queued: 3 });
+        expect(jobs().map(([, j]) => j.kind).sort()).toEqual(['task_reminder', 'task_reminder', 'template']);
+        await runQueue({ db, deadline: Date.now() + 5000, sleep: async () => {} });
+        expect(sent.map(m => m.template.name)).toEqual(['campaign_task_reminder', 'campaign_task_reminder', 'campaign_task_reminder']);
+        expect(sent.find(m => m.to === '919876500001').template.components[1].parameters.map(p => p.text)).toEqual(['Riya', 'Instagram story 1', 'Pinnaca 2026', 'No fixed date']);
+        // Done: the time is gone and logged; running again sends nothing.
+        expect(await runTaskReminders({ db, now: Date.parse(at) + 120_000 })).toEqual({ slots: 0, queued: 0 });
+        expect(db.store.get('campaigns/c1/private/outreach').taskReminderLog.s1[0]).toMatchObject({ at: `${at.slice(0, 16)}:00.000Z`, queued: 3, note: '3 queued' });
+        // A reminder doesn't count as having had the task message.
+        expect((await queueStatus(db, 'c1')).taskTold.s1 || []).not.toContain('creator:cr1');
+    });
+
+    it('skips anyone whose post came in after it was queued, and sends nothing for a closed task', async () => {
+        const at = new Date(Date.now() + HOUR).toISOString();
+        await call('outreach-task-reminders', { campaignId: 'c1', taskId: 's1', times: [at] });
+        const c = db.store.get('campaigns/c1');
+        db.store.set('campaigns/c1', { ...c, tasks: c.tasks.map(t => ({ ...t, submissionsOpen: false })) });
+        expect(await runTaskReminders({ db, now: Date.parse(at) + 60_000 })).toEqual({ slots: 1, queued: 0 });
+        expect(db.store.get('campaigns/c1/private/outreach').taskReminderLog.s1[0].note).toBe('the task was closed');
+    });
+
+    it('goes as the task message again while the reminder template waits for Meta', async () => {
+        vi.stubEnv('WHATSAPP_TEMPLATE_CAMPAIGN_TASK_REMINDER', '');
+        const res = await call('outreach-wa-send', { campaignId: 'c1', kind: 'task_reminder', taskId: 's1', appIds: ['a1'], creatorIds: [] });
+        expect(res.body.queued).toBe(1);
+        expect(sent[0].template.name).toBe('campaign_task_live');
+    });
+
+    it('can be sent now by hand, once per person per day', async () => {
+        const res = await call('outreach-wa-send', { campaignId: 'c1', kind: 'task_reminder', taskId: 's1', appIds: ['a1', 'a3'], creatorIds: ['cr1'] });
+        expect(res.statusCode).toBe(200);
+        expect(res.body.queued).toBe(2);
+        expect(res.body.skipped).toEqual([{ id: 'a3', reason: 'posts_in' }]);
+        const again = await call('outreach-wa-send', { campaignId: 'c1', kind: 'task_reminder', taskId: 's1', appIds: ['a1'], creatorIds: [] });
+        expect(again.body).toMatchObject({ queued: 0, skipped: [{ id: 'a1', reason: 'reminded' }] });
     });
 });

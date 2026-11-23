@@ -140,6 +140,25 @@ export const TEMPLATES = [
         footer: 'Newbi Creators · app.newbi.live',
     },
     {
+        // The task message, shorter (replaces campaign_task_live once approved): task, due date and the brief in a
+        // line; the full brief and links are behind "Open my task".
+        name: 'campaign_task_brief',
+        body: "📌 *New task for you, {{1}}*\n\n*Campaign:* {{2}}\n*Task:* {{3}}\n*Due:* {{4}}\n\n*In short:* {{5}}\n\nTap *Open my task* for the full brief and links. Once your post is up, send it from the same page.",
+        samples: ['Riya', 'Pinnaca 2026', 'Instagram story 1', 'Sunday, 15 November', 'Repost the festival poster on your story · Visible tags: @pinnaca.in @newbi.live'],
+        header: { image: 'public/og/wa-deliverables-v1.jpg' },
+        buttons: [{ type: 'URL', text: 'Open my task', url: `${APP}/d/{{1}}`, example: [`${APP}/d/sample-token`] }],
+        footer: 'Newbi Creators · app.newbi.live',
+    },
+    {
+        // A reminder to approved creators who haven't sent a live task in, at the times the team set (or by hand).
+        name: 'campaign_task_reminder',
+        body: "⏰ *Quick reminder, {{1}}*\n\nWe haven't got your *{{2}}* for *{{3}}* yet.\n\n*Due:* {{4}}\n\nTap *Open my task* for the brief, and send your post from the same page once it's up. Need more time? Reply here.",
+        samples: ['Riya', 'Instagram story 1', 'Pinnaca 2026', 'Sunday, 15 November'],
+        header: { image: 'public/og/wa-reminder-v1.jpg' },
+        buttons: [{ type: 'URL', text: 'Open my task', url: `${APP}/d/{{1}}`, example: [`${APP}/d/sample-token`] }],
+        footer: 'Newbi Creators · app.newbi.live',
+    },
+    {
         // Sent by the team (Outreach → Send on WhatsApp) to approved creators. "Joined" carries a signed payload
         // that marks them joined; "Stop updates" opts the number out.
         name: 'campaign_group_link',

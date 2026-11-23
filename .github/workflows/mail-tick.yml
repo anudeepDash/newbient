@@ -1,0 +1,28 @@
+# Wakes the mail worker every 15 minutes, so WhatsApp task reminders go out near the time the team set
+# (Vercel's own cron runs it once a day). Each tick drains the mail and WhatsApp queues and picks up due
+# reminders; the heavier campaign sweeps still run at most once an hour.
+#
+# Needs one repository secret: CRON_SECRET, the same value as CRON_SECRET in Vercel.
+# GitHub may start a scheduled run a few minutes late; that's fine here.
+name: Mail tick
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Run the mail worker
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then echo "CRON_SECRET isn't set in this repository's secrets."; exit 0; fi
+          curl -sS --max-time 70 -o /dev/null -w "HTTP %{http_code}\n" \
+            -H "Authorization: Bearer $CRON_SECRET" -H "x-mail-tick: 1" \
+            https://app.newbi.live/api/mail

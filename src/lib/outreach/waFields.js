@@ -108,7 +108,7 @@ const OURS = {
     ...Object.fromEntries(Object.values(WA_TEMPLATES).map(t => [t.name, {
         body: t.placeholders,
         ...(t.name === 'campaign_group_invite' ? { button: 'group_code' } : {}),
-        ...(['campaign_deliverables', 'campaign_deliverable_changes', 'campaign_post_due', 'campaign_post_overdue', 'campaign_posts_open', 'campaign_task_live', 'campaign_event_day', 'campaign_brief_updated'].includes(t.name) ? { button: 'submit_token' } : {}),
+        ...(['campaign_deliverables', 'campaign_deliverable_changes', 'campaign_post_due', 'campaign_post_overdue', 'campaign_posts_open', 'campaign_task_live', 'campaign_task_brief', 'campaign_task_reminder', 'campaign_event_day', 'campaign_brief_updated'].includes(t.name) ? { button: 'submit_token' } : {}),
     }])),
 };
 
