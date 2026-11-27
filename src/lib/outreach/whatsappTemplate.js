@@ -162,6 +162,14 @@ export const WA_TEMPLATES = {
         placeholders: ['first_name', 'campaign_title', 'event_when', 'event_where', 'event_note'],
         button: 'Open my page',
     },
+    // Sent by the team from Outreach → Message → Guestlist, to approved creators: they're on the event's guestlist
+    // (no QR code). The same approved template guestlists use (api/_lib/notify.js); this sends the message only and
+    // issues no pass (passes go from Send tickets). No buttons. The event and date are typed in, prefilled from the campaign.
+    guestlist: {
+        name: 'guestlist_rsvp_confirmed',
+        body: "✅ *You're on the list, {{1}}*\n\n*Event:* {{2}}\n*Date:* {{3}}\n*Name on the list:* {{4}}\n\nThere's no QR code for this event. Give the name above at the entrance and the team will let you in.",
+        placeholders: ['first_name', 'event_name', 'event_date', 'door_name'],
+    },
     // The team changed something in the brief. URL button: their task page with the brief.
     brief_changed: {
         name: 'campaign_brief_updated',
@@ -225,6 +233,13 @@ export const approvedSummary = (titles = []) => {
 };
 export const DEADLINE_FALLBACK = 'Details are in the group.';
 
+/* "Riya Sharma + 1": the name the door checks on a guestlist (as doorName in api/_lib/notify.js). */
+export const doorNameOf = (fullName, guests = 0) => {
+    const name = String(fullName || '').replace(/\s+/g, ' ').trim().slice(0, 70) || 'Your name';
+    const extra = Math.max(0, Math.min(10, Math.floor(Number(guests) || 0)));
+    return extra ? `${name} + ${extra}` : name;
+};
+
 /** The template variables for one person, in order. `data` carries per-message values (task title, reason, amount, reference). */
 export const templateParamsFor = (kind, { application, campaign, groupLink, data = {} }) => {
     const values = {
@@ -253,6 +268,9 @@ export const templateParamsFor = (kind, { application, campaign, groupLink, data
         event_when: String(data.when || '').trim() || 'Details on your page',
         event_where: String(data.where || '').trim() || 'Details on your page',
         event_note: String(data.note || '').trim() || 'Nothing extra, just bring your phone charged.',
+        event_name: String(data.eventName || campaign?.eventName || campaign?.title || '').trim() || 'the event',
+        event_date: String(data.eventDate || '').trim() || 'See the campaign',
+        door_name: doorNameOf(application?.fullName, data.guests),
     };
     return (WA_TEMPLATES[kind] || WA_TEMPLATES.invite).placeholders.map(p => values[p]);
 };

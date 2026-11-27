@@ -17,13 +17,15 @@
  *   event_day    when, where and a note for the event (campaign_event_day), with their page link.
  *   brief_changed what changed in the brief (campaign_brief_updated), with their task link.
  *   not_selected applicants who weren't picked (campaign_not_selected).
+ *   guestlist    "You're on the list" (guestlist_rsvp_confirmed): the event, its date and the name at the door.
+ *                The message only: it issues no pass.
  *   task_reminder a reminder for a live task they haven't sent (campaign_task_reminder), once per person per day;
  *                the times it goes by itself are set per task (api/_lib/taskReminders.js).
  *
  * Nothing here is automatic: each send is an admin's choice. Passes stay in the
- * Send tickets sheet (they're never sent from here).
+ * Send tickets sheet (they're never issued from here; the guestlist message only tells people they're on the list).
  *
- * Action: outreach-wa-send { campaignId, kind, appIds, creatorIds?, taskId?, link?, note?, joinBy?, when?, where?, reward?, again? }
+ * Action: outreach-wa-send { campaignId, kind, appIds, creatorIds?, taskId?, link?, note?, joinBy?, when?, where?, reward?, eventName?, eventDate?, guests?, again? }
  *   creatorIds (task_live and task_reminder): creators shortlisted in the app (not on the outreach list).
  *   → { queued, skipped: [{ id, reason }], worker }
  */
@@ -49,6 +51,7 @@ const AUDIENCE = {
     update: (a) => isOnShortlist(a.status),
     event_day: (a) => isOnShortlist(a.status),
     brief_changed: (a) => isOnShortlist(a.status),
+    guestlist: (a) => isOnShortlist(a.status),
     reach_out: (a) => a.status !== 'removed',
     not_selected: (a) => (a.status || 'applied') === 'applied',
 };
@@ -123,6 +126,11 @@ export const handleWaSend = async (req, res, { db, actor, startWorker }) => {
             const where = oneLine(b.where, 140);
             if (!when || !where) return send(res, 400, { success: false, error: 'Add when and where.' });
             data = { when, where, note: oneLine(b.note, 200) };
+        } else if (kind === 'guestlist') {
+            const eventName = oneLine(b.eventName, 80) || oneLine(campaign.eventName, 80) || oneLine(campaign.title, 80);
+            const eventDate = oneLine(b.eventDate, 60);
+            if (!eventName || !eventDate) return send(res, 400, { success: false, error: 'Add the event and its date.' });
+            data = { eventName, eventDate, guests: Math.max(0, Math.min(10, Math.floor(Number(b.guests) || 0))) };
         } else if (kind === 'reach_out') {
             data = { reward: oneLine(b.reward, 160) };
         } else {

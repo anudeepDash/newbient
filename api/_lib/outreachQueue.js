@@ -249,6 +249,8 @@ const KINDS = {
     event_day: { button: 'link' },
     brief_changed: { button: 'link' },
     not_selected: { button: 'stop' },
+    // guestlist: data { eventName, eventDate, guests }. "You're on the list" (guestlist_rsvp_confirmed), no buttons.
+    guestlist: {},
     // After the campaign (api/_lib/campaignFeedback.js): data { feedbackId }. URL button: their feedback form.
     feedback: { feedback: true },
     inbox_text: { text: true },
@@ -571,6 +573,7 @@ const BROADCAST_NOTES = {
     event_day: () => 'Event-day details sent',
     brief_changed: () => 'Brief change sent',
     not_selected: () => 'Told they weren’t picked',
+    guestlist: (d) => `Guestlist message sent: ${d.eventName || 'the event'}`,
 };
 
 /* ── Queue any message ────────────────────────────────────────────────── */

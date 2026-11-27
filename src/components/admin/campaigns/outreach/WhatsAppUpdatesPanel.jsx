@@ -13,6 +13,7 @@ import DoorOpen from 'lucide-react/dist/esm/icons/door-open';
 import TriangleAlert from 'lucide-react/dist/esm/icons/triangle-alert';
 import BellRing from 'lucide-react/dist/esm/icons/bell-ring';
 import Mail from 'lucide-react/dist/esm/icons/mail';
+import ListChecks from 'lucide-react/dist/esm/icons/list-checks';
 import { cn } from '../../../../lib/utils';
 import { useStore } from '../../../../lib/store';
 import { Button, Card, Badge, Select, SearchInput } from '../../ui';
@@ -59,6 +60,7 @@ const MESSAGES = [
     { kind: 'update', label: 'Update', icon: Megaphone, tone: 'blue', hint: 'A short note and a link', segments: ['approved', 'not_joined'] },
     { kind: 'email_details', label: 'Email details', icon: Mail, tone: 'blue', hint: 'Email one creator this campaign’s details to keep, at any address you paste', segments: [], email: true },
     { kind: 'event_day', label: 'Event day', icon: CalendarClock, tone: 'pink', hint: 'When, where, what to bring', segments: ['approved'] },
+    { kind: 'guestlist', label: 'Guestlist', icon: ListChecks, tone: 'green', hint: 'You’re on the list: the event, its date and the name at the door', segments: ['approved'] },
     { kind: 'reach_out', label: 'First reach-out', icon: Hand, tone: 'teal', hint: 'For imported numbers', segments: ['imported_new', 'imported', 'applied'] },
     { kind: 'not_selected', label: 'Not picked', icon: HeartHandshake, tone: 'gray', hint: 'Close the loop with applicants', segments: ['applied'] },
 ];
@@ -128,6 +130,12 @@ const buttonsOf = (kind) => {
     if (kind === 'reach_out') return [INTERESTED_BUTTON, STOP_BUTTON];
     if (['update', 'not_selected'].includes(kind)) return [STOP_BUTTON];
     return WA_TEMPLATES[kind]?.button ? [`↗ ${WA_TEMPLATES[kind].button}`] : [];
+};
+
+/* The campaign's event day as the guestlist message shows it ("Sat, 19 Dec"), or '' when it has none. */
+const eventDayOf = (campaign) => {
+    const d = new Date(String(campaign?.eventDate || '').slice(0, 10));
+    return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
 };
 
 /*
@@ -204,7 +212,7 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
     useEffect(() => { if (!task && openTasks[0]) setTaskId(String(openTasks[0].id)); }, [task, openTasks]);
 
     const defaultGroup = settings?.whatsappGroupLink || campaign.whatsappLink || '';
-    const [fields, setFields] = useState({ groupLink: defaultGroup, joinBy: '', note: '', link: '', when: '', where: '', reward: campaign.reward || '' });
+    const [fields, setFields] = useState({ groupLink: defaultGroup, joinBy: '', note: '', link: '', when: '', where: '', reward: campaign.reward || '', eventName: campaign.eventName || campaign.title || '', eventDate: eventDayOf(campaign), guests: '0' });
     const set = (patch) => setFields(f => ({ ...f, ...patch }));
     const [segment, setSegment] = useState(meta.segments[0] || 'approved');
     useEffect(() => { setSegment(meta.segments[0] || 'approved'); }, [pick]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -243,6 +251,7 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
         brief_changed: { note: one(fields.note) },
         event_day: { when: one(fields.when), where: one(fields.where), note: one(fields.note) },
         reach_out: { reward: one(fields.reward) },
+        guestlist: { eventName: one(fields.eventName), eventDate: one(fields.eventDate), guests: Number(fields.guests) || 0 },
         not_selected: {},
     }[kind];
     const missing = {
@@ -255,6 +264,7 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
         brief_changed: !one(fields.note) && 'Say what changed in the brief.',
         event_day: (!one(fields.when) || !one(fields.where)) && 'Add when and where.',
         reach_out: false,
+        guestlist: (!one(fields.eventName) || !one(fields.eventDate)) && 'Add the event and its date.',
         not_selected: false,
     }[kind];
     const sample = recipients[0] || inSegment[0];
@@ -399,6 +409,16 @@ const WhatsAppUpdatesPanel = ({ campaign, applications, settings, api, onSent, i
                         <Field label="What they get" optional hint="One line. Left empty, it says “Details in the next message”. Tapping “I’m interested” marks them Interested here; reply to them from Inbox.">
                             <input className={fieldCls} value={fields.reward} onChange={(e) => set({ reward: e.target.value })} maxLength={160} placeholder="Free passes for you and a friend, and ₹2,000 per reel" />
                         </Field>
+                    )}
+                    {kind === 'guestlist' && (
+                        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem_9rem]">
+                            <Field label="Event"><input className={fieldCls} value={fields.eventName} onChange={(e) => set({ eventName: e.target.value })} maxLength={80} placeholder="Arijit Singh Live" /></Field>
+                            <Field label="Date"><input className={fieldCls} value={fields.eventDate} onChange={(e) => set({ eventDate: e.target.value })} maxLength={60} placeholder="Sat, 19 Dec" /></Field>
+                            <Field label="Guests each">
+                                <Select label="Guests each" value={fields.guests} onChange={(v) => set({ guests: v })} className="w-full" options={[0, 1, 2, 3, 4].map(n => ({ value: String(n), label: n ? `+ ${n}` : 'Just them' }))} />
+                            </Field>
+                            <p className="text-[12px] text-gray-500 sm:col-span-3">Their name goes on the message as it is on the list{Number(fields.guests) ? ` (“Name + ${fields.guests}”)` : ''}. This only sends the message: it doesn’t issue a pass. Passes go from Send tickets.</p>
+                        </div>
                     )}
                     {kind === 'not_selected' && <p className="text-[13px] text-gray-500">Sent to applicants you didn’t shortlist, so nobody is left waiting. Each person gets it once.</p>}
 
