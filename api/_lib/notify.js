@@ -360,6 +360,9 @@ export const loadRecipient = async (uid, override = {}) => {
     };
 };
 
+// Security alerts stay out of the team's Inbox chats; every other WhatsApp sent from here gets a copy there.
+const NOT_IN_INBOX = new Set(['new-sign-in', 'phone-number-changed', 'accounts-merged']);
+
 const skipped = (reason) => ({ status: 'skipped', reason });
 
 /**
@@ -398,7 +401,7 @@ export const notify = async (event, uid, data = {}, opts = {}) => {
         else if (!isTemplateLive(waTemplate)) results.whatsapp = skipped('WhatsApp template not approved yet');
         else if (!toE164(person.phone)) results.whatsapp = skipped('No WhatsApp number');
         else {
-            jobs.push(sendTemplate({ to: person.phone, template: waTemplate, image: payload.image, ...config.whatsapp.build(payload), event, uid, ref: opts.ref })
+            jobs.push(sendTemplate({ to: person.phone, template: waTemplate, image: payload.image, ...config.whatsapp.build(payload), event, uid, ref: opts.ref, inbox: NOT_IN_INBOX.has(event) ? null : { name: person.name || null, campaignId: payload.campaignId || null } })
                 .then(r => { results.whatsapp = { status: r.status, ...(r.messageId ? { messageId: r.messageId } : {}), ...(r.droppedHeader ? { droppedHeader: true } : {}), ...(r.error ? { error: r.error } : {}) }; }));
         }
     }

@@ -13,6 +13,7 @@
  */
 import { getDb, FieldValue, nowIso } from './db.js';
 import { APP_ORIGIN, WA_CARDS, toOgImage } from '../../src/app/seo.js';
+import { appendThreadMessage } from './outreachThreads.js';
 
 const API_VERSION = () => process.env.WHATSAPP_API_VERSION || 'v23.0';
 const RETRY_DELAYS_MIN = [5, 30, 120];
@@ -170,6 +171,46 @@ export const resetNoHeaderForTests = () => NO_HEADER.clear();
 const isHeaderMismatch = (err) => /title component|header: .*no parameters|^header\b/i
     .test(`${err?.error_data?.details || ''} ${err?.message || ''}`.trim());
 
+/*
+ * The approved text of each template (WhatsApp Manager), so a copy of an automatic send can show in the
+ * person's Inbox chat as they saw it. Asked from Meta at most every 10 minutes per instance; {} when it can't be.
+ */
+const BODY_TTL_MS = 10 * 60 * 1000;
+let bodyCache = { at: 0, bodies: null, pending: null };
+export const resetTemplateBodiesForTests = () => { bodyCache = { at: 0, bodies: null, pending: null }; };
+const templateBodies = async () => {
+    if (bodyCache.bodies && Date.now() - bodyCache.at < BODY_TTL_MS) return bodyCache.bodies;
+    const waba = process.env.WHATSAPP_WABA_ID;
+    if (!waba || !isWhatsAppConfigured()) return {};
+    if (!bodyCache.pending) {
+        bodyCache.pending = (async () => {
+            try {
+                const doFetch = testFetch || fetch;
+                const res = await doFetch(`https://graph.facebook.com/${API_VERSION()}/${encodeURIComponent(waba)}/message_templates?fields=name,components&limit=200`, {
+                    headers: { Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}` },
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) return bodyCache.bodies || {};
+                const bodies = Object.fromEntries((data.data || []).map(t => [t.name, (t.components || []).find(c => c.type === 'BODY')?.text || '']).filter(([, b]) => b));
+                bodyCache = { at: Date.now(), bodies, pending: null };
+                return bodies;
+            } catch {
+                return bodyCache.bodies || {};
+            } finally {
+                bodyCache.pending = null;
+            }
+        })();
+    }
+    return bodyCache.pending;
+};
+
+/** The message as WhatsApp showed it: the approved text with its variables filled in, else the variables in a line. */
+export const templateText = async (name, bodyParams = []) => {
+    const body = (await templateBodies())[name];
+    const values = bodyParams.map(v => String(v ?? ''));
+    return body ? body.replace(/\{\{(\d+)\}\}/g, (_, n) => values[Number(n) - 1] ?? '') : `[${name}] ${values.join(' · ')}`.trim();
+};
+
 /**
  * sendTemplate({ to, template, language, header, image, bodyParams, buttons, event, uid, ref })
  * Templates with an image header (IMAGE_HEADERS) get `image` (the event's or
@@ -177,11 +218,13 @@ const isHeaderMismatch = (err) => /title component|header: .*no parameters|^head
  * → { ok, status: 'sent'|'failed'|'retry'|'skipped', messageId, error, errorCode, retriable, logId }
  * Never throws.
  *
+ * inbox: { name?, campaignId?, sentBy? } also saves the message in the person's Inbox chat.
+ *
  * autoRetry: false leaves retries to the caller (the outreach queue, which has
  * its own rate limit): a failure is logged as 'failed' and the daily worker
  * won't resend it. `retriable` says whether trying again could work.
  */
-export const sendTemplate = async ({ to, template, language, header: givenHeader, softHeader = null, image = null, bodyParams = [], buttons = [], event = '', uid = null, ref = null, logId = null, autoRetry = true }) => {
+export const sendTemplate = async ({ to, template, language, header: givenHeader, softHeader = null, image = null, bodyParams = [], buttons = [], event = '', uid = null, ref = null, logId = null, autoRetry = true, inbox = null }) => {
     if (!isWhatsAppConfigured()) return { ok: false, status: 'skipped', error: 'WhatsApp is not set up' };
     const phone = toE164(to);
     if (!phone) return { ok: false, status: 'skipped', error: 'No valid WhatsApp number' };
@@ -226,6 +269,14 @@ export const sendTemplate = async ({ to, template, language, header: givenHeader
         const messageId = result.data.messages[0].id;
         await logRef.set({ ...base, status: 'sent', messageId, error: FieldValue.delete(), payload: FieldValue.delete() }, { merge: true }).catch(() => {});
         await writeDelivery(ref, { status: 'sent', messageId, at: nowIso(), error: null });
+        // inbox: { name, campaignId, sentBy } puts a copy in their Inbox chat (automatic sends; the outreach
+        // queue and the WhatsApp page write their own). Never for login codes or security alerts.
+        if (inbox) {
+            await appendThreadMessage(db, {
+                phone, name: inbox.name || null, direction: 'out', type: 'template', text: await templateText(name, bodyParams), wamid: messageId,
+                status: 'sent', sentBy: inbox.sentBy || 'Newbi (automatic)', campaignId: inbox.campaignId || null,
+            }).catch(e => console.warn('[WHATSAPP] inbox copy not saved:', e.message));
+        }
         return { ok: true, status: 'sent', messageId, logId: logRef.id, ...(droppedHeader ? { droppedHeader: true } : {}) };
     }
 
